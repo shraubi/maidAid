@@ -68,29 +68,6 @@ main { width: min(760px, calc(100% - 32px)); margin: 0 auto; padding-bottom: 56p
   font-weight: 800;
 }
 
-.kind-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin: 0 0 20px;
-  padding: 5px;
-  border: 0;
-  border-radius: 14px;
-  background: #e9e7de;
-}
-
-.kind-switch label { cursor: pointer; }
-.kind-switch input { position: absolute; opacity: 0; pointer-events: none; }
-.kind-switch span {
-  display: block;
-  padding: 11px 8px;
-  border-radius: 10px;
-  text-align: center;
-  font-size: .9rem;
-  font-weight: 700;
-}
-.kind-switch input:checked + span { color: #fff; background: #2c6658; box-shadow: 0 5px 15px rgba(23, 63, 53, .15); }
-
 .input-label { display: block; margin-bottom: 8px; font-size: .86rem; font-weight: 750; }
 textarea {
   width: 100%;

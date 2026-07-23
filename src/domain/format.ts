@@ -14,8 +14,11 @@ export function formatMoney(cents: number): string {
   return `${(cents / 100).toFixed(2).replace(".", ",")}€`;
 }
 
-export function workTypeLabel(type: "independent" | "orientation" | "unknown"): string {
-  if (type === "independent") return "самостоятельно";
-  if (type === "orientation") return "ознакомление";
-  return "тип не указан";
+export function workTypeLabel(
+  type: "independent" | "orientation" | "practice" | "unknown",
+): string {
+  if (type === "independent") return "Самостоятельная уборка";
+  if (type === "orientation") return "Ознакомление";
+  if (type === "practice") return "Практика";
+  return "Тип не указан";
 }

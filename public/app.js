@@ -23,7 +23,13 @@ const formatTime = (minutes) =>
 const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) =>
-  type === "independent" ? "самостоятельно" : type === "orientation" ? "ознакомление" : "тип не указан";
+  type === "independent"
+    ? "Самостоятельная уборка"
+    : type === "orientation"
+      ? "Ознакомление"
+      : type === "practice"
+        ? "Практика"
+        : "Тип не указан";
 const escapeHtml = (value) =>
   String(value).replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -57,7 +63,7 @@ function renderPreview(data) {
     <article class="job">
       <strong>${escapeHtml(job.object)}</strong>
       <span>${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}</span>
-      <small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}${job.endInferred ? " · окончание выведено из следующей работы" : ""}</small>
+      <small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>
     </article>`).join("");
   const expenses = data.parsed.expenses.map((expense) => `
     <article class="expense">
@@ -66,7 +72,7 @@ function renderPreview(data) {
     </article>`).join("");
 
   parsedSummary.innerHTML = `
-    <div class="date-card">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")} · ${data.parsed.kind === "actual" ? "фактический день" : "расписание"}</div>
+    <div class="date-card">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</div>
     <div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>
     ${expenses ? `<div class="expense-list">${expenses}</div>` : ""}
     <div class="totals">
@@ -85,11 +91,10 @@ previewButton.addEventListener("click", async () => {
   previewButton.disabled = true;
   previewButton.textContent = "Проверяю…";
   try {
-    const kind = document.querySelector('input[name="kind"]:checked').value;
     const response = await fetch("/api/preview", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind, text: textarea.value }),
+      body: JSON.stringify({ text: textarea.value }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error === "invalid_request" ? "Введите сообщение длиной до 32 КБ." : "Не удалось проверить сообщение.");
