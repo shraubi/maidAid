@@ -32,12 +32,23 @@ export function generateShareText(day: ParsedDay, settings: Settings): string {
     const minutes =
       job.startMinutes !== null && job.endMinutes !== null ? job.endMinutes - job.startMinutes : 0;
     const income = calculateJobIncome(job, settings);
-    const jobExpenses = day.expenses.filter((expense) => expense.object === job.object);
-    const expenseText = jobExpenses.length
-      ? jobExpenses.map((expense) => `${formatMoney(expense.amountCents)} ${expense.category}`).join(", ")
-      : "0€";
-    return `${job.object} ${formatHours(minutes)} + ${expenseText} + ${formatMoney(income)}`;
+    const jobExpenses = day.expenses.filter(
+      (expense) => expense.object === job.object && expense.amountCents > 0,
+    );
+    const parts = [`${job.object} ${formatHours(minutes)}`];
+    if (jobExpenses.length) {
+      parts.push(
+        jobExpenses
+          .map((expense) => `${formatMoney(expense.amountCents)} ${expense.category}`)
+          .join(", "),
+      );
+    }
+    if (income > 0) parts.push(formatMoney(income));
+    return parts.join(" + ");
   });
+  const todayParts = [`Сегодня: ${formatHours(today.minutes)}`];
+  if (today.incomeCents > 0) todayParts.push(`${formatMoney(today.incomeCents)} заработок`);
+  if (today.expensesCents > 0) todayParts.push(`${formatMoney(today.expensesCents)} расходы`);
 
   return [
     `${day.displayDate ?? day.dateIso}${changed}`,
@@ -48,10 +59,7 @@ export function generateShareText(day: ParsedDay, settings: Settings): string {
     "",
     ...workLines,
     "",
-    `Сегодня: ${formatHours(today.minutes)} + ${formatMoney(today.incomeCents)} заработок + ${formatMoney(today.expensesCents)} расходы`,
-    "",
-    "Оплата наличными:",
-    "",
-    "Аванс:",
+    todayParts.join(" + "),
   ].join("\n");
 }
+

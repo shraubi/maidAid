@@ -53,7 +53,13 @@ describe("MaidAid HTTP API", () => {
       payload: { text: "19/07\nEiffel 11-14 самостоятельно" },
     });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({ parsed: { kind: "schedule" }, canShare: true });
+    const body = response.json();
+    expect(body).toMatchObject({ parsed: { kind: "schedule" }, canShare: true });
+    expect(body.shareText).toContain("Eiffel 3h + 30,00€");
+    expect(body.shareText).toContain("Сегодня: 3h + 30,00€ заработок");
+    expect(body.shareText).not.toContain("0,00€ расходы");
+    expect(body.shareText).not.toContain("Оплата наличными:");
+    expect(body.shareText).not.toContain("Аванс:");
   });
 
   it("returns cleaned preview data and activity-specific pricing", async () => {
