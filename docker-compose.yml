@@ -1,6 +1,7 @@
 services:
   maidaid:
-    build: .
+    image: ghcr.io/shraubi/maidaid:latest
+    pull_policy: always
     restart: unless-stopped
     env_file: .env
     environment:
