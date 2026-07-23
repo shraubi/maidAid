@@ -1,0 +1,104 @@
+import { afterEach, describe, expect, it } from "vitest";
+import type { FastifyInstance } from "fastify";
+import { buildApp } from "../src/server.js";
+import type { Config } from "../src/config.js";
+
+const config: Config = {
+  PORT: 3000,
+  HOST: "127.0.0.1",
+  LOG_LEVEL: "silent",
+  HOURLY_RATE_CENTS: 1000,
+  DRYER_DEFAULT_CENTS: 390,
+  PREVIEW_RATE_LIMIT_MAX: 100,
+  PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
+};
+
+let app: FastifyInstance | undefined;
+
+afterEach(async () => {
+  await app?.close();
+  app = undefined;
+});
+
+describe("MaidAid HTTP API", () => {
+  it("previews an actual day without storing a draft", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        kind: "actual",
+        text: "19/07 изменения\nEiffel 11-14 самостоятельно\nСушка Eiffel",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      parsed: { kind: "actual", displayDate: "19/07" },
+      totals: { minutes: 180, incomeCents: 3000, expensesCents: 390 },
+      issues: [],
+      unparsedLines: [],
+      canShare: true,
+    });
+    expect(response.json()).not.toHaveProperty("draftId");
+  });
+
+  it("previews a schedule with the explicit request kind", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: { kind: "schedule", text: "19/07\nEiffel 11-14 самостоятельно" },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ parsed: { kind: "schedule" }, canShare: true });
+  });
+
+  it("blocks sharing for parse issues and unrecognized lines", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        kind: "actual",
+        text: "19/07\nEiffel 11:00 самостоятельно\nпотом может ещё куда-нибудь",
+      },
+    });
+    const body = response.json();
+    expect(body.canShare).toBe(false);
+    expect(body.shareText).toBe("");
+    expect(body.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "missing_end" })]));
+    expect(body.unparsedLines).toEqual(["потом может ещё куда-нибудь"]);
+  });
+
+  it("rejects invalid bodies", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: { kind: "unknown", text: "" },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: "invalid_request" });
+  });
+
+  it("rejects request bodies larger than 32 KB", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ kind: "actual", text: "x".repeat(33 * 1024) }),
+    });
+    expect(response.statusCode).toBe(413);
+  });
+
+  it("serves health and the PWA shell without legacy routes", async () => {
+    app = await buildApp(config);
+    expect((await app.inject({ method: "GET", url: "/health" })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/" })).headers["content-type"]).toContain("text/html");
+    expect((await app.inject({ method: "GET", url: "/manifest.webmanifest" })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/sw.js" })).statusCode).toBe(200);
+    expect((await app.inject({ method: "POST", url: "/webhook" })).statusCode).toBe(404);
+  });
+});

@@ -113,18 +113,27 @@ function extractInlineExpense(line: string): { expense?: Expense; remainder: str
   };
 }
 
-function parseStandaloneExpense(line: string): Expense | null {
+function parseStandaloneExpense(line: string, dryerDefaultCents: number): Expense | null {
   const category = line.match(EXPENSE_RE);
   const amount = line.match(AMOUNT_RE);
-  if (!category || category.index === undefined || !amount || amount.index === undefined) return null;
+  if (!category || category.index === undefined) return null;
+  const isDryer = category[0].toLocaleLowerCase("ru").startsWith("сушк");
+  if (!amount || amount.index === undefined) {
+    if (!isDryer) return null;
+    const objectPart = line.slice(category.index + category[0].length).replace(/[():]/g, " ").trim();
+    return {
+      category: "сушка",
+      object: objectPart ? normalizeObject(objectPart) : undefined,
+      amountCents: dryerDefaultCents,
+      sourceLine: line,
+    };
+  }
   const objectPart = line
     .slice(category.index + category[0].length, amount.index)
     .replace(/[():]/g, " ")
     .trim();
   return {
-    category: category[0].toLocaleLowerCase("ru").startsWith("сушк")
-      ? "сушка"
-      : category[0].toLocaleLowerCase("ru"),
+    category: isDryer ? "сушка" : category[0].toLocaleLowerCase("ru"),
     object: objectPart ? normalizeObject(objectPart) : undefined,
     amountCents: Math.round(Number(amount[1]!.replace(",", ".")) * 100),
     sourceLine: line,
@@ -219,7 +228,7 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
   return issues;
 }
 
-export function parseDay(text: string, now = new Date()): ParsedDay {
+export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390): ParsedDay {
   const date = parseDate(text, now);
   const lines = text
     .split(/\r?\n/)
@@ -233,7 +242,7 @@ export function parseDay(text: string, now = new Date()): ParsedDay {
     if (DATE_RE.test(line) && line.replace(DATE_RE, "").trim().match(/^(изменения?)?$/iu)) continue;
     const standaloneExpense = EXPENSE_RE.test(line) && !INTERVAL_RE.test(line) && !TIME_RE.test(line);
     if (standaloneExpense) {
-      const expense = parseStandaloneExpense(line);
+      const expense = parseStandaloneExpense(line, dryerDefaultCents);
       if (expense) expenses.push(expense);
       else unparsedLines.push(line);
       continue;
@@ -249,6 +258,7 @@ export function parseDay(text: string, now = new Date()): ParsedDay {
 
   const issues = inferEndsAndIssues(jobs);
   if (!date) issues.unshift({ code: "missing_date", message: "Не указана дата" });
+  if (!jobs.length) issues.push({ code: "missing_jobs", message: "Не найдена ни одна работа" });
   return {
     dateIso: date?.dateIso ?? null,
     displayDate: date?.displayDate ?? null,

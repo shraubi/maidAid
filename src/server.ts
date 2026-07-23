@@ -1,98 +1,100 @@
-import Fastify from "fastify";
-import rawBody from "fastify-raw-body";
-import { MaidAid } from "./app/maidAid.js";
-import { loadConfig, parseGoogleCredentials } from "./config.js";
-import {
-  extractIncomingMessages,
-  verifyMetaSignature,
-  WhatsAppClient,
-} from "./integrations/whatsapp.js";
-import { GoogleSheetsStorage } from "./storage/googleSheets.js";
-import { MemoryStorage } from "./storage/memory.js";
-import type { Storage } from "./storage/storage.js";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, resolve, sep } from "node:path";
+import Fastify, { type FastifyInstance } from "fastify";
+import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
+import { z } from "zod";
+import { calculateDay } from "./domain/calculations.js";
+import { generateShareText } from "./domain/draft.js";
+import { parseDay } from "./domain/parser.js";
+import type { Settings } from "./domain/types.js";
+import { loadConfig, type Config } from "./config.js";
 
-const config = loadConfig();
-const app = Fastify({ logger: { level: config.LOG_LEVEL } });
+const previewBody = z.object({
+  kind: z.enum(["actual", "schedule"]),
+  text: z.string().trim().min(1).max(32 * 1024),
+}).strict();
 
-if (config.WHATSAPP_ACCESS_TOKEN && !config.META_APP_SECRET) {
-  throw new Error("META_APP_SECRET is required when WhatsApp sending is enabled");
-}
+const moduleDirectory = dirname(fileURLToPath(import.meta.url));
+const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`)
+  ? resolve(moduleDirectory, "../../public")
+  : resolve(moduleDirectory, "../public");
 
-await app.register(rawBody, {
-  field: "rawBody",
-  global: false,
-  encoding: "utf8",
-  runFirst: true,
-  routes: ["/webhook"],
-});
+export async function buildApp(config: Config = loadConfig()): Promise<FastifyInstance> {
+  const app = Fastify({
+    logger: { level: config.LOG_LEVEL },
+    trustProxy: true,
+  });
+  const settings: Settings = {
+    hourlyRateCents: config.HOURLY_RATE_CENTS,
+    dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
+  };
 
-let storage: Storage;
-if (config.USE_MEMORY_STORAGE) {
-  storage = new MemoryStorage();
-} else {
-  if (!config.GOOGLE_SHEET_ID || !config.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS) {
-    throw new Error("Google Sheets configuration is required unless USE_MEMORY_STORAGE=true");
-  }
-  storage = new GoogleSheetsStorage(
-    config.GOOGLE_SHEET_ID,
-    parseGoogleCredentials(config.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS),
+  await app.register(rateLimit, {
+    global: false,
+    max: config.PREVIEW_RATE_LIMIT_MAX,
+    timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
+  });
+  await app.register(fastifyStatic, {
+    root: publicRoot,
+    wildcard: false,
+  });
+
+  app.get("/health", async () => ({ status: "ok", service: "MaidAid" }));
+
+  app.post(
+    "/api/preview",
+    {
+      bodyLimit: 32 * 1024,
+      config: {
+        rateLimit: {
+          max: config.PREVIEW_RATE_LIMIT_MAX,
+          timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
+        },
+      },
+    },
+    async (request, reply) => {
+      const input = previewBody.safeParse(request.body);
+      if (!input.success) {
+        return reply.code(400).send({
+          error: "invalid_request",
+          issues: input.error.issues.map(({ path, message }) => ({ path, message })),
+        });
+      }
+
+      const parsed = parseDay(input.data.text, new Date(), settings.dryerDefaultCents);
+      parsed.kind = input.data.kind;
+      const totals = calculateDay(parsed, settings);
+      const canShare =
+        parsed.dateIso !== null &&
+        parsed.jobs.length > 0 &&
+        parsed.issues.length === 0 &&
+        parsed.unparsedLines.length === 0;
+
+      return {
+        parsed,
+        totals,
+        issues: parsed.issues,
+        unparsedLines: parsed.unparsedLines,
+        canShare,
+        shareText: canShare ? generateShareText(parsed, settings) : "",
+      };
+    },
   );
+
+  return app;
 }
-await storage.initialize();
-const maidAid = new MaidAid(storage);
 
-const whatsApp =
-  config.WHATSAPP_ACCESS_TOKEN && config.WHATSAPP_PHONE_NUMBER_ID
-    ? new WhatsAppClient(
-        config.WHATSAPP_ACCESS_TOKEN,
-        config.WHATSAPP_PHONE_NUMBER_ID,
-        config.WHATSAPP_API_VERSION,
-        config.ALLOWED_USER_PHONE,
-      )
-    : null;
+async function start(): Promise<void> {
+  const config = loadConfig();
+  const app = await buildApp(config);
+  await app.listen({ port: config.PORT, host: config.HOST });
+}
 
-app.get("/health", async () => ({ status: "ok", service: "MaidAid" }));
-
-app.get("/webhook", async (request, reply) => {
-  const query = request.query as Record<string, string | undefined>;
-  if (
-    query["hub.mode"] === "subscribe" &&
-    query["hub.verify_token"] === config.WHATSAPP_WEBHOOK_VERIFY_TOKEN
-  ) {
-    return reply.type("text/plain").send(query["hub.challenge"]);
-  }
-  return reply.code(403).send({ error: "verification_failed" });
-});
-
-app.post("/webhook", async (request, reply) => {
-  const raw = (request as typeof request & { rawBody?: string }).rawBody ?? JSON.stringify(request.body);
-  const signature = request.headers["x-hub-signature-256"];
-  if (
-    !verifyMetaSignature(
-      raw,
-      Array.isArray(signature) ? signature[0] : signature,
-      config.META_APP_SECRET,
-    )
-  ) {
-    return reply.code(401).send({ error: "invalid_signature" });
-  }
-
-  // Acknowledge Meta only after the small, bounded processing loop completes.
-  for (const message of extractIncomingMessages(request.body)) {
-    if (message.from !== config.ALLOWED_USER_PHONE) {
-      request.log.warn({ from: message.from }, "Ignored message from a non-allowlisted number");
-      continue;
-    }
-    if (await storage.hasMessage(message.id)) continue;
-    const responses = await maidAid.handle(message.from, message.text, message.actionId);
-    if (whatsApp) {
-      for (const response of responses) await whatsApp.send(response);
-    } else {
-      request.log.info({ responses }, "WhatsApp credentials absent; response not sent");
-    }
-    await storage.recordMessage(message.id);
-  }
-  return reply.send({ status: "ok" });
-});
-
-await app.listen({ port: config.PORT, host: config.HOST });
+const entryPoint =
+  typeof process !== "undefined" && process.argv[1]
+    ? pathToFileURL(resolve(process.argv[1])).href
+    : "";
+if (import.meta.url === entryPoint) {
+  await start();
+}

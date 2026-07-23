@@ -76,7 +76,7 @@ jobs:
             cd "${{ secrets.APP_DIR }}"
             git pull --ff-only origin main
             printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "$GHCR_USER" --password-stdin
-            docker compose pull maidaid
-            docker compose up -d --no-build maidaid
+            docker compose pull maidaid ngrok
+            docker compose up -d --no-build maidaid ngrok
             docker image prune -f
             docker logout "$REGISTRY"
