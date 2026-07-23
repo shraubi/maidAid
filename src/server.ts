@@ -11,7 +11,7 @@ import type { Settings } from "./domain/types.js";
 import { loadConfig, type Config } from "./config.js";
 
 const previewBody = z.object({
-  kind: z.enum(["actual", "schedule"]),
+  kind: z.enum(["actual", "schedule"]).optional(),
   text: z.string().trim().min(1).max(32 * 1024),
 }).strict();
 
@@ -27,6 +27,8 @@ export async function buildApp(config: Config = loadConfig()): Promise<FastifyIn
   });
   const settings: Settings = {
     hourlyRateCents: config.HOURLY_RATE_CENTS,
+    orientationFlatCents: config.ORIENTATION_FLAT_CENTS,
+    practiceFlatCents: config.PRACTICE_FLAT_CENTS,
     dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
   };
 
@@ -63,7 +65,7 @@ export async function buildApp(config: Config = loadConfig()): Promise<FastifyIn
       }
 
       const parsed = parseDay(input.data.text, new Date(), settings.dryerDefaultCents);
-      parsed.kind = input.data.kind;
+      if (input.data.kind) parsed.kind = input.data.kind;
       const totals = calculateDay(parsed, settings);
       const canShare =
         parsed.dateIso !== null &&

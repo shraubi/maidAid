@@ -8,6 +8,8 @@ const config: Config = {
   HOST: "127.0.0.1",
   LOG_LEVEL: "silent",
   HOURLY_RATE_CENTS: 1000,
+  ORIENTATION_FLAT_CENTS: 1000,
+  PRACTICE_FLAT_CENTS: 1500,
   DRYER_DEFAULT_CENTS: 390,
   PREVIEW_RATE_LIMIT_MAX: 100,
   PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
@@ -43,15 +45,45 @@ describe("MaidAid HTTP API", () => {
     expect(response.json()).not.toHaveProperty("draftId");
   });
 
-  it("previews a schedule with the explicit request kind", async () => {
+  it("auto-detects a schedule when the request omits kind", async () => {
     app = await buildApp(config);
     const response = await app.inject({
       method: "POST",
       url: "/api/preview",
-      payload: { kind: "schedule", text: "19/07\nEiffel 11-14 самостоятельно" },
+      payload: { text: "19/07\nEiffel 11-14 самостоятельно" },
     });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ parsed: { kind: "schedule" }, canShare: true });
+  });
+
+  it("returns cleaned preview data and activity-specific pricing", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        text: `19/07
+1. 10:00-11:00 St Denis ознакомление (ознакомление через видос по итогу, хз как это считат)
+3. Ferronnerie Практика (13:10
+14:00–16:30
+4. 17:00-19:00 Opera самостоятельно`,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      parsed: {
+        jobs: [
+          { object: "St Denis", workType: "orientation" },
+          { object: "Ferronnerie", workType: "practice" },
+          { object: "Opera", workType: "independent" },
+        ],
+      },
+      totals: { minutes: 330, incomeCents: 4500, expensesCents: 0 },
+      canShare: true,
+    });
+    expect(response.json().parsed.jobs[0]).not.toHaveProperty("companion");
+    expect(response.json().parsed.jobs[1]).not.toHaveProperty("companion");
   });
 
   it("blocks sharing for parse issues and unrecognized lines", async () => {
