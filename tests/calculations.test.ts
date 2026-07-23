@@ -42,4 +42,21 @@ Opera 17:00-19:00 самостоятельно`,
       expensesCents: 0,
     });
   });
+
+  it("calculates the reported actual day with one inline dryer expense", () => {
+    const parsed = parseDay(
+      `19/07 изменения
+Eiffel 11:00-14:00 уборка самостоятельно + сушка 3.9
+14:30 Lauriston 31 ознакомление (Вероника)
+15:30-16 Opera ознакомление ( Ана)`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(calculateDay(parsed, settings)).toEqual({
+      minutes: 270,
+      incomeCents: 5000,
+      expensesCents: 390,
+    });
+  });
 });
+

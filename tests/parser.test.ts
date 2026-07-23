@@ -59,17 +59,49 @@ Eiffel 11:00-14:00 самостоятельно
     expect(parsed.issues).toEqual([]);
   });
 
-  it("asks for the last omitted end instead of inventing it", () => {
+  it("uses a nominal hour for a flat-priced activity with no end", () => {
     const parsed = parseDay(
       `19/07
-Eiffel 11:00-14:00 самостоятельно
-Opera 15:30 ознакомление (Ана)`,
+15:30 Opera ознакомление ( Ана)`,
       new Date("2026-07-23T00:00:00Z"),
     );
-    expect(parsed.jobs[1]?.endMinutes).toBeNull();
-    expect(parsed.issues).toContainEqual(
-      expect.objectContaining({ code: "missing_end", jobIndex: 1 }),
+    expect(parsed.jobs[0]).toMatchObject({
+      object: "Opera",
+      startMinutes: 930,
+      endMinutes: 990,
+      endInferred: true,
+      workType: "orientation",
+      companion: "Ана",
+    });
+    expect(parsed.issues).toEqual([]);
+  });
+
+  it("still requires an end for hourly cleaning", () => {
+    const parsed = parseDay(
+      `19/07
+Eiffel 11:00 самостоятельно`,
+      new Date("2026-07-23T00:00:00Z"),
     );
+    expect(parsed.jobs[0]?.endMinutes).toBeNull();
+    expect(parsed.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_end", jobIndex: 0 }),
+    );
+  });
+
+  it("removes the separator before an inline expense and links it to the job", () => {
+    const parsed = parseDay(
+      `19/07 изменения
+Eiffel 11:00-14:00 уборка самостоятельно + сушка 3.9
+14:30 Lauriston 31 ознакомление (Вероника)
+15:30-16 Opera ознакомление ( Ана)`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(parsed.jobs.map((job) => job.object)).toEqual(["Eiffel", "Lauriston 31", "Opera"]);
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ category: "сушка", object: "Eiffel", amountCents: 390 }),
+    ]);
+    expect(parsed.issues).toEqual([]);
   });
 
   it("preserves an unknown line", () => {
@@ -130,3 +162,4 @@ Opera 13-15 ознакомление (Ана)`,
     expect(parsed.issues).toEqual([]);
   });
 });
+
