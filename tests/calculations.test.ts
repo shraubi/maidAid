@@ -6,9 +6,6 @@ import type { Settings } from "../src/domain/types.js";
 const settings: Settings = {
   hourlyRateCents: 1000,
   dryerDefaultCents: 390,
-  initialMinutes: 0,
-  initialIncomeCents: 0,
-  initialExpensesCents: 0,
 };
 
 describe("calculateDay", () => {

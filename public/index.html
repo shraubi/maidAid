@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#173f35" />
+    <meta name="description" content="Проверка расписания, часов и расходов без хранения данных" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>MaidAid</title>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="brand">
+        <img src="/icons/icon.svg" alt="" width="48" height="48" />
+        <div>
+          <p class="eyebrow">Личный помощник</p>
+          <h1>MaidAid</h1>
+        </div>
+      </div>
+      <p class="hero-copy">Проверьте день, подтвердите расчёт и поделитесь готовым текстом.</p>
+      <p class="privacy">Ничего не сохраняется — ни на устройстве, ни на сервере.</p>
+    </header>
+
+    <main>
+      <section id="editor" class="panel" aria-labelledby="editor-title">
+        <div class="step-heading">
+          <span>1</span>
+          <div>
+            <p class="eyebrow">Исходные данные</p>
+            <h2 id="editor-title">Что проверяем?</h2>
+          </div>
+        </div>
+
+        <fieldset class="kind-switch">
+          <legend class="sr-only">Тип сообщения</legend>
+          <label>
+            <input type="radio" name="kind" value="actual" checked />
+            <span>Фактический день</span>
+          </label>
+          <label>
+            <input type="radio" name="kind" value="schedule" />
+            <span>Расписание</span>
+          </label>
+        </fieldset>
+
+        <label class="input-label" for="source-text">Вставьте сообщение целиком</label>
+        <textarea
+          id="source-text"
+          rows="11"
+          maxlength="32768"
+          placeholder="19/07 изменения&#10;Eiffel 11:00-14:00 самостоятельно&#10;Opera 15:30-18:00 ознакомление (Ана)&#10;Сушка Eiffel 3,90"
+        ></textarea>
+        <div class="editor-footer">
+          <span id="character-count">0 / 32 768</span>
+          <button id="preview-button" class="primary" type="button">Проверить</button>
+        </div>
+        <p id="request-error" class="notice error" role="alert" hidden></p>
+      </section>
+
+      <section id="preview" class="panel" aria-labelledby="preview-title" hidden>
+        <div class="step-heading">
+          <span>2</span>
+          <div>
+            <p class="eyebrow">Проверка</p>
+            <h2 id="preview-title">Всё ли верно?</h2>
+          </div>
+        </div>
+        <div id="issue-list" class="notice error" role="alert" hidden></div>
+        <div id="parsed-summary"></div>
+        <div class="actions">
+          <button id="edit-button" class="secondary" type="button">Исправить</button>
+          <button id="confirm-button" class="primary" type="button">Подтвердить</button>
+        </div>
+      </section>
+
+      <section id="result" class="panel result-panel" aria-labelledby="result-title" hidden>
+        <div class="step-heading">
+          <span>3</span>
+          <div>
+            <p class="eyebrow">Готово</p>
+            <h2 id="result-title">Текст для отправки</h2>
+          </div>
+        </div>
+        <pre id="share-text"></pre>
+        <div class="actions">
+          <button id="copy-button" class="secondary" type="button">Скопировать</button>
+          <button id="share-button" class="primary" type="button">Поделиться</button>
+        </div>
+        <p id="share-status" class="notice success" role="status" hidden></p>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

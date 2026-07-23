@@ -1,5 +1,5 @@
 import { formatHours, formatMoney, formatTime, workTypeLabel } from "./format.js";
-import type { Balance, ParsedDay, Settings } from "./types.js";
+import type { ParsedDay, Settings } from "./types.js";
 import { calculateDay } from "./calculations.js";
 
 export function formatParsedDay(day: ParsedDay): string {
@@ -20,17 +20,8 @@ export function formatParsedDay(day: ParsedDay): string {
   );
 }
 
-export function generateDraft(
-  day: ParsedDay,
-  settings: Settings,
-  totalAfterSave: Balance,
-): string {
+export function generateShareText(day: ParsedDay, settings: Settings): string {
   const today = calculateDay(day, settings);
-  const before: Balance = {
-    minutes: totalAfterSave.minutes - today.minutes,
-    incomeCents: totalAfterSave.incomeCents - today.incomeCents,
-    expensesCents: totalAfterSave.expensesCents - today.expensesCents,
-  };
   const changed = day.kind === "actual" ? " изменения" : "";
   const scheduleLines = day.jobs.map((job) => {
     const companion = job.companion ? ` (${job.companion})` : "";
@@ -59,8 +50,6 @@ export function generateDraft(
     ...workLines,
     "",
     `Сегодня: ${formatHours(today.minutes)} + ${formatMoney(today.incomeCents)} заработок + ${formatMoney(today.expensesCents)} расходы`,
-    `Было: ${formatHours(before.minutes)} + ${formatMoney(before.incomeCents)} заработок + ${formatMoney(before.expensesCents)} расходы`,
-    `Всего: ${formatHours(totalAfterSave.minutes)} + ${formatMoney(totalAfterSave.incomeCents)} заработок + ${formatMoney(totalAfterSave.expensesCents)} расходы`,
     "",
     "Оплата наличными:",
     "",

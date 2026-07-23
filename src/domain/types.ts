@@ -20,6 +20,7 @@ export interface Expense {
 
 export type ParseIssueCode =
   | "missing_date"
+  | "missing_jobs"
   | "missing_start"
   | "missing_end"
   | "missing_type"
@@ -44,42 +45,10 @@ export interface ParsedDay {
 export interface Settings {
   hourlyRateCents: number;
   dryerDefaultCents: number;
-  initialMinutes: number;
-  initialIncomeCents: number;
-  initialExpensesCents: number;
 }
 
 export interface DayTotals {
   minutes: number;
   incomeCents: number;
   expensesCents: number;
-}
-
-export interface StoredDay {
-  parsed: ParsedDay;
-  totals: DayTotals;
-  status: DayKind;
-  confirmedAt: string;
-}
-
-export interface Balance extends DayTotals {}
-
-export interface PendingState {
-  mode: "parsed" | "awaiting_actual" | "awaiting_replacement" | "awaiting_answer";
-  kind: DayKind;
-  parsed?: ParsedDay;
-  awaiting?: {
-    field: "end" | "start" | "type";
-    jobIndex: number;
-  };
-}
-
-export interface BotButton {
-  id: string;
-  title: string;
-}
-
-export interface BotResponse {
-  text: string;
-  buttons?: BotButton[];
 }
