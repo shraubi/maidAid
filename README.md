@@ -19,21 +19,24 @@ Schedule:
 ```text
 19/07
 
-*EIFFE* - ознакомление 11 (11:00)
-*Federation* - самостоятельная работа (12:00-15:30)
-*Lauriston 31* - ознакомление (16:00-16:30)
+*EIFFE* - orientation 11 (11:00)
+*Federation* - independent work (12:00-15:30)
+*Lauriston 31* - orientation (16:00-16:30)
 ```
 
 Actual work:
 
 ```text
-19/07 изменения
+19/07 changes
 
-Eiffel 11:00-14:00 самостоятельно
-14:30-15:00 Lauriston 31 ознакомление (Вероника)
-15:30-18:00 Opera ознакомление (Ана)
-Сушка Eiffel 3.90
+Eiffel 11:00-14:00 independently
+14:30-15:00 Lauriston 31 orientation (Colleague A)
+15:30-18:00 Opera orientation (Colleague B)
+Dryer Eiffel 3.90
 ```
+
+These examples document the message structure. The production parser and bot commands use Russian
+vocabulary for the primary user; those strings remain in the source code and tests.
 
 If a job has no end, the next job's start is used. Only a final job with no end triggers a focused
 question.
@@ -69,7 +72,7 @@ On startup MaidAid creates and initializes these tabs:
 - `Messages`
 - `Pending`
 
-The default hourly rate is 1000 cents (€10/hour) and the default dryer expense is 390 cents.
+The default hourly rate is 1000 cents (EUR 10/hour) and the default dryer expense is 390 cents.
 Initial balance values can be changed on the `Settings` tab.
 
 ## WhatsApp Cloud API
@@ -93,13 +96,9 @@ The transport always sends to `ALLOWED_USER_PHONE`; callers cannot provide anoth
 
 ## Commands
 
-- `расписание`
-- `итог`
-- `исправить 19/07`
-- `черновик 19/07`
-- `баланс`
-- `история`
-- `отмена`
+The bot exposes Russian-language commands for schedule entry, actual-day entry, corrections, draft
+generation, balance, history, and cancellation. See `src/app/maidAid.ts` for the canonical command
+strings.
 
 ## Production
 
@@ -118,10 +117,10 @@ transaction store and is intentionally optimized for one user and low volume.
 The deployment follows the same GitHub Actions/SSH pattern as `getajob`. Configure these repository
 secrets:
 
-- `VM_HOST` — the existing VM host;
-- `VM_USER` — SSH user;
-- `VM_SSH_KEY` — private deployment key;
-- `APP_DIR` — MaidAid checkout directory on the VM, for example `/opt/maidaid`.
+- `VM_HOST` - the existing VM host;
+- `VM_USER` - SSH user;
+- `VM_SSH_KEY` - private deployment key;
+- `APP_DIR` - MaidAid checkout directory on the VM, for example `/opt/maidaid`.
 
 Prepare the VM once:
 
