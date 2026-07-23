@@ -1,14 +1,25 @@
-FROM node:22-alpine
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
+FROM node:22-alpine AS production
 
 WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm install --include=dev --no-audit --no-fund
+RUN npm ci --omit=dev --no-audit --no-fund \
+    && npm cache clean --force
 
-COPY tsconfig.json ./
-COPY src ./src
+COPY --from=build --chown=node:node /app/dist/src ./dist/src
 
 USER node
 EXPOSE 3000
-CMD ["./node_modules/.bin/tsx", "src/server.ts"]
+CMD ["node", "dist/src/server.js"]
