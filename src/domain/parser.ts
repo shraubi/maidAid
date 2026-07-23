@@ -6,7 +6,9 @@ const TIME_RE = /\(?\b(\d{1,2}):(\d{2})\b\)?/;
 const EXPENSE_RE = /(сушк[аиу]?|метро|хими[яю]|расход(?:ы)?)/iu;
 const AMOUNT_RE = /(\d+(?:[.,]\d{1,2})?)\s*€?/u;
 const TYPE_RE =
-  /(самостоятельн(?:о|ая|ую|ой)?(?:\s+работ[аыу])?|уборк[ауы]?|ознакомлени[еяю]?|знакомств[оа])/giu;
+  /(самостоятельн(?:о|ая|ую|ой)?(?:\s+работ[аыу])?|уборк[ауы]?|ознакомлени[еяю]?|знакомств[оа]|практик[аиу]?)/giu;
+const TYPE_HINT_RE = /(самостоятель|уборк|ознакомлен|знакомств|практик)/iu;
+const TIME_TOKEN_RE = /\b\d{1,2}:\d{2}\b/gu;
 
 const aliases = new Map<string, string>([
   ["eiffe", "Eiffel"],
@@ -63,6 +65,7 @@ function parseDate(text: string, now: Date): { dateIso: string; displayDate: str
 
 function detectType(line: string): WorkType {
   const lower = line.toLocaleLowerCase("ru");
+  if (/практик/u.test(lower)) return "practice";
   if (/ознакомлен|знакомств/u.test(lower)) return "orientation";
   if (/самостоятель|уборк/u.test(lower)) return "independent";
   return "unknown";
@@ -70,6 +73,7 @@ function detectType(line: string): WorkType {
 
 function normalizeObject(value: string): string {
   const cleaned = value
+    .replace(/^\s*\d+\s*[.)-]\s*/u, "")
     .replace(/^[\s:;,.-]+|[\s:;,.-]+$/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -84,7 +88,10 @@ function normalizeObject(value: string): string {
 function extractCompanion(line: string): string | undefined {
   for (const match of line.matchAll(/\(([^)]+)\)/g)) {
     const value = match[1]!.trim();
-    if (!/\d{1,2}(?::\d{2})?(?:\s*-\s*\d{1,2}(?::\d{2})?)?/.test(value)) {
+    if (
+      !/\d{1,2}(?::\d{2})?(?:\s*-\s*\d{1,2}(?::\d{2})?)?/.test(value) &&
+      !TYPE_HINT_RE.test(value)
+    ) {
       return normalizeObject(value);
     }
   }
@@ -166,6 +173,8 @@ function parseJob(originalLine: string): { job: Job; inlineExpense?: Expense } |
   line = line
     .replace(TYPE_RE, " ")
     .replace(/\([^)]*\)/g, " ")
+    .replace(/\([^)]*$/g, " ")
+    .replace(TIME_TOKEN_RE, " ")
     .replace(/изменения?/giu, " ")
     .replace(/\s+-\s+|^\s*-\s*|\s*-\s*$/g, " ")
     .replace(/\s+/g, " ")
@@ -230,10 +239,20 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
 
 export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390): ParsedDay {
   const date = parseDate(text, now);
-  const lines = text
+  const sourceLines = text
     .split(/\r?\n/)
     .map(normalizeLine)
     .filter(Boolean);
+  const lines: string[] = [];
+  for (const line of sourceLines) {
+    const intervalOnly = INTERVAL_RE.test(line) &&
+      line.replace(INTERVAL_RE, "").replace(/[()]/g, "").trim() === "";
+    if (intervalOnly && lines.length > 0) {
+      lines[lines.length - 1] = `${lines[lines.length - 1]} ${line}`;
+    } else {
+      lines.push(line);
+    }
+  }
   const jobs: Job[] = [];
   const expenses: Expense[] = [];
   const unparsedLines: string[] = [];

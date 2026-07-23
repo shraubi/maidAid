@@ -6,6 +6,8 @@ const schema = z.object({
   HOST: z.string().default("0.0.0.0"),
   LOG_LEVEL: z.string().default("info"),
   HOURLY_RATE_CENTS: z.coerce.number().int().nonnegative().default(1000),
+  ORIENTATION_FLAT_CENTS: z.coerce.number().int().nonnegative().default(1000),
+  PRACTICE_FLAT_CENTS: z.coerce.number().int().nonnegative().default(1500),
   DRYER_DEFAULT_CENTS: z.coerce.number().int().nonnegative().default(390),
   PREVIEW_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   PREVIEW_RATE_LIMIT_WINDOW: z.string().default("1 minute"),

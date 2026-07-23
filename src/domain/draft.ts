@@ -1,6 +1,6 @@
 import { formatHours, formatMoney, formatTime, workTypeLabel } from "./format.js";
 import type { ParsedDay, Settings } from "./types.js";
-import { calculateDay } from "./calculations.js";
+import { calculateDay, calculateJobIncome } from "./calculations.js";
 
 export function formatParsedDay(day: ParsedDay): string {
   const jobs = day.jobs.map((job) => {
@@ -25,14 +25,13 @@ export function generateShareText(day: ParsedDay, settings: Settings): string {
   const changed = day.kind === "actual" ? " изменения" : "";
   const scheduleLines = day.jobs.map((job) => {
     const companion = job.companion ? ` (${job.companion})` : "";
-    const action =
-      job.workType === "independent" ? "уборка самостоятельно" : `ознакомление${companion}`;
+    const action = `${workTypeLabel(job.workType)}${companion}`;
     return `${job.object} ${formatTime(job.startMinutes)}-${formatTime(job.endMinutes)} ${action}`;
   });
   const workLines = day.jobs.map((job) => {
     const minutes =
       job.startMinutes !== null && job.endMinutes !== null ? job.endMinutes - job.startMinutes : 0;
-    const income = Math.round((minutes * settings.hourlyRateCents) / 60);
+    const income = calculateJobIncome(job, settings);
     const jobExpenses = day.expenses.filter((expense) => expense.object === job.object);
     const expenseText = jobExpenses.length
       ? jobExpenses.map((expense) => `${formatMoney(expense.amountCents)} ${expense.category}`).join(", ")

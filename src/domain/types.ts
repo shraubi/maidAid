@@ -1,4 +1,4 @@
-export type WorkType = "independent" | "orientation" | "unknown";
+export type WorkType = "independent" | "orientation" | "practice" | "unknown";
 export type DayKind = "schedule" | "actual";
 
 export interface Job {
@@ -44,6 +44,8 @@ export interface ParsedDay {
 
 export interface Settings {
   hourlyRateCents: number;
+  orientationFlatCents: number;
+  practiceFlatCents: number;
   dryerDefaultCents: number;
 }
 

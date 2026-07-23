@@ -1,6 +1,6 @@
 # MaidAid
 
-MaidAid is a small, stateless PWA for checking a cleaner's schedule or actual work report. It parses
+MaidAid is a small, stateless PWA for checking a cleaner's workday. It parses
 the pasted text, highlights ambiguous input, calculates hours, earnings and expenses, and prepares a
 daily report for the device's system share sheet.
 
@@ -9,29 +9,27 @@ Report text is processed in memory for a single request and is not logged or cac
 
 ## Supported input
 
-Schedule:
-
-```text
-19/07
-
-*EIFFE* - ознакомление 11 (11:00)
-*Federation* - самостоятельная работа (12:00-15:30)
-*Lauriston 31* - ознакомление (16:00-16:30)
-```
-
-Actual work:
-
 ```text
 19/07 изменения
 
-Eiffel 11:00-14:00 самостоятельно
-14:30-15:00 Lauriston 31 ознакомление (Вероника)
-15:30-18:00 Opera ознакомление (Ана)
+1. 10:00-11:00 St Denis ознакомление
+2. 14:00-16:30 Ferronnerie практика
+3. 17:00-19:00 Opera самостоятельно
 Сушка Eiffel 3.90
 ```
 
+The interface auto-detects whether the text describes a schedule or an actual day. Numbered-list
+markers are removed from apartment names, and repeated activity descriptions in parentheses are
+ignored.
+
 If a job has no end, the next job's start is used. A final job without an end, a missing work type,
 overlapping intervals, an invalid date, or any unrecognized line prevents confirmation.
+
+Pricing:
+
+- orientation — EUR 10 per apartment;
+- independent cleaning — EUR 10 per hour;
+- practice — EUR 15 per apartment.
 
 ## Local development
 
@@ -49,7 +47,9 @@ Open `http://localhost:3000`. `GET /health` is public.
 Configuration:
 
 - `PORT`, `HOST`, `LOG_LEVEL` — server settings;
-- `HOURLY_RATE_CENTS` — hourly earnings rate, default `1000`;
+- `HOURLY_RATE_CENTS` — independent-cleaning hourly rate, default `1000`;
+- `ORIENTATION_FLAT_CENTS` — orientation price per apartment, default `1000`;
+- `PRACTICE_FLAT_CENTS` — practice price per apartment, default `1500`;
 - `DRYER_DEFAULT_CENTS` — dryer expense when no amount is present, default `390`;
 - `PREVIEW_RATE_LIMIT_MAX` and `PREVIEW_RATE_LIMIT_WINDOW` — per-IP preview limit.
 
@@ -59,10 +59,12 @@ Configuration:
 
 ```json
 {
-  "kind": "actual",
   "text": "19/07 изменения\nEiffel 11-14 самостоятельно"
 }
 ```
+
+The optional `kind` field remains accepted for API compatibility, but the PWA does not ask the user
+to choose it.
 
 The response contains `parsed`, `totals`, `issues`, `unparsedLines`, `canShare`, and `shareText`.
 Invalid input returns HTTP 400. The endpoint is rate-limited per client IP.

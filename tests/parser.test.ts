@@ -91,4 +91,42 @@ Opera 13-15 ознакомление (Ана)`,
     );
     expect(parsed.issues.some((issue) => issue.code === "overlap")).toBe(true);
   });
+
+  it("removes list numbering and ignores a repeated type description", () => {
+    const parsed = parseDay(
+      `19/07
+1. 10:00 St Denis ознакомление (ознакомление через видос по итогу, хз как это считат)
+2. 11:00-12:00 Opera самостоятельно`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(parsed.jobs[0]).toMatchObject({
+      object: "St Denis",
+      startMinutes: 600,
+      endMinutes: 660,
+      endInferred: true,
+      workType: "orientation",
+    });
+    expect(parsed.jobs[0]?.companion).toBeUndefined();
+  });
+
+  it("parses practice and joins an interval wrapped onto the next line", () => {
+    const parsed = parseDay(
+      `19/07
+3. Ferronnerie Практика (13:10
+14:00–16:30`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(parsed.jobs).toHaveLength(1);
+    expect(parsed.jobs[0]).toMatchObject({
+      object: "Ferronnerie",
+      startMinutes: 840,
+      endMinutes: 990,
+      workType: "practice",
+    });
+    expect(parsed.jobs[0]?.companion).toBeUndefined();
+    expect(parsed.unparsedLines).toEqual([]);
+    expect(parsed.issues).toEqual([]);
+  });
 });
