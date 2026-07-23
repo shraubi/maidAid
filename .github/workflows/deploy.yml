@@ -5,24 +5,78 @@ on:
     branches: [main]
     paths-ignore:
       - "README.md"
+  workflow_dispatch:
 
 concurrency:
   group: maidaid-deploy
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: shraubi/maidaid
+  IMAGE_TAG: latest
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy MaidAid to VM
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Test
+        run: npm test
+
+      - name: Build application
+        run: npm run build
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy prebuilt image to VM
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
+          envs: REGISTRY,IMAGE_NAME,IMAGE_TAG,GHCR_USER,GHCR_TOKEN
           script: |
-            cd ${{ secrets.APP_DIR }}
-            git pull origin main
-            docker compose build maidaid
-            docker compose up -d maidaid
+            set -eu
+            cd "${{ secrets.APP_DIR }}"
+            git pull --ff-only origin main
+            printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "$GHCR_USER" --password-stdin
+            docker compose pull maidaid
+            docker compose up -d --no-build maidaid
             docker image prune -f
+            docker logout "$REGISTRY"
