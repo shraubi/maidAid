@@ -9,6 +9,7 @@ const TYPE_RE =
   /(самостоятельн(?:о|ая|ую|ой)?(?:\s+работ[аыу])?|уборк[ауы]?|ознакомлени[еяю]?|знакомств[оа]|практик[аиу]?)/giu;
 const TYPE_HINT_RE = /(самостоятель|уборк|ознакомлен|знакомств|практик)/iu;
 const TIME_TOKEN_RE = /\b\d{1,2}:\d{2}\b/gu;
+const FLAT_ACTIVITY_DEFAULT_MINUTES = 60;
 
 const aliases = new Map<string, string>([
   ["eiffe", "Eiffel"],
@@ -107,7 +108,9 @@ function extractInlineExpense(line: string): { expense?: Expense; remainder: str
   const amount = Number(amountMatch[1]!.replace(",", "."));
   const segmentEnd =
     categoryMatch.index + categoryMatch[0].length + amountMatch.index + amountMatch[0].length;
-  const remainder = `${line.slice(0, categoryMatch.index)} ${line.slice(segmentEnd)}`.trim();
+  const beforeExpense = line.slice(0, categoryMatch.index).replace(/[\s+,:;-]+$/u, "");
+  const afterExpense = line.slice(segmentEnd).replace(/^[\s+,:;-]+/u, "");
+  const remainder = `${beforeExpense} ${afterExpense}`.trim();
   return {
     remainder,
     expense: {
@@ -207,6 +210,14 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
       job.endMinutes = next.startMinutes;
       job.endInferred = true;
     }
+    if (
+      job.startMinutes !== null &&
+      job.endMinutes === null &&
+      (job.workType === "orientation" || job.workType === "practice")
+    ) {
+      job.endMinutes = job.startMinutes + FLAT_ACTIVITY_DEFAULT_MINUTES;
+      job.endInferred = true;
+    }
     if (job.startMinutes === null) {
       issues.push({ code: "missing_start", jobIndex: index, message: `Нет начала для ${job.object}` });
     } else if (job.endMinutes === null) {
@@ -288,3 +299,4 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
     issues,
   };
 }
+

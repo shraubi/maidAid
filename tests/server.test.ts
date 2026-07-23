@@ -86,6 +86,60 @@ describe("MaidAid HTTP API", () => {
     expect(response.json().parsed.jobs[1]).not.toHaveProperty("companion");
   });
 
+  it("accepts a flat-priced activity without an explicit end", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: { text: "19/07\n15:30 Opera ознакомление ( Ана)" },
+    });
+
+    expect(response.json()).toMatchObject({
+      parsed: {
+        jobs: [{
+          object: "Opera",
+          startMinutes: 930,
+          endMinutes: 990,
+          workType: "orientation",
+        }],
+      },
+      totals: { minutes: 60, incomeCents: 1000, expensesCents: 0 },
+      issues: [],
+      canShare: true,
+    });
+  });
+
+  it("keeps an inline dryer expense attached to one apartment", async () => {
+    app = await buildApp(config);
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        text: `19/07 изменения
+Eiffel 11:00-14:00 уборка самостоятельно + сушка 3.9
+14:30 Lauriston 31 ознакомление (Вероника)
+15:30-16 Opera ознакомление ( Ана)`,
+      },
+    });
+    const body = response.json();
+
+    expect(body).toMatchObject({
+      parsed: {
+        jobs: [
+          { object: "Eiffel", workType: "independent" },
+          { object: "Lauriston 31", workType: "orientation" },
+          { object: "Opera", workType: "orientation" },
+        ],
+        expenses: [{ category: "сушка", object: "Eiffel", amountCents: 390 }],
+      },
+      totals: { minutes: 270, incomeCents: 5000, expensesCents: 390 },
+      issues: [],
+      canShare: true,
+    });
+    expect(body.shareText).toContain("Eiffel 3h + 3,90€ сушка + 30,00€");
+    expect(body.shareText).not.toContain("Eiffel +");
+  });
+
   it("blocks sharing for parse issues and unrecognized lines", async () => {
     app = await buildApp(config);
     const response = await app.inject({
@@ -167,3 +221,4 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "POST", url: "/webhook" })).statusCode).toBe(404);
   });
 });
+

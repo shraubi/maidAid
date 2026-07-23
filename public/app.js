@@ -59,13 +59,21 @@ function renderPreview(data) {
     ? `<strong>Нужно исправить</strong><ul>${problems.map((problem) => `<li>${escapeHtml(problem)}</li>`).join("")}</ul>`
     : "";
 
-  const jobs = data.parsed.jobs.map((job) => `
-    <article class="job">
-      <strong>${escapeHtml(job.object)}</strong>
-      <span>${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}</span>
-      <small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>
-    </article>`).join("");
-  const expenses = data.parsed.expenses.map((expense) => `
+  const jobs = data.parsed.jobs.map((job) => {
+    const jobExpenses = data.parsed.expenses.filter((expense) => expense.object === job.object);
+    return `
+      <article class="job">
+        <strong>${escapeHtml(job.object)}</strong>
+        <span>${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}</span>
+        <small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>
+        ${jobExpenses.length ? `<small class="job-expenses">Расходы: ${jobExpenses.map((expense) =>
+          `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}
+      </article>`;
+  }).join("");
+  const unmatchedExpenses = data.parsed.expenses.filter(
+    (expense) => !expense.object || !data.parsed.jobs.some((job) => job.object === expense.object),
+  );
+  const expenses = unmatchedExpenses.map((expense) => `
     <article class="expense">
       <strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong>
       <span>${formatMoney(expense.amountCents)}</span>
@@ -156,3 +164,4 @@ shareButton.addEventListener("click", async () => {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
 }
+
