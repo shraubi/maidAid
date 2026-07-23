@@ -3,6 +3,12 @@ name: Deploy
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "README.md"
+
+concurrency:
+  group: maidaid-deploy
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -17,6 +23,6 @@ jobs:
           script: |
             cd ${{ secrets.APP_DIR }}
             git pull origin main
-            docker compose build --pull maidaid
+            docker compose build maidaid
             docker compose up -d maidaid
             docker image prune -f
