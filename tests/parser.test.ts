@@ -1,0 +1,94 @@
+import { describe, expect, it } from "vitest";
+import { parseDay } from "../src/domain/parser.js";
+
+describe("parseDay", () => {
+  it("parses the provided schedule and infers an omitted end", () => {
+    const parsed = parseDay(
+      `19/07
+
+*EIFFE* - ознакомление 11 (11:00)
+*Federation* - самостоятельная работа (12:00-15:30)
+*Lauriston 31* - ознакомление (16:00-16:30)`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(parsed.dateIso).toBe("2026-07-19");
+    expect(parsed.kind).toBe("schedule");
+    expect(parsed.unparsedLines).toEqual([]);
+    expect(parsed.jobs).toHaveLength(3);
+    expect(parsed.jobs[0]).toMatchObject({
+      object: "Eiffel",
+      startMinutes: 660,
+      endMinutes: 720,
+      endInferred: true,
+      workType: "orientation",
+    });
+    expect(parsed.jobs[1]).toMatchObject({
+      object: "Federation",
+      startMinutes: 720,
+      endMinutes: 930,
+      workType: "independent",
+    });
+    expect(parsed.jobs[2]).toMatchObject({
+      object: "Lauriston 31",
+      startMinutes: 960,
+      endMinutes: 990,
+      workType: "orientation",
+    });
+    expect(parsed.issues).toEqual([]);
+  });
+
+  it("parses actual work with names before and after intervals and a dryer expense", () => {
+    const parsed = parseDay(
+      `19/07 изменения
+
+Eiffel 11:00-14:00 самостоятельно
+14:30-15:00 Lauriston 31 ознакомление (Вероника)
+15:30-18:00 Opera ознакомление (Ана)
+Сушка Eiffel 3.90`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+
+    expect(parsed.kind).toBe("actual");
+    expect(parsed.jobs.map((job) => job.object)).toEqual(["Eiffel", "Lauriston 31", "Opera"]);
+    expect(parsed.jobs[1]?.companion).toBe("Вероника");
+    expect(parsed.jobs[2]?.companion).toBe("Ана");
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ category: "сушка", object: "Eiffel", amountCents: 390 }),
+    ]);
+    expect(parsed.issues).toEqual([]);
+  });
+
+  it("asks for the last omitted end instead of inventing it", () => {
+    const parsed = parseDay(
+      `19/07
+Eiffel 11:00-14:00 самостоятельно
+Opera 15:30 ознакомление (Ана)`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+    expect(parsed.jobs[1]?.endMinutes).toBeNull();
+    expect(parsed.issues).toContainEqual(
+      expect.objectContaining({ code: "missing_end", jobIndex: 1 }),
+    );
+  });
+
+  it("preserves an unknown line", () => {
+    const parsed = parseDay(
+      `19/07
+Eiffel 11-14 самостоятельно
+потом может ещё куда-нибудь`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+    expect(parsed.unparsedLines).toEqual(["потом может ещё куда-нибудь"]);
+  });
+
+  it("detects overlapping work", () => {
+    const parsed = parseDay(
+      `19/07
+Eiffel 11-14 самостоятельно
+Opera 13-15 ознакомление (Ана)`,
+      new Date("2026-07-23T00:00:00Z"),
+    );
+    expect(parsed.issues.some((issue) => issue.code === "overlap")).toBe(true);
+  });
+});
