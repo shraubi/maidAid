@@ -71,6 +71,39 @@ describe("MaidAid HTTP API", () => {
     expect(body.unparsedLines).toEqual(["потом может ещё куда-нибудь"]);
   });
 
+  it("lets the user correct the original message and receive a ready report", async () => {
+    app = await buildApp(config);
+    const invalid = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        kind: "actual",
+        text: "19/07 изменения\nEiffel 11:00 самостоятельно",
+      },
+    });
+    expect(invalid.json()).toMatchObject({
+      canShare: false,
+      shareText: "",
+      issues: [expect.objectContaining({ code: "missing_end" })],
+    });
+
+    const corrected = await app.inject({
+      method: "POST",
+      url: "/api/preview",
+      payload: {
+        kind: "actual",
+        text: "19/07 изменения\nEiffel 11:00-14:00 самостоятельно\nСушка Eiffel 3,90",
+      },
+    });
+    expect(corrected.json()).toMatchObject({
+      canShare: true,
+      totals: { minutes: 180, incomeCents: 3000, expensesCents: 390 },
+    });
+    expect(corrected.json().shareText).toContain(
+      "Сегодня: 3h + 30,00€ заработок + 3,90€ расходы",
+    );
+  });
+
   it("rejects invalid bodies", async () => {
     app = await buildApp(config);
     const response = await app.inject({
