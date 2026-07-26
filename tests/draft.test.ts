@@ -3,7 +3,7 @@ import { generateShareText } from "../src/domain/draft.js";
 import { parseDay } from "../src/domain/parser.js";
 
 describe("generateShareText", () => {
-  it("generates a daily stateless report without accumulated balance", () => {
+  it("generates a daily report without accumulated balance", () => {
     const day = parseDay(
       "19/07 изменения\nEiffel 11-14 самостоятельно\nСушка Eiffel 3,90",
       new Date("2026-07-23T00:00:00Z"),
@@ -15,7 +15,8 @@ describe("generateShareText", () => {
       dryerDefaultCents: 390,
     });
 
-    expect(text).toContain("19/07 изменения");
+    expect(text.startsWith("19/07\n")).toBe(true);
+    expect(text).not.toContain("19/07 изменения");
     expect(text).toContain("Сегодня: 3h + 30,00€ заработок + 3,90€ расходы");
     expect(text).not.toContain("Было:");
     expect(text).not.toContain("Всего:");
@@ -38,7 +39,7 @@ Dominique 17:00-18:00 ознакомление`,
       dryerDefaultCents: 390,
     });
 
-    expect(text).toContain("Ferronnerie 13:00-15:30 Практика");
+    expect(text).not.toContain("Ferronnerie 13:00-15:30 Практика");
     expect(text.endsWith(
       `St Denis 1h + 10,00€
 23 Stuart 2.5h + 15,00€
@@ -53,4 +54,3 @@ Dominique 1h + 10,00€
     expect(text).not.toContain("Аванс:");
   });
 });
-
