@@ -9,6 +9,7 @@ import { generateShareText } from "./domain/draft.js";
 import { parseDay } from "./domain/parser.js";
 import type { Settings } from "./domain/types.js";
 import { loadConfig, type Config } from "./config.js";
+import { DayStore } from "./storage/day-store.js";
 
 const previewBody = z.object({
   kind: z.enum(["actual", "schedule"]).optional(),
@@ -31,6 +32,8 @@ export async function buildApp(config: Config = loadConfig()): Promise<FastifyIn
     practiceFlatCents: config.PRACTICE_FLAT_CENTS,
     dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
   };
+  const dayStore = new DayStore(config.DATABASE_PATH);
+  app.addHook("onClose", async () => dayStore.close());
 
   await app.register(rateLimit, {
     global: false,
@@ -83,6 +86,24 @@ export async function buildApp(config: Config = loadConfig()): Promise<FastifyIn
       };
     },
   );
+
+  app.post("/api/days", {
+    config: { rateLimit: {
+      max: config.PREVIEW_RATE_LIMIT_MAX,
+      timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
+    } },
+  }, async (request, reply) => {
+    const input = previewBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+
+    const parsed = parseDay(input.data.text, new Date(), settings.dryerDefaultCents);
+    if (input.data.kind) parsed.kind = input.data.kind;
+    const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 &&
+      parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
+    if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
+
+    return { day: dayStore.save(parsed.dateIso, calculateDay(parsed, settings)) };
+  });
 
   return app;
 }

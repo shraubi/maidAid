@@ -11,6 +11,7 @@ const schema = z.object({
   DRYER_DEFAULT_CENTS: z.coerce.number().int().nonnegative().default(390),
   PREVIEW_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   PREVIEW_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
+  DATABASE_PATH: z.string().default("./data/maidaid.sqlite"),
 });
 
 export type Config = z.infer<typeof schema>;

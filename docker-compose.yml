@@ -7,6 +7,9 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3000
+      DATABASE_PATH: /data/maidaid.sqlite
+    volumes:
+      - maidaid-data:/data
     ports:
       - "127.0.0.1:${MAIDAID_HOST_PORT:-3001}:3000"
     healthcheck:
@@ -35,3 +38,6 @@ services:
     depends_on:
       maidaid:
         condition: service_healthy
+
+volumes:
+  maidaid-data:
