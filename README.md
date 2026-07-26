@@ -1,11 +1,11 @@
 # MaidAid
 
-MaidAid is a small, stateless PWA for checking a cleaner's workday. It parses
+MaidAid is a small PWA for checking a cleaner's workday. It parses
 the pasted text, highlights ambiguous input, calculates hours, earnings and expenses, and prepares a
 daily report for the device's system share sheet.
 
-The MVP has no accounts, database, history, accumulated balance, or automatic message delivery.
-Report text is processed in memory for a single request and is not logged or cached.
+Confirmed daily totals are stored in SQLite. A date is unique: confirming it again replaces its
+previous totals.
 
 ## Supported input
 
@@ -52,6 +52,7 @@ Configuration:
 - `PRACTICE_FLAT_CENTS` — practice price per apartment, default `1500`;
 - `DRYER_DEFAULT_CENTS` — dryer expense when no amount is present, default `390`;
 - `PREVIEW_RATE_LIMIT_MAX` and `PREVIEW_RATE_LIMIT_WINDOW` — per-IP preview limit.
+- `DATABASE_PATH` — SQLite file path, default `./data/maidaid.sqlite`.
 
 ## API
 
@@ -91,4 +92,4 @@ docker compose pull maidaid ngrok
 docker compose up -d --no-build maidaid ngrok
 ```
 
-Persistent storage and multi-user authorization are intentionally deferred to a later release.
+Multi-user authorization is intentionally deferred to a later release.
