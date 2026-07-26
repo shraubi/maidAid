@@ -22,12 +22,6 @@ export function formatParsedDay(day: ParsedDay): string {
 
 export function generateShareText(day: ParsedDay, settings: Settings): string {
   const today = calculateDay(day, settings);
-  const changed = day.kind === "actual" ? " изменения" : "";
-  const scheduleLines = day.jobs.map((job) => {
-    const companion = job.companion ? ` (${job.companion})` : "";
-    const action = `${workTypeLabel(job.workType)}${companion}`;
-    return `${job.object} ${formatTime(job.startMinutes)}-${formatTime(job.endMinutes)} ${action}`;
-  });
   const workLines = day.jobs.map((job) => {
     const minutes =
       job.startMinutes !== null && job.endMinutes !== null ? job.endMinutes - job.startMinutes : 0;
@@ -51,10 +45,6 @@ export function generateShareText(day: ParsedDay, settings: Settings): string {
   if (today.expensesCents > 0) todayParts.push(`${formatMoney(today.expensesCents)} расходы`);
 
   return [
-    `${day.displayDate ?? day.dateIso}${changed}`,
-    "",
-    ...scheduleLines,
-    "",
     day.displayDate ?? day.dateIso ?? "",
     "",
     ...workLines,
@@ -62,4 +52,3 @@ export function generateShareText(day: ParsedDay, settings: Settings): string {
     todayParts.join(" + "),
   ].join("\n");
 }
-
