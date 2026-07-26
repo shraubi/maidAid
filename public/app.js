@@ -122,12 +122,26 @@ editButton.addEventListener("click", () => {
   textarea.focus({ preventScroll: true });
 });
 
-confirmButton.addEventListener("click", () => {
+confirmButton.addEventListener("click", async () => {
   if (!latestPreview?.canShare) return;
-  shareText.textContent = latestPreview.shareText;
-  result.hidden = false;
-  shareStatus.hidden = true;
-  result.scrollIntoView({ behavior: "smooth", block: "start" });
+  confirmButton.disabled = true;
+  try {
+    const response = await fetch("/api/days", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: textarea.value }),
+    });
+    if (!response.ok) throw new Error();
+    shareText.textContent = latestPreview.shareText;
+    result.hidden = false;
+    shareStatus.hidden = true;
+    result.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch {
+    requestError.textContent = "Не удалось сохранить день.";
+    requestError.hidden = false;
+  } finally {
+    confirmButton.disabled = false;
+  }
 });
 
 async function copyResult() {
@@ -164,4 +178,3 @@ shareButton.addEventListener("click", async () => {
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
 }
-
