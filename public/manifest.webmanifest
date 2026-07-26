@@ -1,7 +1,7 @@
 {
   "name": "MaidAid",
   "short_name": "MaidAid",
-  "description": "Проверка расписания, часов и расходов без хранения данных",
+  "description": "Проверка расписания, часов и расходов",
   "lang": "ru",
   "start_url": "/",
   "scope": "/",
