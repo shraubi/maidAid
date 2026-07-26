@@ -13,6 +13,7 @@ const config: Config = {
   DRYER_DEFAULT_CENTS: 390,
   PREVIEW_RATE_LIMIT_MAX: 100,
   PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
+  DATABASE_PATH: ":memory:",
 };
 
 let app: FastifyInstance | undefined;
@@ -60,6 +61,23 @@ describe("MaidAid HTTP API", () => {
     expect(body.shareText).not.toContain("0,00€ расходы");
     expect(body.shareText).not.toContain("Оплата наличными:");
     expect(body.shareText).not.toContain("Аванс:");
+  });
+
+  it("saves confirmed totals idempotently with the last entry winning", async () => {
+    app = await buildApp(config);
+    const first = await app.inject({
+      method: "POST", url: "/api/days",
+      payload: { text: "19/07\nEiffel 11-14 самостоятельно" },
+    });
+    const last = await app.inject({
+      method: "POST", url: "/api/days",
+      payload: { text: "19/07\nEiffel 11-15 самостоятельно" },
+    });
+
+    expect(first.statusCode).toBe(200);
+    expect(last.json().day).toMatchObject({
+      dateIso: "2026-07-19", minutes: 240, incomeCents: 4000, expensesCents: 0,
+    });
   });
 
   it("returns cleaned preview data and activity-specific pricing", async () => {
@@ -227,4 +245,3 @@ Eiffel 11:00-14:00 уборка самостоятельно + сушка 3.9
     expect((await app.inject({ method: "POST", url: "/webhook" })).statusCode).toBe(404);
   });
 });
-
