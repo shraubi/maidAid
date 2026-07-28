@@ -9,9 +9,9 @@ const emptyTotals = (): LedgerTotals => ({
 
 function summaryLine(label: string, totals: LedgerTotals): string {
   const parts = [`${formatHours(totals.minutes).replace("h", " h")}`];
-  if (totals.expensesCents > 0) parts.push(`${formatMoneyCompact(totals.expensesCents)} расходы`);
+  parts.push(totals.expensesCents > 0 ? `${formatMoneyCompact(totals.expensesCents)} расходы` : "0€");
   if (totals.checkinCents > 0) parts.push(`${formatMoneyCompact(totals.checkinCents)} check in`);
-  return `${label} : ${parts.join(" + ")}`;
+  return `${label}: ${parts.join(" + ")}`;
 }
 
 export function generateShareText(day: ParsedDay, settings: Settings, snapshot?: ReportSnapshot): string {
@@ -32,27 +32,24 @@ export function generateShareText(day: ParsedDay, settings: Settings, snapshot?:
       continue;
     }
     const minutes = job.startMinutes !== null && job.endMinutes !== null ? job.endMinutes - job.startMinutes : 0;
-    const parts = [formatHours(minutes)];
     const jobExpenses = day.expenses.filter((expense) => expense.object === job.object && expense.amountCents > 0);
-    parts.push(...jobExpenses.map((expense) => `${formatMoneyCompact(expense.amountCents)} ${expense.category}`));
-    if (job.workType === "orientation" || job.workType === "practice") {
-      parts.push(formatMoneyCompact(calculateJobIncome(job, settings)));
-    }
-    workLines.push(`${job.object}\n${parts.join(" + ")}`);
+    const dryerCents = jobExpenses.filter((expense) => expense.category === "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
+    const otherCents = jobExpenses.filter((expense) => expense.category !== "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
+    const dryer = dryerCents > 0 ? `${formatMoneyCompact(dryerCents)} сушка` : "0";
+    const other = otherCents > 0 ? `${formatMoneyCompact(otherCents)} расходы` : "0";
+    workLines.push(`${job.object} ${formatHours(minutes)} + ${dryer} + ${other}`);
   }
   const unmatched = day.expenses.filter((expense) => !expense.object || !day.jobs.some((job) => job.object === expense.object));
   if (unmatched.length) workLines.push(unmatched.map((expense) => `${formatMoneyCompact(expense.amountCents)} ${expense.category}`).join(" + "));
 
-  const result = [
-    day.displayDate ?? day.dateIso ?? "", "", workLines.join("\n\n"), "",
+  const receivedToday = Math.max(0, report.total.receivedCents - report.previous.receivedCents);
+  const result = [day.displayDate ?? day.dateIso ?? "", workLines.join("\n"), "",
+    summaryLine("Сегодня", { ...emptyTotals(), minutes: today.minutes, earnedCents: today.incomeCents,
+      expensesCents: today.expensesCents, checkinCents: today.checkinCents }), "",
     summaryLine("Было", report.previous), "",
     summaryLine("Всего", report.total), "",
-    `Оплата наличными: ${formatMoneyCompact(report.total.earnedCents)}`,
-    `Аванс: ${formatMoneyCompact(report.total.receivedCents)}`,
-  ];
-  if (day.advanceCents > 0) {
-    result.push(`Аванс сегодня: ${formatMoneyCompact(day.advanceCents)}`);
-    result.push(`Остаток: ${formatMoneyCompact(report.total.outstandingCents)}`);
-  }
+    `Оплата наличными:${receivedToday > 0 ? ` ${formatMoneyCompact(receivedToday)}` : ""}`,
+    `Аванс: ${formatMoneyCompact(report.total.receivedCents)}`];
   return result.join("\n");
 }
+

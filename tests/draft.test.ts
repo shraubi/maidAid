@@ -4,31 +4,47 @@ import { parseDay } from "../src/domain/parser.js";
 import { settings } from "./helpers.js";
 
 describe("generateShareText", () => {
-  it("matches the requested compact cumulative report", () => {
-    const day = parseDay(`26/07
-Bosquet 9:00-12:00 - самостоятельная уборка / ключ от Вероники у вас
-сушка 4.2 + 11.67
-Dominique 12:30-15:30 - самостоятельная уборка
-сушка 6 + 5.13
-16:00 check in Dominiquet - самостоятельное заселение / LX638 flight number`, new Date("2026-07-28T00:00:00Z"));
+  it("formats the daily report and takes Было/Всего from the database snapshot", () => {
+    const day = parseDay(`21/07
+Tiquetonne 9:00-12:00 самостоятельная уборка
+сушка 3.60 + 5.09`, new Date("2026-07-28T00:00:00Z"));
     const text = generateShareText(day, settings, {
-      previous: { minutes: 930, earnedCents: 17500, receivedCents: 20000, outstandingCents: -2500, expensesCents: 4905, checkinCents: 1000 },
-      total: { minutes: 1290, earnedCents: 24500, receivedCents: 20000, outstandingCents: 4500, expensesCents: 7605, checkinCents: 2000 },
+      previous: { minutes: 330, earnedCents: 5500, receivedCents: 10000, outstandingCents: -4500, expensesCents: 390, checkinCents: 0 },
+      total: { minutes: 510, earnedCents: 8500, receivedCents: 10000, outstandingCents: -1500, expensesCents: 1259, checkinCents: 0 },
     });
-    expect(text).toContain("Bosquet\n3h + 4.20€ сушка + 11.67€ расходы");
-    expect(text).toContain("Dominique\n3h + 6€ сушка + 5.13€ расходы\n\nCheck in 10€");
-    expect(text).toContain("Было : 15.5 h + 49.05€ расходы + 10€ check in");
-    expect(text).toContain("Всего : 21.5 h + 76.05€ расходы + 20€ check in");
-    expect(text).toContain("Оплата наличными: 245€\nАванс: 200€");
+    expect(text).toBe(`21/07
+Tiquetonne 3h + 3.60€ сушка + 5.09€ расходы
+
+Сегодня: 3 h + 8.69€ расходы
+
+Было: 5.5 h + 3.90€ расходы
+
+Всего: 8.5 h + 12.59€ расходы
+
+Оплата наличными:
+Аванс: 100€`);
   });
 
-  it("adds the current advance and outstanding balance only when present", () => {
-    const day = parseDay("26/07\nBosquet 9-12 уборка\nАванс: 50€", new Date("2026-07-28T00:00:00Z"));
+  it("leaves cash payment blank when the database has no receipt on this day", () => {
+    const day = parseDay("19/07\nEiffel 9-12 уборка\nсушка 3.9\nOpera 13-15:30 уборка", new Date("2026-07-28T00:00:00Z"));
     const text = generateShareText(day, settings, {
-      previous: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 },
-      total: { minutes: 180, earnedCents: 3000, receivedCents: 5000, outstandingCents: -2000, expensesCents: 0, checkinCents: 0 },
+      previous: { minutes: 0, earnedCents: 0, receivedCents: 10000, outstandingCents: -10000, expensesCents: 0, checkinCents: 0 },
+      total: { minutes: 330, earnedCents: 5500, receivedCents: 10000, outstandingCents: -4500, expensesCents: 390, checkinCents: 0 },
     });
-    expect(text).toContain("Аванс сегодня: 50€");
-    expect(text).toContain("Остаток: -20€");
+    expect(text).toContain("Eiffel 3h + 3.90€ сушка + 0");
+    expect(text).toContain("Opera 2.5h + 0 + 0");
+    expect(text).toContain("Сегодня: 5.5 h + 3.90€ расходы");
+    expect(text).toContain("Было: 0 h + 0€");
+    expect(text).toContain("Оплата наличными:\nАванс: 100€");
+  });
+
+  it("shows only the receipt recorded in the database for this day", () => {
+    const day = parseDay("21/07\nTiquetonne 9-12 уборка", new Date("2026-07-28T00:00:00Z"));
+    const text = generateShareText(day, settings, {
+      previous: { minutes: 330, earnedCents: 5500, receivedCents: 10000, outstandingCents: -4500, expensesCents: 390, checkinCents: 0 },
+      total: { minutes: 510, earnedCents: 8500, receivedCents: 13500, outstandingCents: -5000, expensesCents: 390, checkinCents: 0 },
+    });
+    expect(text).toContain("Оплата наличными: 35€\nАванс: 135€");
   });
 });
+
