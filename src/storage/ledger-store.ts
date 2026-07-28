@@ -215,9 +215,18 @@ function mapTotals(row: Record<string, string | number | null>): LedgerTotals {
   };
 }
 
+export function normalizeDateIso(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  const text = String(value);
+  const iso = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (iso) return iso;
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().slice(0, 10);
+}
+
 function mapDay(row: Record<string, unknown>): StoredDay {
   return {
-    dateIso: String(row.date_iso), sourceText: String(row.source_text), parsedDetails: row.parsed_details as ParsedDay,
+    dateIso: normalizeDateIso(row.date_iso), sourceText: String(row.source_text), parsedDetails: row.parsed_details as ParsedDay,
     minutes: Number(row.minutes), incomeCents: Number(row.earned_cents), checkinCents: Number(row.checkin_cents),
     expensesCents: Number(row.expenses_cents), updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
@@ -225,9 +234,9 @@ function mapDay(row: Record<string, unknown>): StoredDay {
 
 function mapPayment(row: Record<string, unknown>): Payment {
   return {
-    id: Number(row.id), dateIso: String(row.payment_date), amountCents: Number(row.amount_cents),
+    id: Number(row.id), dateIso: normalizeDateIso(row.payment_date), amountCents: Number(row.amount_cents),
     note: row.note == null ? null : String(row.note), source: String(row.source) as Payment["source"],
-    workDate: row.work_date == null ? null : String(row.work_date),
+    workDate: row.work_date == null ? null : normalizeDateIso(row.work_date),
     createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
 }

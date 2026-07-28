@@ -9,6 +9,7 @@ export interface Job {
   noteBody: string | null;
   startMinutes: number | null;
   endMinutes: number | null;
+  durationMinutes: number | null;
   endInferred: boolean;
   workType: WorkType;
   companion?: string;

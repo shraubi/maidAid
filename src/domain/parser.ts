@@ -4,6 +4,7 @@ import { apartmentKey } from "./apartments.js";
 const DATE_RE = /\b(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?\b/;
 const INTERVAL_RE = /\(?\b(\d{1,2})(?::(\d{2}))?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\b\)?/;
 const TIME_RE = /\(?\b(\d{1,2}):(\d{2})\b\)?/;
+const DURATION_RE = /\b(\d+(?:[.,]\d{1,2})?)\s*(?:h|ч(?:ас(?:а|ов)?)?)\b/iu;
 const EXPENSE_RE = /(сушк[аиу]?|метро|хими[яю]|расход(?:ы)?)/iu;
 const AMOUNT_RE = /-?\d+(?:[.,]\d{1,2})?\s*€?/gu;
 const CHECKIN_RE = /\bcheck[\s-]*in\b|самостоятельн[\p{L}]*\s+заселен[\p{L}]*|заселен[\p{L}]*/iu;
@@ -83,6 +84,15 @@ function amountMatches(line: string): Array<{ value: number; index: number; raw:
   });
 }
 
+function parseDurationExpenses(line: string, durationEnd: number): Expense[] {
+  return line.slice(durationEnd).split("+").flatMap((segment) => {
+    const amount = segment.match(/\d+(?:[.,]\d{1,2})?\s*€?/u)?.[0];
+    const value = amount ? amountCents(amount) : null;
+    if (value === null) return [];
+    return [{ category: /сушк/iu.test(segment) ? "сушка" : "расходы", amountCents: value, sourceLine: line }];
+  });
+}
+
 function parseExpenseSegment(line: string, dryerDefaultCents: number, apartments?: ApartmentLookup): Expense[] | null {
   const categoryMatch = line.match(EXPENSE_RE);
   const onlyAmounts = /^[\s+]*(?:\d+(?:[.,]\d{1,2})?\s*€?[\s+]*)+$/u.test(line);
@@ -126,12 +136,14 @@ function parseAdvance(line: string): { cents?: number; invalid?: boolean } | nul
 function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: ApartmentLookup): { job: Job; inlineExpenses: Expense[] } | null {
   const boldObject = originalLine.match(/\*([^*]+)\*/)?.[1];
   let line = normalizeLine(originalLine.replace(/\*/g, ""));
-  const type = detectType(line);
+  let type = detectType(line);
   const companion = extractCompanion(line, apartments);
-  const extracted = extractInlineExpenses(line, dryerDefaultCents, apartments);
+  const durationHint = line.match(DURATION_RE);
+  const extracted = durationHint ? { expenses: [] as Expense[], remainder: line } : extractInlineExpenses(line, dryerDefaultCents, apartments);
   line = extracted.remainder;
   let startMinutes: number | null = null;
   let endMinutes: number | null = null;
+  let durationMinutes: number | null = null;
   const interval = line.match(INTERVAL_RE);
   if (interval) {
     startMinutes = parseMinutes(interval[1]!, interval[2]);
@@ -142,6 +154,15 @@ function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: 
     if (single) {
       startMinutes = parseMinutes(single[1]!, single[2]);
       line = line.replace(single[0], " ");
+    } else {
+      const duration = line.match(DURATION_RE);
+      if (duration?.index !== undefined) {
+        durationMinutes = Math.round(Number(duration[1]!.replace(",", ".")) * 60);
+        if (!Number.isInteger(durationMinutes) || durationMinutes <= 0 || durationMinutes > 24 * 60) return null;
+        extracted.expenses.splice(0, extracted.expenses.length, ...parseDurationExpenses(line, duration.index + duration[0].length));
+        line = line.slice(0, duration.index);
+        if (type === "unknown") type = "independent";
+      }
     }
   }
   line = line
@@ -152,12 +173,12 @@ function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: 
     .replace(TIME_TOKEN_RE, " ").replace(/изменения?/giu, " ")
     .replace(/\s+-\s+|^\s*-\s*|\s*-\s*$/g, " ").replace(/\s+/g, " ").trim();
   const object = boldObject ? normalizeObject(boldObject, apartments) : normalizeObject(line, apartments);
-  if (!object || startMinutes === null) return null;
+  if (!object || (startMinutes === null && durationMinutes === null)) return null;
   const apartment = apartments?.get(apartmentKey(object));
   const job: Job = {
     object, apartmentId: apartment?.id ?? null, address: apartment?.address ?? null,
     mapsUrl: apartment?.mapsUrl ?? null, noteBody: apartment?.noteBody ?? null,
-    startMinutes, endMinutes, endInferred: false, workType: type, companion, sourceLine: originalLine,
+    startMinutes, endMinutes, durationMinutes, endInferred: false, workType: type, companion, sourceLine: originalLine,
   };
   for (const expense of extracted.expenses) expense.object = object;
   return { job, inlineExpenses: extracted.expenses };
@@ -168,7 +189,9 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
   for (let index = 0; index < jobs.length; index += 1) {
     const job = jobs[index]!;
     const next = jobs[index + 1];
-    if (job.endMinutes === null && job.startMinutes !== null && job.workType === "checkin") {
+    if (job.durationMinutes !== null) {
+      // Duration-only report lines have no wall-clock interval to infer or overlap-check.
+    } else if (job.endMinutes === null && job.startMinutes !== null && job.workType === "checkin") {
       job.endMinutes = job.startMinutes + CHECKIN_DEFAULT_MINUTES;
       job.endInferred = true;
     } else if (job.endMinutes === null && next?.startMinutes !== null && next?.startMinutes !== undefined) {
@@ -178,6 +201,7 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
       job.endMinutes = job.startMinutes + FLAT_ACTIVITY_DEFAULT_MINUTES;
       job.endInferred = true;
     }
+    if (job.durationMinutes !== null) continue;
     if (job.startMinutes === null) issues.push({ code: "missing_start", jobIndex: index, message: `Нет начала для ${job.object}` });
     else if (job.endMinutes === null) issues.push({ code: "missing_end", jobIndex: index, message: `Нет окончания для ${job.object}` });
     else if (job.endMinutes <= job.startMinutes) issues.push({ code: "overlap", jobIndex: index, message: `Некорректный интервал у ${job.object}` });
@@ -207,14 +231,14 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
 
   for (const line of lines) {
     const lineDate = parseDate(line, now);
-    if (lineDate && lineDate.dateIso === date?.dateIso && /^(изменения?)?$/iu.test(line.replace(DATE_RE, "").trim())) continue;
+    if (lineDate && lineDate.dateIso === date?.dateIso && /^(изменения?)?$/iu.test(line.replace(DATE_RE, "").replace(/[*_`]/g, "").trim())) continue;
     const advance = parseAdvance(line);
     if (advance) {
       if (advance.invalid) paymentIssues.push({ code: "invalid_payment", message: `Некорректный аванс: ${line}` });
       else advanceCents += advance.cents ?? 0;
       continue;
     }
-    const standaloneExpense = !INTERVAL_RE.test(line) && !TIME_RE.test(line) ? parseExpenseSegment(line, dryerDefaultCents, apartments) : null;
+    const standaloneExpense = !INTERVAL_RE.test(line) && !TIME_RE.test(line) && !DURATION_RE.test(line) ? parseExpenseSegment(line, dryerDefaultCents, apartments) : null;
     if (standaloneExpense) {
       for (const expense of standaloneExpense) {
         if (!expense.object && lastObject) expense.object = lastObject;

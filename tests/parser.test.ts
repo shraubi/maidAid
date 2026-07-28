@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseDay as parseRaw } from "../src/domain/parser.js";
 import { apartmentLookup, publicApartmentRecords } from "../src/domain/apartments.js";
+import { calculateDay } from "../src/domain/calculations.js";
+import { settings } from "./helpers.js";
 
 const now = new Date("2026-07-28T00:00:00Z");
 const apartments = apartmentLookup(publicApartmentRecords());
@@ -73,4 +75,25 @@ Dominique 12:30-15:30 - самостоятельная уборка
     expect(parsed.jobs[2]).toMatchObject({ startMinutes: 960, endMinutes: 990, workType: "practice" });
     expect(parsed.issues).toEqual([]);
   });
+
+  it("accepts duration-only report lines with trailing expenses", () => {
+    const parsed = parseDay(`**19/07**
+Eiffel 3h + 3.9 сушка + 0€
+Opéra 2.5h + 0 + 0
+Tiquetonne 3h + 3.60€ сушка + 5.09€ расходы`, now);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.unparsedLines).toEqual([]);
+    expect(parsed.jobs).toEqual([
+      expect.objectContaining({ object: "Eiffel", durationMinutes: 180, workType: "independent" }),
+      expect.objectContaining({ object: "Opera", durationMinutes: 150, workType: "independent" }),
+      expect.objectContaining({ object: "Tiquetonne", durationMinutes: 180, workType: "independent" }),
+    ]);
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ object: "Eiffel", category: "сушка", amountCents: 390 }),
+      expect.objectContaining({ object: "Tiquetonne", category: "сушка", amountCents: 360 }),
+      expect.objectContaining({ object: "Tiquetonne", category: "расходы", amountCents: 509 }),
+    ]);
+    expect(calculateDay(parsed, settings)).toMatchObject({ minutes: 510, incomeCents: 8500, expensesCents: 1259 });
+  });
 });
+

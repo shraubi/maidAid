@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MemoryLedgerStore } from "../src/storage/ledger-store.js";
+import { MemoryLedgerStore, normalizeDateIso } from "../src/storage/ledger-store.js";
 import { parseDay } from "../src/domain/parser.js";
 import { calculateDay } from "../src/domain/calculations.js";
 import { settings } from "./helpers.js";
@@ -7,6 +7,10 @@ import { settings } from "./helpers.js";
 const parsed = (text: string) => parseDay(text, new Date("2026-07-28T00:00:00Z"));
 
 describe("ledger semantics", () => {
+  it("normalizes PostgreSQL date values for API and delete URLs", () => {
+    expect(normalizeDateIso(new Date("2026-07-29T00:00:00.000Z"))).toBe("2026-07-29");
+    expect(normalizeDateIso("Wed Jul 29 2026 00:00:00 GMT+0000 (Coordinated Universal Time)")).toBe("2026-07-29");
+  });
   it("replaces same-date work and its text advance without duplicating either", async () => {
     const store = new MemoryLedgerStore();
     const first = parsed("26/07\nBosquet 9-12 уборка\nАванс 50");
@@ -34,3 +38,4 @@ describe("ledger semantics", () => {
     expect((await store.getLedger("2026-07-10", "2026-07-31")).totals).toMatchObject({ receivedCents: 2000, outstandingCents: -2000 });
   });
 });
+

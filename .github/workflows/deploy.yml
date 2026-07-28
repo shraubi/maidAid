@@ -87,7 +87,7 @@ jobs:
             docker compose exec -T maidaid node --input-type=module -e '
               const base = "http://127.0.0.1:3000";
               const date = "2099-12-30";
-              const text = "30/12/2099 изменения\n*Dominiquet* 9:00–12:00 - самостоятельная уборка / тест\nсушка 4,20 + 1.30\n16:00 check-in Dominiquet - самостоятельное заселение\nАванс: 20€";
+              const text = "**30/12/2099**\nDominiquet 3h + 4.20€ сушка + 1.30€ расходы\nOpéra 2.5h + 0 + 0\nАванс: 20€";
               const json = async (path, options) => {
                 const response = await fetch(`${base}${path}`, options);
                 if (!response.ok) throw new Error(`${path} returned ${response.status}: ${await response.text()}`);
@@ -108,19 +108,19 @@ jobs:
                 const before = await json(ledgerPath);
                 if (before.rows.length) throw new Error(`Smoke-test date ${date} is already occupied`);
                 const preview = await json("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
-                const [cleaning, checkin] = preview.parsed.jobs;
-                if (!preview.canShare || preview.advanceCents !== 2000 || preview.totals.expensesCents !== 550) throw new Error("Messy preview totals are incorrect");
-                if (cleaning?.object !== "Dominique" || !cleaning.apartmentId || checkin?.object !== "Dominique" || !checkin.apartmentId) throw new Error("Apartment alias was not resolved");
+                const [dominique, opera] = preview.parsed.jobs;
+                if (!preview.canShare || preview.advanceCents !== 2000 || preview.totals.minutes !== 330 || preview.totals.incomeCents !== 5500 || preview.totals.expensesCents !== 550) throw new Error("Duration preview totals are incorrect");
+                if (dominique?.object !== "Dominique" || !dominique.apartmentId || opera?.object !== "Opéra" || !opera.apartmentId) throw new Error("Apartment alias was not resolved");
                 await json("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
                 const saved = await json(ledgerPath);
-                if (saved.rows.length !== 2 || saved.totals.earnedCents !== 4000 || saved.totals.receivedCents !== 2000) throw new Error("Saved ledger state is incorrect");
+                if (saved.rows.length !== 2 || saved.rows[0]?.dateIso !== date || saved.totals.earnedCents !== 5500 || saved.totals.receivedCents !== 2000) throw new Error("Saved ledger state is incorrect");
               } finally {
                 const cleanup = await fetch(`${base}/api/days/${date}`, { method: "DELETE" });
                 if (![204, 404].includes(cleanup.status)) throw new Error(`Cleanup returned ${cleanup.status}`);
               }
               const after = await json(ledgerPath);
               if (after.rows.length || after.totals.earnedCents || after.totals.receivedCents) throw new Error("Smoke-test cleanup did not remove the test day");
-              console.log("Production apartment smoke test passed and test day was deleted");
+              console.log("Production duration/date/delete smoke test passed");
             '
             docker image prune -f
             docker logout "$REGISTRY"
