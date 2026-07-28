@@ -236,6 +236,7 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
   const paymentIssues: ParseIssue[] = [];
   let advanceCents = 0;
   let lastObject: string | undefined;
+  let lastJobIndex: number | undefined;
 
   for (const line of lines) {
     const lineDate = parseDate(line, now);
@@ -250,15 +251,19 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
     if (standaloneExpense) {
       for (const expense of standaloneExpense) {
         if (!expense.object && lastObject) expense.object = lastObject;
+        if (lastJobIndex !== undefined) expense.jobIndex = lastJobIndex;
         expenses.push(expense);
       }
       continue;
     }
     const parsed = parseJob(line, dryerDefaultCents, apartments);
     if (!parsed) { unparsedLines.push(line); continue; }
+    const jobIndex = jobs.length;
+    for (const expense of parsed.inlineExpenses) expense.jobIndex = jobIndex;
     jobs.push(parsed.job);
     expenses.push(...parsed.inlineExpenses);
     lastObject = parsed.job.object;
+    lastJobIndex = jobIndex;
   }
   const issues = [...paymentIssues, ...inferEndsAndIssues(jobs)];
   if (!date) issues.unshift({ code: "missing_date", message: "Не указана дата" });
