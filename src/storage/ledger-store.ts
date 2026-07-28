@@ -149,7 +149,7 @@ export class MemoryLedgerStore implements LedgerStore {
     const rows: LedgerRow[] = [];
     for (const day of this.days.values()) if ((!from || day.dateIso >= from) && (!to || day.dateIso <= to)) rows.push({ rowType: "work", ...day });
     for (const payment of this.payments.values()) if ((!from || payment.dateIso >= from) && (!to || payment.dateIso <= to)) rows.push({ rowType: "payment", ...payment });
-    rows.sort((a, b) => a.dateIso.localeCompare(b.dateIso) || (a.rowType === "work" ? -1 : 1));
+    rows.sort((a, b) => b.dateIso.localeCompare(a.dateIso) || (a.rowType === "work" ? -1 : 1));
     return { totals: this.aggregate(to, from), rows };
   }
 
@@ -395,7 +395,7 @@ export class PostgresLedgerStore implements LedgerStore {
     const rows: LedgerRow[] = [
       ...days.rows.map((row) => ({ rowType: "work" as const, ...mapDay(row) })),
       ...payments.rows.map((row) => ({ rowType: "payment" as const, ...mapPayment(row) })),
-    ].sort((a, b) => a.dateIso.localeCompare(b.dateIso) || (a.rowType === "work" ? -1 : 1));
+    ].sort((a, b) => b.dateIso.localeCompare(a.dateIso) || (a.rowType === "work" ? -1 : 1));
     return { totals, rows };
   }
 
