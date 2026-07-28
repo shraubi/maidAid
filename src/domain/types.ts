@@ -1,4 +1,4 @@
-export type WorkType = "independent" | "orientation" | "practice" | "unknown";
+export type WorkType = "independent" | "orientation" | "practice" | "checkin" | "unknown";
 export type DayKind = "schedule" | "actual";
 
 export interface Job {
@@ -24,6 +24,7 @@ export type ParseIssueCode =
   | "missing_start"
   | "missing_end"
   | "missing_type"
+  | "invalid_payment"
   | "overlap";
 
 export interface ParseIssue {
@@ -38,6 +39,7 @@ export interface ParsedDay {
   kind: DayKind;
   jobs: Job[];
   expenses: Expense[];
+  advanceCents: number;
   unparsedLines: string[];
   issues: ParseIssue[];
 }
@@ -46,11 +48,27 @@ export interface Settings {
   hourlyRateCents: number;
   orientationFlatCents: number;
   practiceFlatCents: number;
+  checkinFlatCents: number;
   dryerDefaultCents: number;
 }
 
 export interface DayTotals {
   minutes: number;
   incomeCents: number;
+  checkinCents: number;
   expensesCents: number;
+}
+
+export interface LedgerTotals {
+  minutes: number;
+  earnedCents: number;
+  receivedCents: number;
+  outstandingCents: number;
+  expensesCents: number;
+  checkinCents: number;
+}
+
+export interface ReportSnapshot {
+  previous: LedgerTotals;
+  total: LedgerTotals;
 }

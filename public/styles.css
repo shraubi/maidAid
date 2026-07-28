@@ -16,7 +16,7 @@ body {
     linear-gradient(180deg, #f7f4ed 0%, #eeebe1 100%);
 }
 
-button, textarea { font: inherit; }
+button, textarea, input { font: inherit; }
 
 .hero {
   width: min(760px, calc(100% - 32px));
@@ -82,6 +82,8 @@ textarea {
   line-height: 1.55;
 }
 textarea:focus { border-color: #2c6658; box-shadow: 0 0 0 4px rgba(44, 102, 88, .12); }
+input { min-height: 44px; padding: 9px 11px; border: 1px solid #c7cdc7; border-radius: 10px; color: #1d332e; background: #fffefb; }
+input:focus { outline: none; border-color: #2c6658; box-shadow: 0 0 0 3px rgba(44, 102, 88, .1); }
 
 .editor-footer, .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
 #character-count { color: #71807b; font-size: .78rem; }
@@ -127,6 +129,15 @@ button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
 .total { padding: 13px 8px; border-radius: 12px; text-align: center; background: #e7efe9; }
 .total span { display: block; color: #63736e; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
 .total strong { display: block; margin-top: 5px; font-size: 1.05rem; }
+.ledger-totals { grid-template-columns: repeat(4, 1fr); }
+.payment-form { display: grid; grid-template-columns: 1fr 1fr 1.5fr auto; gap: 10px; align-items: end; margin-top: 20px; }
+.payment-form label { display: grid; gap: 5px; color: #63736e; font-size: .76rem; font-weight: 700; }
+.ledger-rows { display: grid; gap: 9px; margin-top: 20px; }
+.ledger-row { display: grid; grid-template-columns: 6.5rem 1fr auto; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #f5f4ee; }
+.ledger-row time { color: #63736e; font-size: .82rem; }
+.ledger-row small { color: #63736e; }
+.ledger-row-actions { display: flex; gap: 6px; }
+.ledger-row-actions button { min-height: 34px; padding: 0 10px; font-size: .75rem; }
 
 pre {
   overflow-wrap: anywhere;
@@ -151,5 +162,7 @@ pre {
   .totals { grid-template-columns: 1fr; }
   .total { display: flex; justify-content: space-between; align-items: center; padding-inline: 14px; text-align: left; }
   .total strong { margin-top: 0; }
+  .payment-form { grid-template-columns: 1fr; }
+  .ledger-row { grid-template-columns: 1fr auto; }
+  .ledger-row time { grid-column: 1 / -1; }
 }
-

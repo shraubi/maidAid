@@ -78,6 +78,25 @@
         </div>
         <p id="share-status" class="notice success" role="status" hidden></p>
       </section>
+
+      <section id="ledger" class="panel" aria-labelledby="ledger-title">
+        <div class="step-heading">
+          <span>₽</span>
+          <div>
+            <p class="eyebrow">Учёт</p>
+            <h2 id="ledger-title">История и оплаты</h2>
+          </div>
+        </div>
+        <div id="ledger-totals" class="totals ledger-totals" aria-live="polite"></div>
+        <form id="payment-form" class="payment-form">
+          <label>Дата<input id="payment-date" type="date" required /></label>
+          <label>Сумма, €<input id="payment-amount" type="number" min="0.01" step="0.01" required /></label>
+          <label>Примечание<input id="payment-note" type="text" maxlength="500" placeholder="Например, аванс" /></label>
+          <button class="primary" type="submit">Добавить оплату</button>
+        </form>
+        <p id="ledger-error" class="notice error" role="alert" hidden></p>
+        <div id="ledger-rows" class="ledger-rows"></div>
+      </section>
     </main>
 
     <script type="module" src="/app.js"></script>

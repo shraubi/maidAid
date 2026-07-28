@@ -1,39 +1,41 @@
 # MaidAid
 
-MaidAid is a small PWA for checking a cleaner's workday. It parses
-the pasted text, highlights ambiguous input, calculates hours, earnings and expenses, and prepares a
-daily report for the device's system share sheet.
+MaidAid is a small Russian-language PWA that parses a cleaner's pasted workday, highlights ambiguous input, calculates hours, earnings and expenses, and prepares a cumulative report for sharing.
 
-Confirmed daily totals are stored in SQLite. A date is unique: confirming it again replaces its
-previous totals.
+Confirmed work and independently recorded payments are stored in self-hosted PostgreSQL. Confirming the same date replaces that day's work and its text-derived advance in one transaction; manual payments are never replaced with the day.
 
 ## Supported input
 
 ```text
-19/07 изменения
+26/07
 
-1. 10:00-11:00 St Denis ознакомление
-2. 14:00-16:30 Ferronnerie практика
-3. 17:00-19:00 Opera самостоятельно
-Сушка Eiffel 3.90
+Bosquet 9:00-12:00 - самостоятельная уборка
+сушка 4.2 + 11.67
+
+Dominique 12:30-15:30 - самостоятельная уборка
+сушка 6 + 5.13
+
+16:00 check in Dominiquet - самостоятельное заселение / LX638 flight number
+Аванс: 50€
 ```
 
-The interface auto-detects whether the text describes a schedule or an actual day. Numbered-list
-markers are removed from apartment names, and repeated activity descriptions in parentheses are
-ignored.
+Every amount on an expense line is retained: the first amount uses the named category and additional amounts become `расходы`. A standalone amount after a job is also treated as an expense for that job. `Check in`/`заселение` is a flat-priced activity with a 30-minute inferred end and is reported separately from cleaning hours.
 
-If a job has no end, the next job's start is used. A final job without an end, a missing work type,
-overlapping intervals, an invalid date, or any unrecognized line prevents confirmation.
+Advance formats include `Аванс 50`, `Аванс: 50€`, decimal values, and multiple lines (which are summed). Negative or invalid advances prevent confirmation.
 
-Pricing:
+Apartment names are canonicalized through `data/apartments.json`. Exact aliases and conservative typo matches are supported, so `Dominiquet` resolves to `Dominique` and `St Denis` resolves to `Saint Denis`.
 
-- orientation — EUR 10 per apartment;
-- independent cleaning — EUR 10 per hour;
-- practice — EUR 15 per apartment.
+Apartment names are canonicalized through `data/apartments.json`. Exact aliases and conservative one-character typo matches are supported, so `Dominiquet` resolves to `Dominique` and `St Denis` resolves to `Saint Denis`. Rebuild the dictionary from an exported Notes folder with:
+
+```powershell
+npm.cmd run apartments:build -- --input C:\path\to\notes-export
+```
+
+The standalone generator accepts `.txt`, `.md`, `.html`, and `.json`, recursively extracts note titles, merges them with existing aliases, and never needs an Apple Account password. See `docs/icloud-notes-research-plan.md` for the recommended iCloud collection approach.
 
 ## Local development
 
-Requirements: Node.js 22+.
+Requirements: Node.js 22+ and PostgreSQL.
 
 ```powershell
 Copy-Item .env.example .env
@@ -42,54 +44,30 @@ npm.cmd test
 npm.cmd run dev
 ```
 
-Open `http://localhost:3000`. `GET /health` is public.
-
 Configuration:
 
-- `PORT`, `HOST`, `LOG_LEVEL` — server settings;
-- `HOURLY_RATE_CENTS` — independent-cleaning hourly rate, default `1000`;
-- `ORIENTATION_FLAT_CENTS` — orientation price per apartment, default `1000`;
-- `PRACTICE_FLAT_CENTS` — practice price per apartment, default `1500`;
-- `DRYER_DEFAULT_CENTS` — dryer expense when no amount is present, default `390`;
-- `PREVIEW_RATE_LIMIT_MAX` and `PREVIEW_RATE_LIMIT_WINDOW` — per-IP preview limit.
-- `DATABASE_PATH` — SQLite file path, default `./data/maidaid.sqlite`.
+- `DATABASE_URL` — PostgreSQL connection string;
+- `HOURLY_RATE_CENTS` — independent-cleaning hourly rate;
+- `ORIENTATION_FLAT_CENTS`, `PRACTICE_FLAT_CENTS`, `CHECKIN_FLAT_CENTS` — flat rates;
+- `DRYER_DEFAULT_CENTS` — dryer expense when no amount is present;
+- `PREVIEW_RATE_LIMIT_MAX` and `PREVIEW_RATE_LIMIT_WINDOW` — preview rate limit.
+
+Startup creates the `work_days` and `payments` tables. The previous SQLite volume remains in Compose for rollback but is not read or migrated.
 
 ## API
 
-`POST /api/preview` accepts up to 32 KB:
+- `POST /api/preview` returns parsed details, totals, parsed advance, projected balance and projected share text.
+- `POST /api/days` transactionally replaces the date and returns the saved day, authoritative running balance and final share text.
+- `GET /api/ledger?from=YYYY-MM-DD&to=YYYY-MM-DD` returns chronological rows and totals.
+- `POST /api/payments` creates a manual payment using integer `amountCents`.
+- `PATCH /api/payments/:id` edits a manual payment.
+- `DELETE /api/payments/:id` deletes a manual payment.
+- `GET /health` verifies both the app and PostgreSQL connection.
 
-```json
-{
-  "text": "19/07 изменения\nEiffel 11-14 самостоятельно"
-}
-```
+Text-derived payments can only be changed by confirming their source day again. Expenses remain separate and do not reduce the outstanding balance.
 
-The optional `kind` field remains accepted for API compatibility, but the PWA does not ask the user
-to choose it.
+## Deployment
 
-The response contains `parsed`, `totals`, `issues`, `unparsedLines`, `canShare`, and `shareText`.
-Invalid input returns HTTP 400. The endpoint is rate-limited per client IP.
+`docker-compose.yml` runs PostgreSQL privately with a persistent volume and no host port. MaidAid waits for the database health check; ngrok waits for MaidAid. Set the application values plus `POSTGRES_PASSWORD`, `NGROK_AUTHTOKEN`, `NGROK_DOMAIN`, and optionally `MAIDAID_HOST_PORT` in the VM `.env`.
 
-## PWA behavior
-
-The service worker caches only the application shell (`HTML`, `CSS`, JavaScript, manifest and icon).
-API requests and report content are never cached. Sharing starts only after a user click; where the
-Web Share API is unavailable, MaidAid copies the final text to the clipboard.
-
-## Production and deployment
-
-The GitHub workflow installs dependencies, runs tests and TypeScript compilation, and builds the
-production image on the runner. The image includes the compiled server and static PWA assets.
-
-Set the application values plus `NGROK_AUTHTOKEN`, `NGROK_DOMAIN`, and optionally
-`MAIDAID_HOST_PORT` in the VM `.env`. MaidAid is reachable inside the Compose network and on a
-loopback diagnostics port; ngrok is the HTTPS ingress.
-
-Deploy the prebuilt services with:
-
-```bash
-docker compose pull maidaid ngrok
-docker compose up -d --no-build maidaid ngrok
-```
-
-Multi-user authorization is intentionally deferred to a later release.
+GitHub Actions runs unit/API tests and a real PostgreSQL integration test before building. The deployment workflow starts PostgreSQL, MaidAid and ngrok, then smoke-checks the application health endpoint.

@@ -1,62 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { calculateDay } from "../src/domain/calculations.js";
 import { parseDay } from "../src/domain/parser.js";
-import type { Settings } from "../src/domain/types.js";
-
-const settings: Settings = {
-  hourlyRateCents: 1000,
-  orientationFlatCents: 1000,
-  practiceFlatCents: 1500,
-  dryerDefaultCents: 390,
-};
+import { settings } from "./helpers.js";
 
 describe("calculateDay", () => {
-  it("calculates minutes, earnings and expenses without an LLM", () => {
-    const parsed = parseDay(
-      `19/07 изменения
-Eiffel 11-14 самостоятельно
-Lauriston 31 14:30-15 ознакомление (Вероника)
-Opera 15:30-18 ознакомление (Ана)
-Сушка Eiffel 3,90`,
-      new Date("2026-07-23T00:00:00Z"),
-    );
-    expect(calculateDay(parsed, settings)).toEqual({
-      minutes: 360,
-      incomeCents: 5000,
-      expensesCents: 390,
-    });
-  });
-
-  it("uses hourly pricing for cleaning and flat pricing for orientation and practice", () => {
-    const parsed = parseDay(
-      `19/07
-St Denis 10:00-11:00 ознакомление
-Ferronnerie 14:00-16:30 практика
-Opera 17:00-19:00 самостоятельно`,
-      new Date("2026-07-23T00:00:00Z"),
-    );
-
-    expect(calculateDay(parsed, settings)).toEqual({
-      minutes: 330,
-      incomeCents: 4500,
-      expensesCents: 0,
-    });
-  });
-
-  it("calculates the reported actual day with one inline dryer expense", () => {
-    const parsed = parseDay(
-      `19/07 изменения
-Eiffel 11:00-14:00 уборка самостоятельно + сушка 3.9
-14:30 Lauriston 31 ознакомление (Вероника)
-15:30-16 Opera ознакомление ( Ана)`,
-      new Date("2026-07-23T00:00:00Z"),
-    );
-
-    expect(calculateDay(parsed, settings)).toEqual({
-      minutes: 270,
-      incomeCents: 5000,
-      expensesCents: 390,
-    });
+  it("keeps check-in earnings separate and excludes check-in from worked hours", () => {
+    const parsed = parseDay("26/07\nBosquet 9-12 уборка\n16:00 check in Dominique", new Date("2026-07-28T00:00:00Z"));
+    expect(calculateDay(parsed, settings)).toEqual({ minutes: 180, incomeCents: 4000, checkinCents: 1000, expensesCents: 0 });
   });
 });
-

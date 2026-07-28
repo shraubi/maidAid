@@ -20,6 +20,7 @@ RUN npm ci --omit=dev --no-audit --no-fund \
 
 COPY --from=build --chown=node:node /app/dist/src ./dist/src
 COPY --chown=node:node public ./public
+COPY --chown=node:node data ./data
 RUN mkdir -p /data && chown node:node /data
 
 USER node

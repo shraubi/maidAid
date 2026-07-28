@@ -76,8 +76,9 @@ jobs:
             cd "${{ secrets.APP_DIR }}"
             git pull --ff-only origin main
             printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "$GHCR_USER" --password-stdin
-            docker compose pull maidaid ngrok
-            docker compose up -d --no-build maidaid ngrok
+            docker compose pull postgres maidaid ngrok
+            docker compose up -d --no-build postgres maidaid ngrok
+            docker compose ps --status running postgres maidaid ngrok
+            docker compose exec -T maidaid node -e "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
             docker image prune -f
             docker logout "$REGISTRY"
-

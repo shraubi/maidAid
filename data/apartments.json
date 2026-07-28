@@ -1,0 +1,26 @@
+{
+  "apartments": [
+    { "name": "Bosquet", "aliases": ["Bosquet"] },
+    { "name": "Braque 13", "aliases": ["Braque 13"] },
+    { "name": "Dominique", "aliases": ["Dominique", "Dominiquet"] },
+    { "name": "Eiffel", "aliases": ["Eiffel", "Eiffe", "Eiffee"] },
+    { "name": "Euler", "aliases": ["Euler"] },
+    { "name": "Federation", "aliases": ["Federation"] },
+    { "name": "Ferronnerie", "aliases": ["Ferronnerie"] },
+    { "name": "Flers", "aliases": ["Flers"] },
+    { "name": "Gaston", "aliases": ["Gaston"] },
+    { "name": "Hugo", "aliases": ["Hugo"] },
+    { "name": "Lauriston 20", "aliases": ["Lauriston 20"] },
+    { "name": "Lauriston 31", "aliases": ["Lauriston 31"] },
+    { "name": "Lebouteux", "aliases": ["Lebouteux"] },
+    { "name": "Louvre", "aliases": ["Louvre"] },
+    { "name": "Monceau", "aliases": ["Monceau"] },
+    { "name": "Montorgueil 58", "aliases": ["Montorgueil 58"] },
+    { "name": "Opera", "aliases": ["Opera", "Opéra"] },
+    { "name": "Poncelet", "aliases": ["Poncelet", "Poncelet вторая квартира"] },
+    { "name": "Saint Denis", "aliases": ["Saint Denis", "St Denis"] },
+    { "name": "Sevres", "aliases": ["Sevres", "Sèvres"] },
+    { "name": "Stuart 23", "aliases": ["Stuart 23", "23 Stuart"] },
+    { "name": "Tiquetonne", "aliases": ["Tiquetonne"] }
+  ]
+}

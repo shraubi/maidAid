@@ -9,115 +9,57 @@ import { generateShareText } from "./domain/draft.js";
 import { parseDay } from "./domain/parser.js";
 import type { Settings } from "./domain/types.js";
 import { loadConfig, type Config } from "./config.js";
-import { DayStore } from "./storage/day-store.js";
+import { PostgresLedgerStore, type LedgerStore } from "./storage/ledger-store.js";
 
-const previewBody = z.object({
-  kind: z.enum(["actual", "schedule"]).optional(),
-  text: z.string().trim().min(1).max(32 * 1024),
-}).strict();
+const previewBody = z.object({ kind: z.enum(["actual", "schedule"]).optional(), text: z.string().trim().min(1).max(32 * 1024) }).strict();
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const paymentCreate = z.object({ dateIso: date, amountCents: z.number().int().positive(), note: z.string().max(500).optional() }).strict();
+const paymentPatch = z.object({ dateIso: date.optional(), amountCents: z.number().int().positive().optional(), note: z.string().max(500).nullable().optional() }).strict().refine((value) => Object.keys(value).length > 0);
+const paymentParams = z.object({ id: z.coerce.number().int().positive() });
+const ledgerQuery = z.object({ from: date.optional(), to: date.optional() });
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
-const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`)
-  ? resolve(moduleDirectory, "../../public")
-  : resolve(moduleDirectory, "../public");
+const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(moduleDirectory, "../../public") : resolve(moduleDirectory, "../public");
 
-export async function buildApp(config: Config = loadConfig()): Promise<FastifyInstance> {
-  const app = Fastify({
-    logger: { level: config.LOG_LEVEL },
-    trustProxy: true,
-  });
+export async function buildApp(config: Config = loadConfig(), providedStore?: LedgerStore): Promise<FastifyInstance> {
+  const app = Fastify({ logger: { level: config.LOG_LEVEL }, trustProxy: true });
   const settings: Settings = {
     hourlyRateCents: config.HOURLY_RATE_CENTS,
     orientationFlatCents: config.ORIENTATION_FLAT_CENTS,
     practiceFlatCents: config.PRACTICE_FLAT_CENTS,
+    checkinFlatCents: config.CHECKIN_FLAT_CENTS,
     dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
   };
-  const dayStore = new DayStore(config.DATABASE_PATH);
-  app.addHook("onClose", async () => dayStore.close());
+  const ledger = providedStore ?? new PostgresLedgerStore(config.DATABASE_URL);
+  await ledger.initialize();
+  app.addHook("onClose", async () => ledger.close());
+  await app.register(rateLimit, { global: false, max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW });
+  await app.register(fastifyStatic, { root: publicRoot, wildcard: false });
 
-  await app.register(rateLimit, {
-    global: false,
-    max: config.PREVIEW_RATE_LIMIT_MAX,
-    timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
-  });
-  await app.register(fastifyStatic, {
-    root: publicRoot,
-    wildcard: false,
+  app.get("/health", async (_request, reply) => {
+    const database = await ledger.health();
+    return reply.code(database ? 200 : 503).send({ status: database ? "ok" : "unavailable", service: "MaidAid", database });
   });
 
-  app.get("/health", async () => ({ status: "ok", service: "MaidAid" }));
-
-  app.post(
-    "/api/preview",
-    {
-      bodyLimit: 32 * 1024,
-      config: {
-        rateLimit: {
-          max: config.PREVIEW_RATE_LIMIT_MAX,
-          timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
-        },
-      },
-    },
-    async (request, reply) => {
-      const input = previewBody.safeParse(request.body);
-      if (!input.success) {
-        return reply.code(400).send({
-          error: "invalid_request",
-          issues: input.error.issues.map(({ path, message }) => ({ path, message })),
-        });
-      }
-
-      const parsed = parseDay(input.data.text, new Date(), settings.dryerDefaultCents);
-      if (input.data.kind) parsed.kind = input.data.kind;
-      const totals = calculateDay(parsed, settings);
-      const canShare =
-        parsed.dateIso !== null &&
-        parsed.jobs.length > 0 &&
-        parsed.issues.length === 0 &&
-        parsed.unparsedLines.length === 0;
-
-      return {
-        parsed,
-        totals,
-        issues: parsed.issues,
-        unparsedLines: parsed.unparsedLines,
-        canShare,
-        shareText: canShare ? generateShareText(parsed, settings) : "",
-      };
-    },
-  );
-
-  app.post("/api/days", {
-    config: { rateLimit: {
-      max: config.PREVIEW_RATE_LIMIT_MAX,
-      timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW,
-    } },
-  }, async (request, reply) => {
+  app.post("/api/preview", { bodyLimit: 32 * 1024, config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
     const input = previewBody.safeParse(request.body);
-    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
-
+    if (!input.success) return reply.code(400).send({ error: "invalid_request", issues: input.error.issues.map(({ path, message }) => ({ path, message })) });
     const parsed = parseDay(input.data.text, new Date(), settings.dryerDefaultCents);
     if (input.data.kind) parsed.kind = input.data.kind;
-    const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 &&
-      parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
-    if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
-
-    return { day: dayStore.save(parsed.dateIso, calculateDay(parsed, settings)) };
+    const totals = calculateDay(parsed, settings);
+    const canShare = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
+    const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents) : null;
+    return { parsed, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
   });
 
-  return app;
-}
-
-async function start(): Promise<void> {
-  const config = loadConfig();
-  const app = await buildApp(config);
-  await app.listen({ port: config.PORT, host: config.HOST });
-}
-
-const entryPoint =
-  typeof process !== "undefined" && process.argv[1]
-    ? pathToFileURL(resolve(process.argv[1])).href
-    : "";
-if (import.meta.url === entryPoint) {
-  await start();
-}
+  app.post("/api/days", { config: { rateLimit5óŞü¶‰Ëkºwµç\Û™[KŒŒNˆßB‚ˆ˜\İYY\Y\]X[ËŒKŒÎˆßB‚ˆ˜\İZœÛÛ‹\İš[™ÚYPËŒŒN‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ˜\İYKÛY\™ÙKZœÛÛ‹\ØÚ[X\ÉÎˆŒ‹ŒBˆZˆŒŒŒˆZ‹Y›Ü›X]ÎˆËŒŒJZŒŒŒ
+Bˆ˜\İ]\šNˆŒKŒBˆœÛÛ‹\ØÚ[XK\™Y‹\™\ÛÛ™\ˆËŒŒˆ™™ÎˆKŒB‚ˆ˜\İ\]Y\\İš[™ĞKŒKŒ‚ˆ\[™[˜ÚY\Î‚ˆ˜\İYXÛÙK]\šKXÛÛ\Û™[ˆKŒŒB‚ˆ˜\İ]\šPËŒKˆßB‚ˆ˜\İ]\šPŒKŒNˆßB‚ˆ˜\İYK\YÚ[KŒKŒˆßB‚ˆ˜\İYPKŒLŒ‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ˜\İYKØZ‹XÛÛ\[\‰ÎˆŒBˆ	Ğ˜\İYKÙ\œ›Ü‰ÎˆŒ‹Œˆ	Ğ˜\İYKÙ˜\İZœÛÛ‹\İš[™ÚYKXÛÛ\[\‰ÎˆKŒKŒˆ	Ğ˜\İYKÜ›ŞKXY‰ÎˆKŒKŒˆXœİ˜Xİ[ÙÙÚ[™Îˆ‹ŒŒBˆ]š[ÎˆKŒËŒˆ˜\İZœÛÛ‹\İš[™ÚYNˆËŒŒBˆš[™[^K]Ø^NˆKËŒˆYÚ[^K\™\]Y\İˆ‹‹Œˆ[›ÎˆLŒËŒBˆ›ØÙ\ÜË]Ø\›š[™ÎˆKŒŒˆ™™ÎˆKŒBˆÙXİ\™KZœÛÛ‹\\œÙNˆŒKŒˆÙ[]™\ˆËBˆØYXØXÚNˆËË‚ˆ˜\İPKŒŒŒN‚ˆ\[™[˜ÚY\Î‚ˆ™]\ÚYNˆKŒKŒ‚ˆ™\‹KŒ
+XÛÛX]ÚŒJN‚ˆÜ[Û˜[\[™[˜ÚY\Î‚ˆXÛÛX]ÚˆŒB‚ˆš[™[^K]Ø^PKËŒ‚ˆ\[™[˜ÚY\Î‚ˆ˜\İYY\Y\]X[ˆËŒKŒÂˆ˜\İ\]Y\\İš[™ÎˆKŒKŒ‚ˆØY™K\™YÙ^ˆKŒKŒB‚ˆ›Ü™YÜ›İ[™XÚ[ËŒËŒN‚ˆ\[™[˜ÚY\Î‚ˆÜ›ÜÜË\Ü]ÛˆËŒ‚ˆÚYÛ˜[Y^]ˆŒKŒ‚ˆœÙ]™[Ğ‹ŒËŒÎ‚ˆÜ[Û˜[ˆYB‚ˆÛØLKŒKŒ‚ˆ\[™[˜ÚY\Î‚ˆ›Ü™YÜ›İ[™XÚ[ˆËŒËŒBˆ˜XÚÜÜXZÎˆŒ‹ŒÂˆZ[š[X]ÚˆLŒ‹BˆZ[š\\ÜÎˆËŒKŒÂˆXÚØYÙKZœÛÛ‹Yœ›ÛKY\İˆKŒŒBˆ]\Øİ\œNˆ‹ŒŒ‚‚ˆY\œ›ÜœĞ‹ŒŒN‚ˆ\[™[˜ÚY\Î‚ˆ\ˆ‹ŒŒˆ[š\š]Îˆ‹ŒˆÙ]›İİ\[ÙˆKŒ‹Œˆİ]\Ù\Îˆ‹ŒŒ‚ˆÚY[YšY\ˆKŒŒB‚ˆ[š\š]Ğ‹ŒˆßB‚ˆ\Y‹šœĞ‹ŒˆßB‚ˆ\Ù^P‹ŒŒˆßB‚ˆ˜XÚÜÜXZĞŒ‹ŒÎ‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ\ØXXÜËØÛ]ZIÎˆKŒŒ‚ˆœË]ÚÙ[œĞKŒŒNˆßB‚ˆœÛÛ‹\ØÚ[XK\™Y‹\™\ÛÛ™\ËŒŒ‚ˆ\[™[˜ÚY\Î‚ˆ\]X[ˆ‹ŒŒÂ‚ˆœÛÛ‹\ØÚ[XK]˜]™\œÙPKŒŒˆßB‚ˆYÚ[^K\™\]Y\İ‹‹Œ‚ˆ\[™[˜ÚY\Î‚ˆÛÛÚÚYNˆKŒKŒBˆ›ØÙ\ÜË]Ø\›š[™ÎˆŒŒBˆÙ]XÛÛÚÚYK\\œÙ\ˆ‹ËŒ‚‚ˆİ\PËŒ‹ŒNˆßB‚ˆKXØXÚPLKKŒˆßB‚ˆXYÚXË\İš[™ĞŒÌŒŒN‚ˆ\[™[˜ÚY\Î‚ˆ	ĞœšYÙ]Ù[ÜÛİ\˜Ù[X\XÛÙXÉÎˆKKB‚ˆZ[YPËŒŒˆßB‚ˆZ[š[X]ÚLŒ‹N‚ˆ\[™[˜ÚY\Î‚ˆœ˜XÙKY^[œÚ[ÛˆKŒ‚ˆZ[š\\ÜĞËŒKŒÎˆßB‚ˆ\Ğ‹ŒKŒÎˆßB‚ˆ˜[›ÚYËŒËŒMˆßB‚ˆÛ‹Y^][XZËYœ™YP‹ŒKŒˆßB‚ˆXÚØYÙKZœÛÛ‹Yœ›ÛKY\İKŒŒNˆßB‚ˆ]ZÙ^PËŒKŒNˆßB‚ˆ]\Øİ\œP‹ŒŒ‚ˆ\[™[˜ÚY\Î‚ˆKXØXÚNˆLKKŒ‚ˆZ[š\\ÜÎˆËŒKŒÂ‚ˆ]P‹ŒŒÎˆßB‚ˆ]˜[‹ŒŒNˆßB‚ˆËXÛİY›\™PKŒ‚ˆÜ[Û˜[ˆYB‚ˆËXÛÛ›™Xİ[Û‹\İš[™Ğ‹ŒMŒˆßB‚ˆËZ[KŒŒNˆßB‚ˆË\ÛÛËŒMŒ
+ĞŒŒ‹Œ
+N‚ˆ\[™[˜ÚY\Î‚ˆÎˆŒŒ‹Œ‚ˆË\›İØÛÛKŒMKŒˆßB‚ˆË]\\Ğ‹Œ‹Œ‚ˆ\[™[˜ÚY\Î‚ˆËZ[ˆKŒŒBˆÜİÜ™\ËX\œ˜^Nˆ‹ŒŒˆÜİÜ™\ËX]XNˆKŒŒBˆÜİÜ™\ËY]NˆKŒÂˆÜİÜ™\ËZ[\˜[ˆKŒ‹Œ‚ˆĞŒŒ‹Œ‚ˆ\[™[˜ÚY\Î‚ˆËXÛÛ›™Xİ[Û‹\İš[™Îˆ‹ŒMŒˆË\ÛÛˆËŒMŒ
+ĞŒŒ‹Œ
+BˆË\›İØÛÛˆKŒMKŒˆË]\\Îˆ‹Œ‹ŒˆÜ\ÜÎˆKŒBˆÜ[Û˜[\[™[˜ÚY\Î‚ˆËXÛİY›\™NˆKŒ‚ˆÜ\ÜĞKŒN‚ˆ\[™[˜ÚY\Î‚ˆÜ]ˆŒ‹Œ‚ˆXÛØÛÛÜœĞKŒKŒNˆßB‚ˆXÛÛX]ÚŒNˆßB‚ˆ[›ËXXœİ˜Xİ]˜[œÜÜËŒŒ‚ˆ\[™[˜ÚY\Î‚ˆÜ]ˆŒ‹Œ‚ˆ[›Ë\İ\Ù\šX[^™\œĞËŒKŒˆßB‚ˆ[›ĞLŒËŒN‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ[›ÚœËÜ™YXİ	ÎˆŒˆ]ÛZXË\ÛY\ˆKŒŒˆÛ‹Y^][XZËYœ™YNˆ‹ŒKŒ‚ˆ[›ËXXœİ˜Xİ]˜[œÜÜˆËŒŒˆ[›Ë\İ\Ù\šX[^™\œÎˆËŒKŒˆ›ØÙ\ÜË]Ø\›š[™ÎˆKŒŒˆ]ZXÚËY›Ü›X]][™\ØØ\YˆŒˆ™X[\™\]Z\™NˆŒ‹ŒˆØY™K\İX›K\İš[™ÚYNˆ‹KŒˆÛÛšXËX›ÛÛNˆŒ‹ŒBˆ™XY\İ™X[NˆŒ‹Œ‚ˆÜİÜÜĞKŒŒÎ‚ˆ\[™[˜ÚY\Î‚ˆ˜[›ÚYˆËŒËŒM‚ˆXÛØÛÛÜœÎˆKŒKŒBˆÛİ\˜ÙK[X\ZœÎˆKŒ‹ŒB‚ˆÜİÜ™\ËX\œ˜^P‹ŒŒˆßB‚ˆÜİÜ™\ËX]XPKŒŒNˆßB‚ˆÜİÜ™\ËY]PKŒÎˆßB‚ˆÜİÜ™\ËZ[\˜[KŒ‹Œ‚ˆ\[™[˜ÚY\Î‚ˆ[™ˆŒŒ‚‚ˆ›ØÙ\ÜË]Ø\›š[™ĞŒŒNˆßB‚ˆ›ØÙ\ÜË]Ø\›š[™ĞKŒŒˆßB‚ˆ]ZXÚËY›Ü›X]][™\ØØ\YŒˆßB‚ˆ™X[\™\]Z\™PŒ‹ŒˆßB‚ˆ™X[\™\]Z\™PKŒŒˆßB‚ˆ™\]Z\™KYœ›ÛK\İš[™Ğ‹ŒŒˆßB‚ˆ™]KŒˆßB‚ˆ™]\ÚYPKŒKŒˆßB‚ˆ™™ĞKŒNˆßB‚ˆ›Û\Œ‹Œ‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ\\ËÙ\İ™YIÎˆKŒBˆÜ[Û˜[\[™[˜ÚY\Î‚ˆ	Ğ›Û\Ü›Û\X[™›ÚYX\›KYXXšIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\X[™›ÚYX\›M	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\Y\Ú[‹X\›M	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\Y\Ú[‹^	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\Yœ™YXœÙX\›M	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\Yœ™YXœÙ^	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^X\›KYÛYXXšZ‰ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^X\›K[]\ÛXXšZ‰ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^X\›MYÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^X\›M[]\Û	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^[ÛÛ™ÍYÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^[ÛÛ™Í[]\Û	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^\ÍYÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^\Í[]\Û	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^\š\ØİYÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^\š\Øİ[]\Û	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^\ÌÎLYÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^^YÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[[^^[]\Û	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[Ü[˜œÙ^	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\[Ü[š\›[ÛKX\›M	ÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\]Ú[ŒÌ‹X\›M[\İ˜ÉÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\]Ú[ŒÌ‹ZXLÌ‹[\İ˜ÉÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\]Ú[ŒÌ‹^YÛIÎˆŒ‹Œ‚ˆ	Ğ›Û\Ü›Û\]Ú[ŒÌ‹^[\İ˜ÉÎˆŒ‹Œ‚ˆœÙ]™[Îˆ‹ŒËŒÂ‚ˆØY™KXY™™\KŒ‹ŒNˆßB‚ˆØY™K\™YÙ^KŒKŒN‚ˆ\[™[˜ÚY\Î‚ˆ™]ˆKŒ‚ˆØY™K\İX›K\İš[™ÚYP‹KŒˆßB‚ˆÙXİ\™KZœÛÛ‹\\œÙPŒKŒˆßB‚ˆÙ[]™\ËNˆßB‚ˆÙ]XÛÛÚÚYK\\œÙ\‹ËŒˆßB‚ˆÙ]›İİ\[ÙKŒ‹ŒˆßB‚ˆÚX˜[™ËXÛÛ[X[™‹ŒŒ‚ˆ\[™[˜ÚY\Î‚ˆÚX˜[™Ë\™YÙ^ˆËŒŒ‚ˆÚX˜[™Ë\™YÙ^ËŒŒˆßB‚ˆÚYÚ[™›Ğ‹ŒŒˆßB‚ˆÚYÛ˜[Y^]ŒKŒˆßB‚ˆÛÛšXËX›ÛÛPŒ‹ŒN‚ˆ\[™[˜ÚY\Î‚ˆ]ÛZXË\ÛY\ˆKŒŒ‚ˆÛİ\˜ÙK[X\ZœĞKŒ‹ŒNˆßB‚ˆÜ]Œ‹ŒˆßB‚ˆİXÚØ˜XÚĞŒŒˆßB‚ˆİ]\Ù\Ğ‹ŒŒˆßB‚ˆİY[ËŒLŒˆßB‚ˆİš\[]\˜[ËŒKŒ‚ˆ\[™[˜ÚY\Î‚ˆœË]ÚÙ[œÎˆKŒŒB‚ˆ™XY\İ™X[PŒ‹Œ‚ˆ\[™[˜ÚY\Î‚ˆ™X[\™\]Z\™NˆKŒŒ‚ˆ[X™[˜Ú‹KŒˆßB‚ˆ[Y^XĞŒËŒˆßB‚ˆ[YÛØ˜PŒ‹ŒMÎ‚ˆ\[™[˜ÚY\Î‚ˆ™\ˆ‹KŒ
+XÛÛX]ÚŒJBˆXÛÛX]ÚˆŒB‚ˆ[\ÛÛKŒKŒNˆßB‚ˆ[\˜Z[˜›İĞ‹ŒŒˆßB‚ˆ[\ÜPŒˆßB‚ˆØYXØXÚPËËˆßB‚ˆÚY[YšY\KŒŒNˆßB‚ˆŞŒŒËŒN‚ˆ\[™[˜ÚY\Î‚ˆ\ØZ[ˆŒŒBˆÜ[Û˜[\[™[˜ÚY\Î‚ˆœÙ]™[Îˆ‹ŒËŒÂ‚ˆ\\ØÜš\KKŒÎˆßB‚ˆ[™XÚK]\\ĞËŒNŒˆßB‚ˆš]K[›ÙPËŒ‹
+\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJN‚ˆ\[™[˜ÚY\Î‚ˆØXÎˆ‹ËŒMˆXYÎˆŒÂˆ\Ë[[Ù[K[^\ˆKËŒˆ]Nˆ‹ŒŒÂˆš]NˆËŒËŠ\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJBˆ˜[œÚ]]™TY\‘\[™[˜ÚY\Î‚ˆH	Ğ\\ËÛ›ÙIÂˆHš]BˆH\ÜÂˆHYÚš[™ØÜÜÂˆHØ\ÜÂˆHØ\ÜËY[X™YYˆHİ[\ÂˆHİYØ\œÜÂˆHİ\ÜËXÛÛÜ‚ˆH\œÙ\‚ˆHŞˆHX[[‚ˆš]PËŒËŠ\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJN‚ˆ\[™[˜ÚY\Î‚ˆ\ØZ[ˆŒŒBˆ™\ˆ‹KŒ
+XÛÛX]ÚŒJBˆXÛÛX]ÚˆŒBˆÜİÜÜÎˆKŒŒÂˆ›Û\ˆŒ‹Œ‚ˆ[YÛØ˜NˆŒ‹ŒMÂˆÜ[Û˜[\[™[˜ÚY\Î‚ˆ	Ğ\\ËÛ›ÙIÎˆŒLËŒÂˆœÙ]™[Îˆ‹ŒËŒÂˆŞˆŒŒËŒB‚ˆš]\İËŒ‹Ê\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJN‚ˆ\[™[˜ÚY\Î‚ˆ	Ğ\\ËØÚZIÎˆKŒ‹ŒÂˆ	Ğš]\İÙ^Xİ	ÎˆËŒ‹Âˆ	Ğš]\İÛ[ØÚÙ\‰ÎˆËŒ‹Êš]PËŒËŠ\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJJBˆ	Ğš]\İÜ™]KY›Ü›X]	ÎˆËŒ‹Âˆ	Ğš]\İÜ[›™\‰ÎˆËŒ‹Âˆ	Ğš]\İÜÛ˜\Úİ	ÎˆËŒ‹Âˆ	Ğš]\İÜÜIÎˆËŒ‹Âˆ	Ğš]\İİ][ÉÎˆËŒ‹ÂˆÚZNˆKŒËŒÂˆXYÎˆŒÂˆ^Xİ]\NˆKŒˆXYÚXË\İš[™ÎˆŒÌŒŒBˆ]Nˆ‹ŒŒÂˆXÛÛX]ÚˆŒBˆİY[ˆËŒLŒˆ[X™[˜Úˆ‹KŒˆ[Y^XÎˆŒËŒ‚ˆ[YÛØ˜NˆŒ‹ŒMÂˆ[\ÛÛˆKŒKŒBˆ[\˜Z[˜›İÎˆ‹ŒŒˆš]NˆËŒËŠ\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJBˆš]K[›ÙNˆËŒ‹
+\\ËÛ›ÙPŒLËŒÊJŞŒŒËŒJBˆÚKZ\Ë[›ÙK\[›š[™Îˆ‹ŒËŒˆÜ[Û˜[\[™[˜ÚY\Î‚ˆ	Ğ\\ËÛ›ÙIÎˆŒLËŒÂˆ˜[œÚ]]™TY\‘\[™[˜ÚY\Î‚ˆHš]BˆH\ÜÂˆHYÚš[™ØÜÜÂˆH\İÂˆHØ\ÜÂˆHØ\ÜËY[X™YYˆHİ[\ÂˆHİYØ\œÜÂˆHİ\ÜËXÛÛÜ‚ˆH\œÙ\‚ˆHŞˆHX[[‚ˆÚXÚ‹ŒŒ‚ˆ\[™[˜ÚY\Î‚ˆ\Ù^Nˆ‹ŒŒ‚ˆÚKZ\Ë[›ÙK\[›š[™Ğ‹ŒËŒ‚ˆ\[™[˜ÚY\Î‚ˆÚYÚ[™›Îˆ‹ŒŒˆİXÚØ˜XÚÎˆŒŒ‚‚ˆ[™ŒŒˆßB‚ˆ›ÙŒÎˆßB

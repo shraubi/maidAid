@@ -1,56 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { generateShareText } from "../src/domain/draft.js";
 import { parseDay } from "../src/domain/parser.js";
+import { settings } from "./helpers.js";
 
 describe("generateShareText", () => {
-  it("generates a daily report without accumulated balance", () => {
-    const day = parseDay(
-      "19/07 изменения\nEiffel 11-14 самостоятельно\nСушка Eiffel 3,90",
-      new Date("2026-07-23T00:00:00Z"),
-    );
-    const text = generateShareText(day, {
-      hourlyRateCents: 1000,
-      orientationFlatCents: 1000,
-      practiceFlatCents: 1500,
-      dryerDefaultCents: 390,
+  it("matches the requested compact cumulative report", () => {
+    const day = parseDay(`26/07
+Bosquet 9:00-12:00 - самостоятельная уборка / ключ от Вероники у вас
+сушка 4.2 + 11.67
+Dominique 12:30-15:30 - самостоятельная уборка
+сушка 6 + 5.13
+16:00 check in Dominiquet - самостоятельное заселение / LX638 flight number`, new Date("2026-07-28T00:00:00Z"));
+    const text = generateShareText(day, settings, {
+      previous: { minutes: 930, earnedCents: 17500, receivedCents: 20000, outstandingCents: -2500, expensesCents: 4905, checkinCents: 1000 },
+      total: { minutes: 1290, earnedCents: 24500, receivedCents: 20000, outstandingCents: 4500, expensesCents: 7605, checkinCents: 2000 },
     });
-
-    expect(text.startsWith("19/07\n")).toBe(true);
-    expect(text).not.toContain("19/07 изменения");
-    expect(text).toContain("Сегодня: 3h + 30,00€ заработок + 3,90€ расходы");
-    expect(text).not.toContain("Было:");
-    expect(text).not.toContain("Всего:");
+    expect(text).toContain("Bosquet\n3h + 4.20€ сушка + 11.67€ расходы");
+    expect(text).toContain("Dominique\n3h + 6€ сушка + 5.13€ расходы\n\nCheck in 10€");
+    expect(text).toContain("Было : 15.5 h + 49.05€ расходы + 10€ check in");
+    expect(text).toContain("Всего : 21.5 h + 76.05€ расходы + 20€ check in");
+    expect(text).toContain("Оплата наличными: 245€\nАванс: 200€");
   });
 
-  it("omits zero expenses and empty payment sections", () => {
-    const day = parseDay(
-      `19/07
-St Denis 09:00-10:00 ознакомление
-23 Stuart 10:00-12:30 практика
-Ferronnerie 13:00-15:30 практика
-Tiquetonne 16:00-16:30 ознакомление
-Dominique 17:00-18:00 ознакомление`,
-      new Date("2026-07-23T00:00:00Z"),
-    );
-    const text = generateShareText(day, {
-      hourlyRateCents: 1000,
-      orientationFlatCents: 1000,
-      practiceFlatCents: 1500,
-      dryerDefaultCents: 390,
+  it("adds the current advance and outstanding balance only when present", () => {
+    const day = parseDay("26/07\nBosquet 9-12 уборка\nАванс: 50€", new Date("2026-07-28T00:00:00Z"));
+    const text = generateShareText(day, settings, {
+      previous: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 },
+      total: { minutes: 180, earnedCents: 3000, receivedCents: 5000, outstandingCents: -2000, expensesCents: 0, checkinCents: 0 },
     });
-
-    expect(text).not.toContain("Ferronnerie 13:00-15:30 Практика");
-    expect(text.endsWith(
-      `St Denis 1h + 10,00€
-23 Stuart 2.5h + 15,00€
-Ferronnerie 2.5h + 15,00€
-Tiquetonne 0.5h + 10,00€
-Dominique 1h + 10,00€
-
-Сегодня: 7.5h + 60,00€ заработок`,
-    )).toBe(true);
-    expect(text).not.toMatch(/(?:^|\+ )0(?:,00)?€/m);
-    expect(text).not.toContain("Оплата наличными:");
-    expect(text).not.toContain("Аванс:");
+    expect(text).toContain("Аванс сегодня: 50€");
+    expect(text).toContain("Остаток: -20€");
   });
 });
