@@ -154,15 +154,15 @@ function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: 
     if (single) {
       startMinutes = parseMinutes(single[1]!, single[2]);
       line = line.replace(single[0], " ");
-    } else {
-      const duration = line.match(DURATION_RE);
-      if (duration?.index !== undefined) {
-        durationMinutes = Math.round(Number(duration[1]!.replace(",", ".")) * 60);
-        if (!Number.isInteger(durationMinutes) || durationMinutes <= 0 || durationMinutes > 24 * 60) return null;
-        extracted.expenses.splice(0, extracted.expenses.length, ...parseDurationExpenses(line, duration.index + duration[0].length));
-        line = line.slice(0, duration.index);
-        if (type === "unknown") type = "independent";
-      }
+    }
+    const duration = line.match(DURATION_RE);
+    if (duration?.index !== undefined) {
+      durationMinutes = Math.round(Number(duration[1]!.replace(",", ".")) * 60);
+      if (!Number.isInteger(durationMinutes) || durationMinutes <= 0 || durationMinutes > 24 * 60) return null;
+      extracted.expenses.splice(0, extracted.expenses.length, ...parseDurationExpenses(line, duration.index + duration[0].length));
+      line = line.slice(0, duration.index);
+      if (startMinutes !== null) endMinutes = startMinutes + durationMinutes;
+      if (type === "unknown") type = "independent";
     }
   }
   line = line
