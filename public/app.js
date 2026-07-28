@@ -54,14 +54,14 @@ function renderPreview(data) {
   const problems = [...data.issues.map((issue) => issue.message), ...data.unparsedLines.map((line) => `Не распознано: ${line}`)];
   issueList.hidden = problems.length === 0;
   issueList.innerHTML = problems.length ? `<strong>Нужно исправить</strong><ul>${problems.map((problem) => `<li>${escapeHtml(problem)}</li>`).join("")}</ul>` : "";
-  const jobs = data.parsed.jobs.map((job) => {
-    const expenses = data.parsed.expenses.filter((expense) => expense.object === job.object);
+  const jobs = data.parsed.jobs.map((job, jobIndex) => {
+    const expenses = data.parsed.expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
     const mapsUrl = safeMapsUrl(job.mapsUrl);
     const apartment = job.apartmentId == null ? "" : `<div class="apartment-details">${job.address ? `<span class="apartment-address">${escapeHtml(job.address)}</span>` : ""}${mapsUrl ? `<a class="maps-button" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Google Maps</a>` : ""}${job.noteBody ? `<details><summary>Инструкции</summary><pre>${escapeHtml(job.noteBody)}</pre></details>` : ""}</div>`;
     const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
     return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}${apartment}</article>`;
   }).join("");
-  const unmatched = data.parsed.expenses.filter((expense) => !expense.object || !data.parsed.jobs.some((job) => job.object === expense.object));
+  const unmatched = data.parsed.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !data.parsed.jobs.some((job) => job.object === expense.object)));
   const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
   parsedSummary.innerHTML = `<div class="date-card">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</div><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>${data.advanceCents ? `<p class="notice success">Аванс в тексте: ${formatMoney(data.advanceCents)} · остаток после сохранения: ${formatMoney(data.projectedBalance)}</p>` : ""}`;
   confirmButton.disabled = !data.canShare; preview.hidden = false; result.hidden = true;
