@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import type { Expense, Job, ParsedDay, ParseIssue, WorkType } from "./types.js";
+import type { ApartmentLookup, Expense, Job, ParsedDay, ParseIssue, WorkType } from "./types.js";
+import { apartmentKey } from "./apartments.js";
 
 const DATE_RE = /\b(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?\b/;
 const INTERVAL_RE = /\(?\b(\d{1,2})(?::(\d{2}))?\s*[-–—]\s*(\d{1,2})(?::(\d{2}))?\b\)?/;
@@ -13,54 +12,6 @@ const TYPE_HINT_RE = /(самостоятель|уборк|ознакомлен|
 const TIME_TOKEN_RE = /\b\d{1,2}:\d{2}\b/gu;
 const FLAT_ACTIVITY_DEFAULT_MINUTES = 60;
 const CHECKIN_DEFAULT_MINUTES = 30;
-
-interface ApartmentDictionary { apartments?: Array<{ name: string; aliases?: string[] }> }
-
-function apartmentKey(value: string): string {
-  return value.normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("en").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-}
-
-function loadApartmentAliases(): Map<string, string> {
-  const result = new Map<string, string>();
-  try {
-    const dictionary = JSON.parse(readFileSync(resolve(process.cwd(), "data/apartments.json"), "utf8")) as ApartmentDictionary;
-    for (const apartment of dictionary.apartments ?? []) {
-      for (const alias of [apartment.name, ...(apartment.aliases ?? [])]) result.set(apartmentKey(alias), apartment.name);
-    }
-  } catch { /* Parsing unknown names still works if no generated dictionary is present. */ }
-  return result;
-}
-
-const aliases = loadApartmentAliases();
-
-function editDistance(left: string, right: string): number {
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
-    const current = [leftIndex];
-    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
-      current[rightIndex] = Math.min(
-        (current[rightIndex - 1] ?? 0) + 1,
-        (previous[rightIndex] ?? 0) + 1,
-        (previous[rightIndex - 1] ?? 0) + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1),
-      );
-    }
-    previous.splice(0, previous.length, ...current);
-  }
-  return previous[right.length] ?? right.length;
-}
-
-function canonicalApartment(value: string): string | null {
-  const candidate = apartmentKey(value);
-  const exact = aliases.get(candidate);
-  if (exact) return exact;
-  let best: { name: string; distance: number } | null = null;
-  for (const [alias, name] of aliases) {
-    const allowed = alias.length >= 12 ? 2 : alias.length >= 5 ? 1 : 0;
-    const distance = editDistance(candidate, alias);
-    if (distance <= allowed && (!best || distance < best.distance)) best = { name, distance };
-  }
-  return best?.name ?? null;
-}
 
 function normalizeLine(line: string): string {
   return line.replace(/\u00a0/g, " ").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
@@ -102,20 +53,20 @@ function detectType(line: string): WorkType {
   return "unknown";
 }
 
-function normalizeObject(value: string): string {
+function normalizeObject(value: string, apartments?: ApartmentLookup): string {
   const cleaned = value
     .replace(/^\s*\d+\s*[.)-]\s*/u, "")
     .replace(/^[\s:;,.-]+|[\s:;,.-]+$/g, "")
     .replace(/\s+/g, " ").trim();
-  const alias = canonicalApartment(cleaned);
-  if (alias) return alias;
+  const apartment = apartments?.get(apartmentKey(cleaned));
+  if (apartment) return apartment.canonicalName;
   return cleaned.split(" ").map((part) => /^\d+$/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
 }
 
-function extractCompanion(line: string): string | undefined {
+function extractCompanion(line: string, apartments?: ApartmentLookup): string | undefined {
   for (const match of line.matchAll(/\(([^)]+)\)/g)) {
     const value = match[1]!.trim();
-    if (!/\d{1,2}(?::\d{2})?(?:\s*-\s*\d{1,2}(?::\d{2})?)?/.test(value) && !TYPE_HINT_RE.test(value)) return normalizeObject(value);
+    if (!/\d{1,2}(?::\d{2})?(?:\s*-\s*\d{1,2}(?::\d{2})?)?/.test(value) && !TYPE_HINT_RE.test(value)) return normalizeObject(value, apartments);
   }
   return undefined;
 }
@@ -132,7 +83,7 @@ function amountMatches(line: string): Array<{ value: number; index: number; raw:
   });
 }
 
-function parseExpenseSegment(line: string, dryerDefaultCents: number): Expense[] | null {
+function parseExpenseSegment(line: string, dryerDefaultCents: number, apartments?: ApartmentLookup): Expense[] | null {
   const categoryMatch = line.match(EXPENSE_RE);
   const onlyAmounts = /^[\s+]*(?:\d+(?:[.,]\d{1,2})?\s*€?[\s+]*)+$/u.test(line);
   if (!categoryMatch && !onlyAmounts) return null;
@@ -151,17 +102,17 @@ function parseExpenseSegment(line: string, dryerDefaultCents: number): Expense[]
     category: index === 0 && categoryMatch
       ? (categoryMatch[0].toLocaleLowerCase("ru").startsWith("сушк") ? "сушка" : categoryMatch[0].toLocaleLowerCase("ru"))
       : "расходы",
-    object: index === 0 && objectRaw ? normalizeObject(objectRaw) : undefined,
+    object: index === 0 && objectRaw ? normalizeObject(objectRaw, apartments) : undefined,
     amountCents: match.value,
     sourceLine: line,
   }));
 }
 
-function extractInlineExpenses(line: string, dryerDefaultCents: number): { expenses: Expense[]; remainder: string } {
+function extractInlineExpenses(line: string, dryerDefaultCents: number, apartments?: ApartmentLookup): { expenses: Expense[]; remainder: string } {
   const category = line.match(EXPENSE_RE);
   if (!category || category.index === undefined) return { expenses: [], remainder: line };
   const segment = line.slice(category.index);
-  const expenses = parseExpenseSegment(segment, dryerDefaultCents) ?? [];
+  const expenses = parseExpenseSegment(segment, dryerDefaultCents, apartments) ?? [];
   return { expenses, remainder: line.slice(0, category.index).replace(/[\s+,:;-]+$/u, "").trim() };
 }
 
@@ -172,12 +123,12 @@ function parseAdvance(line: string): { cents?: number; invalid?: boolean } | nul
   return { cents: rawMatches.reduce((sum, match) => sum + (amountCents(match[0]) ?? 0), 0) };
 }
 
-function parseJob(originalLine: string, dryerDefaultCents: number): { job: Job; inlineExpenses: Expense[] } | null {
+function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: ApartmentLookup): { job: Job; inlineExpenses: Expense[] } | null {
   const boldObject = originalLine.match(/\*([^*]+)\*/)?.[1];
   let line = normalizeLine(originalLine.replace(/\*/g, ""));
   const type = detectType(line);
-  const companion = extractCompanion(line);
-  const extracted = extractInlineExpenses(line, dryerDefaultCents);
+  const companion = extractCompanion(line, apartments);
+  const extracted = extractInlineExpenses(line, dryerDefaultCents, apartments);
   line = extracted.remainder;
   let startMinutes: number | null = null;
   let endMinutes: number | null = null;
@@ -200,9 +151,14 @@ function parseJob(originalLine: string, dryerDefaultCents: number): { job: Job; 
     .replace(/\([^)]*\)/g, " ").replace(/\([^)]*$/g, " ")
     .replace(TIME_TOKEN_RE, " ").replace(/изменения?/giu, " ")
     .replace(/\s+-\s+|^\s*-\s*|\s*-\s*$/g, " ").replace(/\s+/g, " ").trim();
-  const object = boldObject ? normalizeObject(boldObject) : normalizeObject(line);
+  const object = boldObject ? normalizeObject(boldObject, apartments) : normalizeObject(line, apartments);
   if (!object || startMinutes === null) return null;
-  const job: Job = { object, startMinutes, endMinutes, endInferred: false, workType: type, companion, sourceLine: originalLine };
+  const apartment = apartments?.get(apartmentKey(object));
+  const job: Job = {
+    object, apartmentId: apartment?.id ?? null, address: apartment?.address ?? null,
+    mapsUrl: apartment?.mapsUrl ?? null, noteBody: apartment?.noteBody ?? null,
+    startMinutes, endMinutes, endInferred: false, workType: type, companion, sourceLine: originalLine,
+  };
   for (const expense of extracted.expenses) expense.object = object;
   return { job, inlineExpenses: extracted.expenses };
 }
@@ -233,7 +189,7 @@ function inferEndsAndIssues(jobs: Job[]): ParseIssue[] {
   return issues;
 }
 
-export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390): ParsedDay {
+export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390, apartments?: ApartmentLookup): ParsedDay {
   const date = parseDate(text, now);
   const sourceLines = text.split(/\r?\n/).map(normalizeLine).filter(Boolean);
   const lines: string[] = [];
@@ -258,7 +214,7 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
       else advanceCents += advance.cents ?? 0;
       continue;
     }
-    const standaloneExpense = !INTERVAL_RE.test(line) && !TIME_RE.test(line) ? parseExpenseSegment(line, dryerDefaultCents) : null;
+    const standaloneExpense = !INTERVAL_RE.test(line) && !TIME_RE.test(line) ? parseExpenseSegment(line, dryerDefaultCents, apartments) : null;
     if (standaloneExpense) {
       for (const expense of standaloneExpense) {
         if (!expense.object && lastObject) expense.object = lastObject;
@@ -266,7 +222,7 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
       }
       continue;
     }
-    const parsed = parseJob(line, dryerDefaultCents);
+    const parsed = parseJob(line, dryerDefaultCents, apartments);
     if (!parsed) { unparsedLines.push(line); continue; }
     jobs.push(parsed.job);
     expenses.push(...parsed.inlineExpenses);
@@ -282,3 +238,4 @@ export function parseDay(text: string, now = new Date(), dryerDefaultCents = 390
     jobs, expenses, advanceCents, unparsedLines, issues,
   };
 }
+
