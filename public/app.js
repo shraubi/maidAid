@@ -138,99 +138,15 @@ ledgerRows.addEventListener("click", async (event) => {
   }
   if (remove && confirm("Удалить эту оплату?")) {
     try { await api(`/api/payments/${remove.dataset.deletePayment}`, { method: "DELETE" }); await loadLedger(); }
-    catch { ledgerError.textContent = "Не удалось у…14170 tokens truncated…text',$1)",
-        [input.dateIso, input.advanceCents],
-      );
-      const previous = await this.aggregate(client, "date_iso < $1", [input.dateIso]);
-      const total = await this.aggregate(client, "date_iso <= $1", [input.dateIso]);
-      await client.query("COMMIT");
-      return { day: mapDay(saved.rows[0]), snapshot: { previous, total } };
-    } catch (error) { await client.query("ROLLBACK"); throw error; }
-    finally { client.release(); }
+    catch { ledgerError.textContent = "Не удалось удалить оплату."; ledgerError.hidden = false; }
   }
+  if (removeDay && confirm(`Удалить рабочий день ${removeDay.dataset.deleteDay}? Связанный аванс из текста тоже удалится.`)) {
+    try { await api(`/api/days/${removeDay.dataset.deleteDay}`, { method: "DELETE" }); await loadLedger(); }
+    catch { ledgerError.textContent = "Не удалось удалить рабочий день."; ledgerError.hidden = false; }
+  }
+});
 
-  async deleteDay(dateIso: string): Promise<boolean> {
-    const result = await this.pool.query("DELETE FROM work_days WHERE date_iso=$1", [dateIso]);
-    return (result.rowCount ?? 0) > 0;
-  }
+paymentDate.value = new Date().toISOString().slice(0, 10);
+loadLedger();
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
 
-  async getLedger(from?: string, to?: string): Promise<LedgerView> {
-    const values: string[] = []; const clauses: string[] = [];
-    if (from) { values.push(from); clauses.push(`date_iso >= $${values.length}`); }
-    if (to) { values.push(to); clauses.push(`date_iso <= $${values.length}`); }
-    const condition = clauses.length ? clauses.join(" AND ") : "TRUE";
-    const [totals, days, payments] = await Promise.all([
-      this.aggregate(this.pool, condition, values),
-      this.pool.query(`SELECT * FROM work_days WHERE ${condition} ORDER BY date_iso, updated_at`, values),
-      this.pool.query(`SELECT * FROM payments WHERE ${condition.replaceAll("date_iso", "payment_date")} ORDER BY payment_date, id`, values),
-    ]);
-    const rows: LedgerRow[] = [
-      ...days.rows.map((row) => ({ rowType: "work" as const, ...mapDay(row) })),
-      ...payments.rows.map((row) => ({ rowType: "payment" as const, ...mapPayment(row) })),
-    ].sort((a, b) => a.dateIso.localeCompare(b.dateIso) || (a.rowType === "work" ? -1 : 1));
-    return { totals, rows };
-  }
-
-  async createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment> {
-    const result = await this.pool.query(
-      "INSERT INTO payments (payment_date,amount_cents,note,source) VALUES ($1,$2,$3,'manual') RETURNING *",
-      [dateIso, amountCents, note?.trim() || null],
-    );
-    return mapPayment(result.rows[0]);
-  }
-
-  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null> {
-    const result = await this.pool.query(`
-      UPDATE payments SET payment_date=COALESCE($2,payment_date), amount_cents=COALESCE($3,amount_cents),
-        note=CASE WHEN $4::boolean THEN $5 ELSE note END, updated_at=now()
-      WHERE id=$1 AND source='manual' RETURNING *
-    `, [id, values.dateIso ?? null, values.amountCents ?? null, values.note !== undefined, values.note?.trim() || null]);
-    return result.rows[0] ? mapPayment(result.rows[0]) : null;
-  }
-
-  async deletePayment(id: number): Promise<boolean> {
-    const result = await this.pool.query("DELETE FROM payments WHERE id=$1 AND source='manual'", [id]);
-    return (result.rowCount ?? 0) > 0;
-  }
-
-  async getActiveApartments(): Promise<Apartment[]> {
-    const result = await this.pool.query("SELECT * FROM apartments WHERE active=true ORDER BY canonical_name");
-    return result.rows.map(mapApartment);
-  }
-
-  async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
-    const client = await this.pool.connect();
-    const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
-    try {
-      await client.query("BEGIN");
-      const existingResult = await client.query("SELECT * FROM apartments FOR UPDATE");
-      const existing = existingResult.rows.map(mapApartment);
-      for (const record of records) {
-        const canonicalKey = apartmentKey(record.canonicalName);
-        const bySource = existing.find((item) => item.sourceKey === record.sourceKey);
-        const byCanonical = existing.find((item) => item.canonicalKey === canonicalKey);
-        if (bySource && byCanonical && bySource.id !== byCanonical.id) {
-          result.conflicts.push({ sourceKey: record.sourceKey, reason: "source_key_and_canonical_key_disagree" }); continue;
-        }
-        const current = bySource ?? byCanonical;
-        const aliases = [...new Set([record.canonicalName, ...record.aliases].map((value) => value.trim()))];
-        const aliasKeys = new Set(aliases.map(apartmentKey));
-        const aliasOwner = existing.find((item) => item.id !== current?.id && [item.canonicalName, ...item.aliases].some((alias) => aliasKeys.has(apartmentKey(alias))));
-        if (aliasOwner) { result.conflicts.push({ sourceKey: record.sourceKey, reason: "alias_belongs_to_another_apartment" }); continue; }
-        const comparable = { sourceKey: record.sourceKey, canonicalKey, canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl, noteBody: record.noteBody, active: record.active };
-        if (current && JSON.stringify({ sourceKey: current.sourceKey, canonicalKey: current.canonicalKey, canonicalName: current.canonicalName, aliases: current.aliases, address: current.address, mapsUrl: current.mapsUrl, noteBody: current.noteBody, active: current.active }) === JSON.stringify(comparable)) {
-          result.skipped += 1; continue;
-        }
-        const saved = current
-          ? await client.query(`UPDATE apartments SET source_key=$2, canonical_key=$3, canonical_name=$4, aliases=$5::jsonb, address=$6, maps_url=$7, note_body=$8, active=$9, updated_at=now() WHERE id=$1 RETURNING *`, [current.id, record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active])
-          : await client.query(`INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, address, maps_url, note_body, active) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8) RETURNING *`, [record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active]);
-        const mapped = mapApartment(saved.rows[0]);
-        if (current) { existing.splice(existing.indexOf(current), 1, mapped); result.updated += 1; }
-        else { existing.push(mapped); result.created += 1; }
-      }
-      if (dryRun) await client.query("ROLLBACK"); else await client.query("COMMIT");
-      return result;
-    } catch (error) { await client.query("ROLLBACK"); throw error; }
-    finally { client.release(); }
-  }
-}
