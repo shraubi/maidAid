@@ -21,8 +21,16 @@ const paymentForm = $("#payment-form");
 const paymentDate = $("#payment-date");
 const paymentAmount = $("#payment-amount");
 const paymentNote = $("#payment-note");
+const dayEditDialog = $("#day-edit-dialog");
+const dayEditForm = $("#day-edit-form");
+const dayEditDate = $("#day-edit-date");
+const dayEditText = $("#day-edit-text");
+const dayEditError = $("#day-edit-error");
+const dayEditCancel = $("#day-edit-cancel");
 
 let latestPreview = null;
+let ledgerDays = new Map();
+let editingDateIso = null;
 
 const formatTime = (minutes) => minutes == null ? "?" : `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
@@ -100,9 +108,19 @@ shareButton.addEventListener("click", async () => {
 
 function renderLedger(data) {
   const totals = data.totals;
-  ledgerTotals.innerHTML = [["Заработано", totals.earnedCents], ["Получено", totals.receivedCents], ["Остаток", totals.outstandingCents], ["Расходы", totals.expensesCents]].map(([label, cents]) => `<div class="total"><span>${label}</span><strong>${formatMoney(cents)}</strong></div>`).join("");
+  ledgerDays = new Map(data.rows.filter((row) => row.rowType === "work").map((row) => [row.dateIso, row]));
+  ledgerTotals.innerHTML = `<div class="total"><span>Часы</span><strong>${formatHours(totals.minutes)}</strong></div>${[["Получено", totals.receivedCents], ["Остаток", totals.outstandingCents], ["Расходы", totals.expensesCents]].map(([label, cents]) => `<div class="total"><span>${label}</span><strong>${formatMoney(cents)}</strong></div>`).join("")}`;
   ledgerRows.innerHTML = data.rows.length ? data.rows.map((row) => {
-    if (row.rowType === "work") return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatHours(row.minutes)} работы</strong><br><small>${formatMoney(row.incomeCents)} заработано · ${formatMoney(row.expensesCents)} расходы</small></div><button class="secondary" data-delete-day="${escapeHtml(row.dateIso)}" type="button">Удалить день</button></article>`;
+    if (row.rowType === "work") {
+      const jobs = row.parsedDetails?.jobs ?? [];
+      const expenses = row.parsedDetails?.expenses ?? [];
+      const details = jobs.map((job, jobIndex) => {
+        const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
+        const jobExpenses = expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
+        return `<div class="ledger-detail-item"><strong>${escapeHtml(job.object)}</strong> · ${timing}<small>${typeLabel(job.workType)}${jobExpenses.length ? ` · ${jobExpenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}` : ""}</small></div>`;
+      }).join("");
+      return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatHours(row.minutes)} работы</strong><br><small>${formatMoney(row.expensesCents)} расходы</small></div><div class="ledger-row-actions"><button class="secondary" data-edit-day="${escapeHtml(row.dateIso)}" type="button">Изменить</button><button class="secondary" data-delete-day="${escapeHtml(row.dateIso)}" type="button">Удалить</button></div><details class="ledger-day-details"><summary>Подробнее</summary><div class="ledger-detail-list">${details || "Работы не найдены"}</div><pre class="ledger-source">${escapeHtml(row.sourceText)}</pre></details></article>`;
+    }
     const manual = row.source === "manual";
     return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatMoney(row.amountCents)} получено</strong><br><small>${escapeHtml(row.note ?? (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></div>${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${escapeHtml(row.dateIso)}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note ?? "")}" type="button">Изменить</button><button class="secondary" data-delete-payment="${row.id}" type="button">Удалить</button></div>` : "<span>Из текста</span>"}</article>`;
   }).join("") : "<p>Записей пока нет.</p>";
@@ -123,8 +141,16 @@ paymentForm.addEventListener("submit", async (event) => {
 
 ledgerRows.addEventListener("click", async (event) => {
   const edit = event.target.closest("[data-edit-payment]");
+  const editDay = event.target.closest("[data-edit-day]");
   const remove = event.target.closest("[data-delete-payment]");
   const removeDay = event.target.closest("[data-delete-day]");
+  if (editDay) {
+    const day = ledgerDays.get(editDay.dataset.editDay);
+    if (day) {
+      editingDateIso = day.dateIso; dayEditDate.textContent = day.dateIso; dayEditText.value = day.sourceText;
+      dayEditError.hidden = true; dayEditDialog.showModal();
+    }
+  }
   if (edit) {
     const dateIso = prompt("Дата оплаты (ГГГГ-ММ-ДД):", edit.dataset.date);
     if (dateIso === null) return;
@@ -145,6 +171,22 @@ ledgerRows.addEventListener("click", async (event) => {
     try { await api(`/api/days/${removeDay.dataset.deleteDay}`, { method: "DELETE" }); await loadLedger(); }
     catch { ledgerError.textContent = "Не удалось удалить рабочий день."; ledgerError.hidden = false; }
   }
+});
+
+dayEditCancel.addEventListener("click", () => dayEditDialog.close());
+dayEditForm.addEventListener("submit", async (event) => {
+  event.preventDefault(); dayEditError.hidden = true;
+  try {
+    const text = dayEditText.value;
+    const previewResult = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
+    if (!previewResult.canShare || previewResult.parsed.dateIso !== editingDateIso) {
+      const problems = [...previewResult.issues.map((issue) => issue.message), ...previewResult.unparsedLines.map((line) => `Не распознано: ${line}`)];
+      dayEditError.textContent = previewResult.parsed.dateIso !== editingDateIso ? "Дата в тексте должна остаться прежней." : problems.join(" · ") || "Проверьте текст дня.";
+      dayEditError.hidden = false; return;
+    }
+    await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
+    dayEditDialog.close(); editingDateIso = null; await loadLedger();
+  } catch { dayEditError.textContent = "Не удалось сохранить изменения."; dayEditError.hidden = false; }
 });
 
 paymentDate.value = new Date().toISOString().slice(0, 10);

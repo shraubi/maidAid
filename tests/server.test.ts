@@ -39,6 +39,15 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "DELETE", url: `/api/payments/${id}` })).statusCode).toBe(204);
   });
 
+  it("updates an existing work day without creating a duplicate", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    await app.inject({ method: "POST", url: "/api/days", payload: { text: "26/07\nBosquet 9-12 уборка" } });
+    await app.inject({ method: "POST", url: "/api/days", payload: { text: "26/07\nBosquet 9-12 уборка расходы 5€ + 3.9€" } });
+    const ledger = (await app.inject({ method: "GET", url: "/api/ledger?from=2026-07-26&to=2026-07-26" })).json();
+    expect(ledger.rows).toHaveLength(1);
+    expect(ledger.rows[0]).toMatchObject({ expensesCents: 890, sourceText: expect.stringContaining("5€") });
+  });
+
   it("keeps text-derived payments protected from manual mutation", async () => {
     const store = new MemoryLedgerStore(); app = await buildApp(config, store);
     await app.inject({ method: "POST", url: "/api/days", payload: { text: "26/07\nBosquet 9-12 уборка\nАванс 50" } });
@@ -86,3 +95,4 @@ describe("MaidAid HTTP API", () => {
     expect(repeated.json()).toMatchObject({ accepted: 1, skipped: 1, conflicts: [] });
   });
 });
+
