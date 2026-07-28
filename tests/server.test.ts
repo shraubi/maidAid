@@ -24,7 +24,7 @@ describe("MaidAid HTTP API", () => {
     expect(preview.json()).toMatchObject({ canShare: true, totals: { minutes: 180, incomeCents: 4000, checkinCents: 1000, expensesCents: 1587 }, projectedBalance: 4000 });
     const saved = await app.inject({ method: "POST", url: "/api/days", payload: { text } });
     expect(saved.statusCode).toBe(200);
-    expect(saved.json().shareText).toContain("Bosquet\n3h + 4.20€ сушка + 11.67€ расходы");
+    expect(saved.json().shareText).toContain("Bosquet 3h + 4.20€ сушка + 11.67€ расходы");
     expect(saved.json().runningBalance).toBe(4000);
   });
 
