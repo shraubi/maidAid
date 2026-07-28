@@ -35,6 +35,7 @@ export type ApartmentLookup = Map<string, Apartment>;
 export interface Expense {
   category: string;
   object?: string;
+  jobIndex?: number;
   amountCents: number;
   sourceLine: string;
 }
