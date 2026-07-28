@@ -93,12 +93,20 @@ jobs:
                 if (!response.ok) throw new Error(`${path} returned ${response.status}: ${await response.text()}`);
                 return response.status === 204 ? null : response.json();
               };
-              const appResponse = await fetch(`${base}/app.js`);
-              if (!appResponse.ok || !appResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production app.js response is invalid");
-              new Function(await appResponse.text());
-              const serviceWorkerResponse = await fetch(`${base}/sw.js`);
-              if (!serviceWorkerResponse.ok || !serviceWorkerResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production sw.js response is invalid");
-              new Function(await serviceWorkerResponse.text());
+              const scriptAsset = async (path) => {
+                const response = await fetch(`${base}${path}`);
+                if (!response.ok || !response.headers.get("content-type")?.includes("javascript")) throw new Error(`Production ${path} response is invalid`);
+                return response.text();
+              };
+              await Promise.all([
+                scriptAsset("/app.js"),
+                scriptAsset("/apartment-tools.js"),
+                scriptAsset("/apartment.js"),
+              ]);
+              const serviceWorkerSource = await scriptAsset("/sw.js");
+              new Function(serviceWorkerSource);
+              const apartmentPageResponse = await fetch(`${base}/apartment.html`);
+              if (!apartmentPageResponse.ok || !apartmentPageResponse.headers.get("content-type")?.includes("text/html")) throw new Error("Production apartment.html response is invalid");
               const manifestResponse = await fetch(`${base}/manifest.webmanifest`);
               if (!manifestResponse.ok) throw new Error(`Production manifest returned ${manifestResponse.status}`);
               const manifest = JSON.parse(await manifestResponse.text());
