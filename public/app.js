@@ -1,3 +1,5 @@
+import { buildMapTarget, uniqueApartments, writeSelectedApartment } from "./apartment-tools.js";
+
 const $ = (selector) => document.querySelector(selector);
 const editor = $("#editor");
 const preview = $("#preview");
@@ -29,6 +31,7 @@ const dayEditError = $("#day-edit-error");
 const dayEditCancel = $("#day-edit-cancel");
 
 let latestPreview = null;
+let previewApartments = new Map();
 let ledgerDays = new Map();
 let editingDateIso = null;
 
@@ -37,13 +40,6 @@ const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) => ({ independent: "Самостоятельная уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[type] ?? "Тип не указан";
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
-const safeMapsUrl = (value) => {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && ["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl"].includes(url.hostname) ? url.href : null;
-  } catch { return null; }
-};
-
 textarea.addEventListener("input", () => { characterCount.textContent = `${textarea.value.length.toLocaleString("ru-RU")} / 32 768`; });
 
 function setStatus(message, kind = "success") {
@@ -64,17 +60,38 @@ function renderPreview(data) {
   issueList.innerHTML = problems.length ? `<strong>Нужно исправить</strong><ul>${problems.map((problem) => `<li>${escapeHtml(problem)}</li>`).join("")}</ul>` : "";
   const jobs = data.parsed.jobs.map((job, jobIndex) => {
     const expenses = data.parsed.expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
-    const mapsUrl = safeMapsUrl(job.mapsUrl);
-    const apartment = job.apartmentId == null ? "" : `<div class="apartment-details">${job.address ? `<span class="apartment-address">${escapeHtml(job.address)}</span>` : ""}${mapsUrl ? `<a class="maps-button" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Google Maps</a>` : ""}${job.noteBody ? `<details><summary>Инструкции</summary><pre>${escapeHtml(job.noteBody)}</pre></details>` : ""}</div>`;
     const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
-    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}${apartment}</article>`;
+    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}</article>`;
   }).join("");
+  const apartments = uniqueApartments(data.parsed.jobs);
+  previewApartments = new Map(apartments.map((apartment) => [String(apartment.id), apartment]));
+  const apartmentCards = apartments.map((apartment) => {
+    const mapTarget = buildMapTarget(apartment.address, apartment.mapsUrl);
+    const mapAttributes = mapTarget?.external ? ' target="_blank" rel="noopener noreferrer"' : "";
+    const mapAction = mapTarget ? `<a class="maps-button" href="${escapeHtml(mapTarget.href)}"${mapAttributes} aria-label="Открыть ${escapeHtml(apartment.name)} в картах">Карты</a>` : "";
+    const infoAction = apartment.noteBody ? `<button class="secondary apartment-info-button" data-apartment-info="${escapeHtml(apartment.id)}" type="button">Информация</button>` : "";
+    return `<article class="apartment-card"><strong>${escapeHtml(apartment.name)}</strong>${apartment.address ? `<p class="apartment-address">${escapeHtml(apartment.address)}</p>` : ""}${mapAction || infoAction ? `<div class="apartment-actions">${mapAction}${infoAction}</div>` : ""}</article>`;
+  }).join("");
+  const apartmentSection = apartmentCards ? `<section class="apartments-today" aria-labelledby="apartments-today-title"><h3 id="apartments-today-title">Квартиры на сегодня</h3><div class="apartment-list">${apartmentCards}</div></section>` : "";
   const unmatched = data.parsed.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !data.parsed.jobs.some((job) => job.object === expense.object)));
   const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
-  parsedSummary.innerHTML = `<div class="date-card">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</div><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>${data.advanceCents ? `<p class="notice success">Аванс в тексте: ${formatMoney(data.advanceCents)} · остаток после сохранения: ${formatMoney(data.projectedBalance)}</p>` : ""}`;
+  parsedSummary.innerHTML = `<div class="date-card">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</div><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${apartmentSection}${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>${data.advanceCents ? `<p class="notice success">Аванс в тексте: ${formatMoney(data.advanceCents)} · остаток после сохранения: ${formatMoney(data.projectedBalance)}</p>` : ""}`;
   confirmButton.disabled = !data.canShare; preview.hidden = false; result.hidden = true;
   preview.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+parsedSummary.addEventListener("click", (event) => {
+  const infoButton = event.target.closest("[data-apartment-info]");
+  if (!infoButton) return;
+  const apartment = previewApartments.get(infoButton.dataset.apartmentInfo);
+  try {
+    if (!apartment || !writeSelectedApartment(sessionStorage, apartment)) throw new Error("invalid_apartment");
+    window.location.href = "/apartment.html";
+  } catch {
+    requestError.textContent = "Не удалось открыть информацию о квартире.";
+    requestError.hidden = false;
+  }
+});
 
 previewButton.addEventListener("click", async () => {
   requestError.hidden = true; previewButton.disabled = true; previewButton.textContent = "Проверяю…";
