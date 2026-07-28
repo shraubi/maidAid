@@ -69,7 +69,7 @@ function renderPreview(data) {
     const mapTarget = buildMapTarget(apartment.address, apartment.mapsUrl);
     const mapAttributes = mapTarget?.external ? ' target="_blank" rel="noopener noreferrer"' : "";
     const mapAction = mapTarget ? `<a class="maps-button" href="${escapeHtml(mapTarget.href)}"${mapAttributes} aria-label="Открыть ${escapeHtml(apartment.name)} в картах">Карты</a>` : "";
-    const infoAction = apartment.noteBody ? `<button class="secondary apartment-info-button" data-apartment-info="${escapeHtml(apartment.id)}" type="button">Информация</button>` : "";
+    const infoAction = apartment.noteBody ? `<a class="secondary action-link apartment-info-button" href="/apartment.html" data-apartment-info="${escapeHtml(apartment.id)}">Информация</a>` : "";
     return `<article class="apartment-card"><strong>${escapeHtml(apartment.name)}</strong>${apartment.address ? `<p class="apartment-address">${escapeHtml(apartment.address)}</p>` : ""}${mapAction || infoAction ? `<div class="apartment-actions">${mapAction}${infoAction}</div>` : ""}</article>`;
   }).join("");
   const apartmentSection = apartmentCards ? `<section class="apartments-today" aria-labelledby="apartments-today-title"><h3 id="apartments-today-title">Квартиры на сегодня</h3><div class="apartment-list">${apartmentCards}</div></section>` : "";
@@ -81,13 +81,13 @@ function renderPreview(data) {
 }
 
 parsedSummary.addEventListener("click", (event) => {
-  const infoButton = event.target.closest("[data-apartment-info]");
-  if (!infoButton) return;
-  const apartment = previewApartments.get(infoButton.dataset.apartmentInfo);
+  const infoLink = event.target.closest("[data-apartment-info]");
+  if (!infoLink) return;
+  const apartment = previewApartments.get(infoLink.dataset.apartmentInfo);
   try {
     if (!apartment || !writeSelectedApartment(sessionStorage, apartment)) throw new Error("invalid_apartment");
-    window.location.href = "/apartment.html";
   } catch {
+    event.preventDefault();
     requestError.textContent = "Не удалось открыть информацию о квартире.";
     requestError.hidden = false;
   }

@@ -127,7 +127,8 @@ button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
 .apartment-card { padding: 14px; border: 1px solid #dce2dc; border-radius: 13px; background: #fffefb; }
 .apartment-card strong { color: #183d34; }
 .apartment-address { overflow-wrap: anywhere; margin: 7px 0 0; color: #425e56; font-size: .9rem; line-height: 1.45; }
-.apartment-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.apartment-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.apartment-actions > a, .apartment-actions > button { position: relative; pointer-events: auto; touch-action: manipulation; cursor: pointer; }
 .apartment-info-button, .maps-button, .action-link { min-height: 42px; padding: 0 15px; font-size: .84rem; }
 .maps-button, .action-link { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 800; text-decoration: none; }
 .maps-button { color: #fff; background: #2c6658; }

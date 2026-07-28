@@ -20,6 +20,12 @@ describe("public assets", () => {
     }
   });
 
+  it("renders apartment information as a direct navigation link", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(app).toContain('href="/apartment.html" data-apartment-info=');
+    expect(app).not.toContain('window.location.href = "/apartment.html"');
+  });
+
   it("ships a valid web app manifest", () => {
     const manifest = JSON.parse(readFileSync(resolve("public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });
