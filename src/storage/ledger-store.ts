@@ -293,6 +293,27 @@ export class PostgresLedgerStore implements LedgerStore {
         ON CONFLICT (canonical_key) DO NOTHING
       `, [apartment.sourceKey, apartment.canonicalKey, apartment.canonicalName, JSON.stringify(apartment.aliases)]);
     }
+    await this.pool.query(`
+      WITH recalculated AS (
+        SELECT day.date_iso, COALESCE(SUM(
+          CASE WHEN job->>'workType' = 'independent'
+            THEN COALESCE(
+              NULLIF(job->>'durationMinutes', '')::int,
+              NULLIF(job->>'endMinutes', '')::int - NULLIF(job->>'startMinutes', '')::int,
+              0
+            )
+            ELSE 0
+          END
+        ), 0)::int AS minutes
+        FROM work_days AS day
+        LEFT JOIN LATERAL jsonb_array_elements(COALESCE(day.parsed_details->'jobs', '[]'::jsonb)) AS job ON true
+        GROUP BY day.date_iso
+      )
+      UPDATE work_days AS day
+      SET minutes = recalculated.minutes
+      FROM recalculated
+      WHERE day.date_iso = recalculated.date_iso AND day.minutes IS DISTINCT FROM recalculated.minutes
+    `);
   }
 
   async health(): Promise<boolean> { try { await this.pool.query("SELECT 1"); return true; } catch { return false; } }
