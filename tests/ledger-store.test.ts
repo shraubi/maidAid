@@ -31,6 +31,13 @@ describe("ledger semantics", () => {
     expect(await store.deletePayment(payment.id)).toBe(true);
   });
 
+  it("returns the newest ledger rows first", async () => {
+    const store = new MemoryLedgerStore();
+    await store.createPayment("2026-07-01", 5000);
+    await store.createPayment("2026-07-28", 2000);
+    expect((await store.getLedger()).rows.map((row) => row.dateIso)).toEqual(["2026-07-28", "2026-07-01"]);
+  });
+
   it("supports backdated filters and negative outstanding balances", async () => {
     const store = new MemoryLedgerStore();
     await store.createPayment("2026-07-01", 5000);
