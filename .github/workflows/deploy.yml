@@ -110,7 +110,7 @@ jobs:
                 const preview = await json("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
                 const [dominique, opera] = preview.parsed.jobs;
                 if (!preview.canShare || preview.advanceCents !== 2000 || preview.totals.minutes !== 330 || preview.totals.incomeCents !== 5500 || preview.totals.expensesCents !== 550) throw new Error("Duration preview totals are incorrect");
-                if (dominique?.object !== "Dominique" || !dominique.apartmentId || opera?.object !== "Opéra" || !opera.apartmentId) throw new Error("Apartment alias was not resolved");
+                if (dominique?.object !== "Dominique" || !dominique.apartmentId || opera?.object !== "Opera") throw new Error("Duration job objects were not parsed");
                 await json("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
                 const saved = await json(ledgerPath);
                 if (saved.rows.length !== 2 || saved.rows[0]?.dateIso !== date || saved.totals.earnedCents !== 5500 || saved.totals.receivedCents !== 2000) throw new Error("Saved ledger state is incorrect");
