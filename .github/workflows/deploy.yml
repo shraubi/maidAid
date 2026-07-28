@@ -75,6 +75,10 @@ jobs:
             set -eu
             cd "${{ secrets.APP_DIR }}"
             git pull --ff-only origin main
+            if ! grep -q '^POSTGRES_PASSWORD=' .env; then
+              umask 077
+              printf '\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env
+            fi
             printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "$GHCR_USER" --password-stdin
             docker compose pull postgres maidaid ngrok
             docker compose up -d --no-build postgres maidaid ngrok
@@ -82,3 +86,4 @@ jobs:
             docker compose exec -T maidaid node -e "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
             docker image prune -f
             docker logout "$REGISTRY"
+
