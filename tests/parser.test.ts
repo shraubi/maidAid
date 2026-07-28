@@ -35,6 +35,25 @@ Dominique 12:30-15:30 - самостоятельная уборка
     ]);
   });
 
+  it("parses inline amounts written before their expense categories", () => {
+    const parsed = parseDay("26/07\nSt Denis 11:30-15:30 самостоятельная уборка 3.6€ сушка + 12.5€ расходы", now);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.jobs[0]).toMatchObject({ object: "Saint Denis", startMinutes: 690, endMinutes: 930 });
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ object: "Saint Denis", category: "сушка", amountCents: 360 }),
+      expect.objectContaining({ object: "Saint Denis", category: "расходы", amountCents: 1250 }),
+    ]);
+  });
+
+  it("treats the unlabeled second amount after expenses as dryer cost", () => {
+    const parsed = parseDay("26/07\nSt Denis 11:30-15:30 самостоятельная уборка расходы 12.5€ +3.6€", now);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ object: "Saint Denis", category: "расходы", amountCents: 1250 }),
+      expect.objectContaining({ object: "Saint Denis", category: "сушка", amountCents: 360 }),
+    ]);
+  });
+
   it("treats a standalone random amount as an expense", () => {
     const parsed = parseDay("26/07\nBosquet 9-12 уборка\n7.25", now);
     expect(parsed.expenses).toEqual([expect.objectContaining({ object: "Bosquet", category: "расходы", amountCents: 725 })]);
