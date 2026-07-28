@@ -120,6 +120,12 @@ button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
 .job strong, .expense strong { color: #183d34; }
 .job small { grid-column: 1 / -1; color: #667771; }
 .job .job-expenses { color: #ad613d; font-weight: 700; }
+.apartment-details { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+.apartment-address { flex: 1 1 260px; color: #425e56; font-size: .88rem; }
+.maps-button { display: inline-flex; min-height: 38px; padding: 0 13px; align-items: center; border-radius: 10px; color: #fff; background: #2c6658; font-size: .82rem; font-weight: 800; text-decoration: none; }
+.apartment-details details { flex: 1 0 100%; border-top: 1px solid #dce2dc; padding-top: 9px; }
+.apartment-details summary { cursor: pointer; color: #2c6658; font-weight: 750; }
+.apartment-details pre { margin-top: 9px; padding: 12px; font-size: .84rem; }
 .totals {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -166,3 +172,4 @@ pre {
   .ledger-row { grid-template-columns: 1fr auto; }
   .ledger-row time { grid-column: 1 / -1; }
 }
+
