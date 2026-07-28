@@ -108,10 +108,15 @@ function parseExpenseSegment(line: string, dryerDefaultCents: number, apartments
   const objectRaw = categoryMatch
     ? line.slice(categoryEnd, firstAmount.index).replace(/[():+]/g, " ").trim()
     : "";
+  const firstCategory = categoryMatch
+    ? (categoryMatch[0].toLocaleLowerCase("ru").startsWith("сушк") ? "сушка" : categoryMatch[0].toLocaleLowerCase("ru"))
+    : null;
   return matches.map((match, index) => ({
-    category: index === 0 && categoryMatch
-      ? (categoryMatch[0].toLocaleLowerCase("ru").startsWith("сушк") ? "сушка" : categoryMatch[0].toLocaleLowerCase("ru"))
-      : "расходы",
+    category: index === 0 && firstCategory
+      ? firstCategory
+      : index === 1 && matches.length === 2 && firstCategory === "расходы"
+        ? "сушка"
+        : "расходы",
     object: index === 0 && objectRaw ? normalizeObject(objectRaw, apartments) : undefined,
     amountCents: match.value,
     sourceLine: line,
@@ -121,9 +126,12 @@ function parseExpenseSegment(line: string, dryerDefaultCents: number, apartments
 function extractInlineExpenses(line: string, dryerDefaultCents: number, apartments?: ApartmentLookup): { expenses: Expense[]; remainder: string } {
   const category = line.match(EXPENSE_RE);
   if (!category || category.index === undefined) return { expenses: [], remainder: line };
-  const segment = line.slice(category.index);
+  const prefix = line.slice(0, category.index);
+  const amountBeforeCategory = prefix.match(/\d+(?:[.,]\d{1,2})?\s*€?\s*$/u);
+  const expenseStart = amountBeforeCategory?.index ?? category.index;
+  const segment = line.slice(expenseStart);
   const expenses = parseExpenseSegment(segment, dryerDefaultCents, apartments) ?? [];
-  return { expenses, remainder: line.slice(0, category.index).replace(/[\s+,:;-]+$/u, "").trim() };
+  return { expenses, remainder: line.slice(0, expenseStart).replace(/[\s+,:;-]+$/u, "").trim() };
 }
 
 function parseAdvance(line: string): { cents?: number; invalid?: boolean } | null {
