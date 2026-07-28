@@ -19,5 +19,9 @@ describe.skipIf(!databaseUrl)("PostgreSQL ledger integration", () => {
     await store.saveDay({ dateIso, sourceText: "second", parsedDetails: second, totals: calculateDay(second, settings), advanceCents: second.advanceCents });
     const ledger = await store.getLedger(dateIso, dateIso);
     expect(ledger.totals).toMatchObject({ minutes: 240, earnedCents: 4000, receivedCents: 3000, expensesCents: 0 });
+    expect(await store.deleteDay(dateIso)).toBe(true);
+    const afterDelete = await store.getLedger(dateIso, dateIso);
+    expect(afterDelete.rows.filter((row) => row.rowType === "work")).toEqual([]);
+    expect(afterDelete.totals).toMatchObject({ earnedCents: 0, receivedCents: 1000 });
   });
 });
