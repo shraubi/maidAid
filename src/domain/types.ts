@@ -3,6 +3,10 @@ export type DayKind = "schedule" | "actual";
 
 export interface Job {
   object: string;
+  apartmentId: number | null;
+  address: string | null;
+  mapsUrl: string | null;
+  noteBody: string | null;
   startMinutes: number | null;
   endMinutes: number | null;
   endInferred: boolean;
@@ -10,6 +14,22 @@ export interface Job {
   companion?: string;
   sourceLine: string;
 }
+
+export interface Apartment {
+  id: number;
+  sourceKey: string;
+  canonicalKey: string;
+  canonicalName: string;
+  aliases: string[];
+  address: string | null;
+  mapsUrl: string | null;
+  noteBody: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApartmentLookup = Map<string, Apartment>;
 
 export interface Expense {
   category: string;
@@ -72,3 +92,4 @@ export interface ReportSnapshot {
   previous: LedgerTotals;
   total: LedgerTotals;
 }
+
