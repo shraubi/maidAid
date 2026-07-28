@@ -15,8 +15,7 @@ export function calculateJobIncome(job: Job, settings: Settings): number {
 
 export function calculateDay(day: ParsedDay, settings: Settings): DayTotals {
   const minutes = day.jobs.reduce((sum, job) => {
-    if (job.workType === "checkin") return sum;
-    return sum + jobMinutes(job);
+    return job.workType === "independent" ? sum + jobMinutes(job) : sum;
   }, 0);
   const checkinCents = day.jobs
     .filter((job) => job.workType === "checkin")
