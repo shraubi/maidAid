@@ -64,6 +64,18 @@ Dominique 12:30-15:30 - самостоятельная уборка
     expect(parsed.issues).toContainEqual(expect.objectContaining({ code: "missing_end" }));
   });
 
+  it("uses a duration after a start time to calculate the end", () => {
+    const parsed = parseDay("26/07\n15:30 Opera 2.5h уборка самостоятельно", now);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.jobs[0]).toMatchObject({
+      object: "Opera",
+      startMinutes: 930,
+      endMinutes: 1080,
+      durationMinutes: 150,
+      workType: "independent",
+    });
+  });
+
   it("keeps list, alias, companion and wrapped-interval behavior", () => {
     const parsed = parseDay(`19/07
 1. *EIFFE* - ознакомление 11 (11:00)
