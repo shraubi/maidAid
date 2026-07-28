@@ -26,20 +26,20 @@ export function generateShareText(day: ParsedDay, settings: Settings, snapshot?:
   };
   const report = snapshot ?? { previous: emptyTotals(), total: fallbackTotal };
   const workLines: string[] = [];
-  for (const job of day.jobs) {
+  for (const [jobIndex, job] of day.jobs.entries()) {
     if (job.workType === "checkin") {
       workLines.push(`Check in ${formatMoneyCompact(calculateJobIncome(job, settings))}`);
       continue;
     }
     const minutes = jobMinutes(job);
-    const jobExpenses = day.expenses.filter((expense) => expense.object === job.object && expense.amountCents > 0);
+    const jobExpenses = day.expenses.filter((expense) => (expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object)) && expense.amountCents > 0);
     const dryerCents = jobExpenses.filter((expense) => expense.category === "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
     const otherCents = jobExpenses.filter((expense) => expense.category !== "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
     const dryer = dryerCents > 0 ? `${formatMoneyCompact(dryerCents)} сушка` : "0";
     const other = otherCents > 0 ? `${formatMoneyCompact(otherCents)} расходы` : "0";
     workLines.push(`${job.object} ${formatHours(minutes)} + ${dryer} + ${other}`);
   }
-  const unmatched = day.expenses.filter((expense) => !expense.object || !day.jobs.some((job) => job.object === expense.object));
+  const unmatched = day.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !day.jobs.some((job) => job.object === expense.object)));
   if (unmatched.length) workLines.push(unmatched.map((expense) => `${formatMoneyCompact(expense.amountCents)} ${expense.category}`).join(" + "));
 
   const receivedToday = Math.max(0, report.total.receivedCents - report.previous.receivedCents);
