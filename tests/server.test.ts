@@ -10,6 +10,7 @@ const config: Config = {
   CHECKIN_FLAT_CENTS: 1000, DRYER_DEFAULT_CENTS: 390,
   PREVIEW_RATE_LIMIT_MAX: 100, PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
   DATABASE_URL: "postgresql://unused",
+  APARTMENT_IMPORT_TOKEN: "test-import-token", APARTMENT_CACHE_TTL_MS: 30_000,
 };
 
 let app: FastifyInstance | undefined;
@@ -50,5 +51,38 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "POST", url: "/api/preview", payload: { text: "" } })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/health" })).json()).toMatchObject({ status: "ok", database: true });
     expect((await app.inject({ method: "GET", url: "/" })).headers["content-type"]).toContain("text/html");
+  });
+
+  it("protects, dry-runs and idempotently applies apartment imports", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    const payload = { apartments: [{
+      sourceKey: "source-bosquet", canonicalName: "Bosquet", aliases: ["Bosquet Test"],
+      address: "Test address", mapsUrl: "https://www.google.com/maps/search/?api=1&query=Test",
+      noteBody: "<script>alert(1)</script>", active: true,
+    }] };
+    expect((await app.inject({ method: "POST", url: "/api/admin/apartments/import", payload })).statusCode).toBe(401);
+    expect((await app.inject({ method: "POST", url: "/api/admin/apartments/import", headers: { authorization: "Bearer wrong-token" }, payload })).statusCode).toBe(401);
+    const headers = { authorization: "Bearer test-import-token" };
+    const dryRun = await app.inject({ method: "POST", url: "/api/admin/apartments/import?dryRun=true", headers, payload });
+    expect(dryRun.json()).toMatchObject({ dryRun: true, accepted: 1, updated: 1, conflicts: [] });
+    const before = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "26/07\nBosquet Test 9-12 уборка" } });
+    expect(before.json().parsed.jobs[0].apartmentId).toBeNull();
+    const imported = await app.inject({ method: "POST", url: "/api/admin/apartments/import", headers, payload });
+    expect(imported.json()).toMatchObject({ dryRun: false, accepted: 1, updated: 1, conflicts: [] });
+    const preview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "26/07\nBosquet Test 9-12 уборка" } });
+    expect(preview.json().parsed.jobs[0]).toMatchObject({ object: "Bosquet", address: "Test address", noteBody: "<script>alert(1)</script>" });
+    const messyText = "28/07/2098 изменения\n*Bosquet Test* 9:00–12:00 - самостоятельная уборка / комментарий\nсушка 4,20 + 1.30\n16:00 check-in Bosquet Test - самостоятельное заселение\nАванс: 20€";
+    const messyPreview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: messyText } });
+    expect(messyPreview.json()).toMatchObject({ canShare: true, advanceCents: 2000, totals: { minutes: 180, incomeCents: 4000, expensesCents: 550 } });
+    expect(messyPreview.json().parsed.jobs).toEqual([
+      expect.objectContaining({ object: "Bosquet", apartmentId: expect.any(Number), address: "Test address" }),
+      expect.objectContaining({ object: "Bosquet", apartmentId: expect.any(Number), workType: "checkin" }),
+    ]);
+    expect((await app.inject({ method: "POST", url: "/api/days", payload: { text: messyText } })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/api/ledger?from=2098-07-28&to=2098-07-28" })).json().rows).toHaveLength(2);
+    expect((await app.inject({ method: "DELETE", url: "/api/days/2098-07-28" })).statusCode).toBe(204);
+    expect((await app.inject({ method: "GET", url: "/api/ledger?from=2098-07-28&to=2098-07-28" })).json()).toMatchObject({ totals: { earnedCents: 0, receivedCents: 0 }, rows: [] });
+    const repeated = await app.inject({ method: "POST", url: "/api/admin/apartments/import", headers, payload });
+    expect(repeated.json()).toMatchObject({ accepted: 1, skipped: 1, conflicts: [] });
   });
 });
