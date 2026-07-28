@@ -99,6 +99,21 @@
       </section>
     </main>
 
+    <dialog id="day-edit-dialog" class="edit-dialog">
+      <form id="day-edit-form">
+        <h2>Изменить рабочий день</h2>
+        <p id="day-edit-date" class="privacy"></p>
+        <label class="input-label" for="day-edit-text">Исходный текст</label>
+        <textarea id="day-edit-text" rows="11" maxlength="32768" required></textarea>
+        <p id="day-edit-error" class="notice error" role="alert" hidden></p>
+        <div class="actions">
+          <button id="day-edit-cancel" class="secondary" type="button">Отмена</button>
+          <button class="primary" type="submit">Проверить и сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="/app.js"></script>
   </body>
 </html>
+
