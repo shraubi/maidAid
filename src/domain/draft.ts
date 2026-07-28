@@ -1,6 +1,6 @@
 import { formatHours, formatMoneyCompact } from "./format.js";
 import type { LedgerTotals, ParsedDay, ReportSnapshot, Settings } from "./types.js";
-import { calculateDay, calculateJobIncome } from "./calculations.js";
+import { calculateDay, calculateJobIncome, jobMinutes } from "./calculations.js";
 
 const emptyTotals = (): LedgerTotals => ({
   minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0,
@@ -31,7 +31,7 @@ export function generateShareText(day: ParsedDay, settings: Settings, snapshot?:
       workLines.push(`Check in ${formatMoneyCompact(calculateJobIncome(job, settings))}`);
       continue;
     }
-    const minutes = job.startMinutes !== null && job.endMinutes !== null ? job.endMinutes - job.startMinutes : 0;
+    const minutes = jobMinutes(job);
     const jobExpenses = day.expenses.filter((expense) => expense.object === job.object && expense.amountCents > 0);
     const dryerCents = jobExpenses.filter((expense) => expense.category === "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
     const otherCents = jobExpenses.filter((expense) => expense.category !== "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);
