@@ -93,6 +93,16 @@ jobs:
                 if (!response.ok) throw new Error(`${path} returned ${response.status}: ${await response.text()}`);
                 return response.status === 204 ? null : response.json();
               };
+              const appResponse = await fetch(`${base}/app.js`);
+              if (!appResponse.ok || !appResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production app.js response is invalid");
+              new Function(await appResponse.text());
+              const serviceWorkerResponse = await fetch(`${base}/sw.js`);
+              if (!serviceWorkerResponse.ok || !serviceWorkerResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production sw.js response is invalid");
+              new Function(await serviceWorkerResponse.text());
+              const manifestResponse = await fetch(`${base}/manifest.webmanifest`);
+              if (!manifestResponse.ok) throw new Error(`Production manifest returned ${manifestResponse.status}`);
+              const manifest = JSON.parse(await manifestResponse.text());
+              if (manifest.name !== "MaidAid" || manifest.start_url !== "/") throw new Error("Production manifest content is invalid");
               const ledgerPath = `/api/ledger?from=${date}&to=${date}`;
               try {
                 const before = await json(ledgerPath);
@@ -114,5 +124,4 @@ jobs:
             '
             docker image prune -f
             docker logout "$REGISTRY"
-
 
