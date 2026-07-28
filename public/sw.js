@@ -1,4 +1,4 @@
-const CACHE_NAME = "maidaid-shell-v6";
+const CACHE_NAME = "maidaid-shell-v7";
 const SHELL = [
   "/",
   "/index.html",
