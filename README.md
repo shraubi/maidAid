@@ -23,15 +23,7 @@ Every amount on an expense line is retained: the first amount uses the named cat
 
 Advance formats include `Аванс 50`, `Аванс: 50€`, decimal values, and multiple lines (which are summed). Negative or invalid advances prevent confirmation.
 
-Apartment names are canonicalized through `data/apartments.json`. Exact aliases and conservative typo matches are supported, so `Dominiquet` resolves to `Dominique` and `St Denis` resolves to `Saint Denis`.
-
-Apartment names are canonicalized through `data/apartments.json`. Exact aliases and conservative one-character typo matches are supported, so `Dominiquet` resolves to `Dominique` and `St Denis` resolves to `Saint Denis`. Rebuild the dictionary from an exported Notes folder with:
-
-```powershell
-npm.cmd run apartments:build -- --input C:\path\to\notes-export
-```
-
-The standalone generator accepts `.txt`, `.md`, `.html`, and `.json`, recursively extracts note titles, merges them with existing aliases, and never needs an Apple Account password. See `docs/icloud-notes-research-plan.md` for the recommended iCloud collection approach.
+Apartment names are resolved against active PostgreSQL records using exact normalized aliases. Unknown names are left unchanged and receive no apartment details.
 
 ## Local development
 
@@ -51,6 +43,8 @@ Configuration:
 - `ORIENTATION_FLAT_CENTS`, `PRACTICE_FLAT_CENTS`, `CHECKIN_FLAT_CENTS` — flat rates;
 - `DRYER_DEFAULT_CENTS` — dryer expense when no amount is present;
 - `PREVIEW_RATE_LIMIT_MAX` and `PREVIEW_RATE_LIMIT_WINDOW` — preview rate limit.
+- `APARTMENT_IMPORT_TOKEN` — temporary bearer token enabling the one-time apartment import (leave empty to disable it);
+- `APARTMENT_CACHE_TTL_MS` — active apartment lookup cache duration.
 
 Startup creates the `work_days` and `payments` tables. The previous SQLite volume remains in Compose for rollback but is not read or migrated.
 
@@ -58,10 +52,12 @@ Startup creates the `work_days` and `payments` tables. The previous SQLite volum
 
 - `POST /api/preview` returns parsed details, totals, parsed advance, projected balance and projected share text.
 - `POST /api/days` transactionally replaces the date and returns the saved day, authoritative running balance and final share text.
+- `DELETE /api/days/:dateIso` removes an erroneous day and its text-derived advance; manual payments remain untouched.
 - `GET /api/ledger?from=YYYY-MM-DD&to=YYYY-MM-DD` returns chronological rows and totals.
 - `POST /api/payments` creates a manual payment using integer `amountCents`.
 - `PATCH /api/payments/:id` edits a manual payment.
 - `DELETE /api/payments/:id` deletes a manual payment.
+- `POST /api/admin/apartments/import?dryRun=true` validates or transactionally upserts `{ apartments: [...] }`; it requires `Authorization: Bearer <APARTMENT_IMPORT_TOKEN>`.
 - `GET /health` verifies both the app and PostgreSQL connection.
 
 Text-derived payments can only be changed by confirming their source day again. Expenses remain separate and do not reduce the outstanding balance.
