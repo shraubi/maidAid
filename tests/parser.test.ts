@@ -54,6 +54,18 @@ Dominique 12:30-15:30 - самостоятельная уборка
     ]);
   });
 
+  it("binds expenses to a specific job when an apartment repeats", () => {
+    const parsed = parseDay(`26/07
+Dominique 12:30-15:30 самостоятельная уборка, расходы 5.13€ +6
+16:00 check in Dominiquet самостоятельное заселение`, now);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.jobs.map((job) => job.object)).toEqual(["Dominique", "Dominique"]);
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ jobIndex: 0, category: "расходы", amountCents: 513 }),
+      expect.objectContaining({ jobIndex: 0, category: "сушка", amountCents: 600 }),
+    ]);
+  });
+
   it("treats a standalone random amount as an expense", () => {
     const parsed = parseDay("26/07\nBosquet 9-12 уборка\n7.25", now);
     expect(parsed.expenses).toEqual([expect.objectContaining({ object: "Bosquet", category: "расходы", amountCents: 725 })]);
