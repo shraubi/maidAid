@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { parseDay } from "../src/domain/parser.js";
+import { parseDay as parseRaw } from "../src/domain/parser.js";
+import { apartmentLookup, publicApartmentRecords } from "../src/domain/apartments.js";
 
 const now = new Date("2026-07-28T00:00:00Z");
+const apartments = apartmentLookup(publicApartmentRecords());
+const parseDay = (text: string, current = new Date(), dryerDefaultCents = 390) => parseRaw(text, current, dryerDefaultCents, apartments);
 
 describe("parseDay", () => {
   it("parses every amount on an expense line and attaches it to the preceding job", () => {
     const parsed = parseDay(`26/07
 
-Bosquet 9:00-12:00 - самостоятельная уборка / ключ от Вероники у вас
+Bosquet 9:00-12:00 - самостоятельная уборка / комментарий
 сушка 4.2 + 11.67
 
 Dominique 12:30-15:30 - самостоятельная уборка
@@ -36,9 +39,11 @@ Dominique 12:30-15:30 - самостоятельная уборка
     expect(parsed.unparsedLines).toEqual([]);
   });
 
-  it("canonicalizes apartment aliases and one-character typos through the generated dictionary", () => {
+  it("canonicalizes exact apartment aliases through the database-shaped lookup", () => {
     const parsed = parseDay("26/07\nDominiquet 9-12 уборка\n13:00-14:00 St Denis уборка", now);
     expect(parsed.jobs.map((job) => job.object)).toEqual(["Dominique", "Saint Denis"]);
+    const unknown = parseDay("26/07\nBosqet 9-12 уборка", now);
+    expect(unknown.jobs[0]).toMatchObject({ object: "Bosqet", apartmentId: null });
   });
 
   it("sums supported advance formats", () => {

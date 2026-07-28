@@ -1,4 +1,4 @@
-const CACHE_NAME = "maidaid-shell-v5";
+const CACHE_NAME = "maidaid-shell-v6";
 const SHELL = [
   "/",
   "/index.html",
@@ -28,3 +28,4 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
   event.respondWith(caches.match(event.request).then((cached) => cached ?? fetch(event.request)));
 });
+

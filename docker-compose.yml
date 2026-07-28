@@ -23,6 +23,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-maidaid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-maidaid}
+      APARTMENT_IMPORT_TOKEN: ${APARTMENT_IMPORT_TOKEN:-}
     volumes:
       - maidaid-data:/data
     depends_on:

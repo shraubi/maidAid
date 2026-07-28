@@ -1,5 +1,23 @@
 import { Pool, type PoolClient } from "pg";
-import type { DayTotals, LedgerTotals, ParsedDay, ReportSnapshot } from "../domain/types.js";
+import type { Apartment, DayTotals, LedgerTotals, ParsedDay, ReportSnapshot } from "../domain/types.js";
+import { apartmentKey, publicApartmentRecords } from "../domain/apartments.js";
+
+export interface ApartmentImportInput {
+  sourceKey: string;
+  canonicalName: string;
+  aliases: string[];
+  address: string;
+  mapsUrl: string;
+  noteBody: string;
+  active: boolean;
+}
+
+export interface ApartmentImportResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  conflicts: Array<{ sourceKey: string; reason: string }>;
+}
 
 export interface StoredDay extends DayTotals {
   dateIso: string;
@@ -42,10 +60,13 @@ export interface LedgerStore {
   close(): Promise<void>;
   projectDay(dateIso: string, totals: DayTotals, advanceCents: number): Promise<ReportSnapshot>;
   saveDay(input: SaveDayInput): Promise<{ day: StoredDay; snapshot: ReportSnapshot }>;
+  deleteDay(dateIso: string): Promise<boolean>;
   getLedger(from?: string, to?: string): Promise<LedgerView>;
   createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment>;
   updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null>;
   deletePayment(id: number): Promise<boolean>;
+  getActiveApartments(): Promise<Apartment[]>;
+  importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult>;
 }
 
 const zeroTotals = (): LedgerTotals => ({
@@ -61,6 +82,8 @@ export class MemoryLedgerStore implements LedgerStore {
   private readonly days = new Map<string, StoredDay>();
   private readonly payments = new Map<number, Payment>();
   private nextId = 1;
+  private readonly apartments = new Map<number, Apartment>(publicApartmentRecords().map((item) => [item.id, item]));
+  private nextApartmentId = this.apartments.size + 1;
 
   async initialize(): Promise<void> {}
   async health(): Promise<boolean> { return true; }
@@ -114,6 +137,14 @@ export class MemoryLedgerStore implements LedgerStore {
     return { day, snapshot: await this.projectDay(input.dateIso, input.totals, input.advanceCents) };
   }
 
+  async deleteDay(dateIso: string): Promise<boolean> {
+    const deleted = this.days.delete(dateIso);
+    for (const [id, payment] of this.payments) {
+      if (payment.source === "day_text" && payment.workDate === dateIso) this.payments.delete(id);
+    }
+    return deleted;
+  }
+
   async getLedger(from?: string, to?: string): Promise<LedgerView> {
     const rows: LedgerRow[] = [];
     for (const day of this.days.values()) if ((!from || day.dateIso >= from) && (!to || day.dateIso <= to)) rows.push({ rowType: "work", ...day });
@@ -138,6 +169,39 @@ export class MemoryLedgerStore implements LedgerStore {
   async deletePayment(id: number): Promise<boolean> {
     const payment = this.payments.get(id);
     return payment?.source === "manual" ? this.payments.delete(id) : false;
+  }
+
+  async getActiveApartments(): Promise<Apartment[]> {
+    return [...this.apartments.values()].filter(({ active }) => active).map((item) => ({ ...item, aliases: [...item.aliases] }));
+  }
+
+  async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
+    const working = new Map([...this.apartments].map(([id, item]) => [id, { ...item, aliases: [...item.aliases] }]));
+    const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
+    for (const record of records) {
+      const canonicalKey = apartmentKey(record.canonicalName);
+      const bySource = [...working.values()].find((item) => item.sourceKey === record.sourceKey);
+      const byCanonical = [...working.values()].find((item) => item.canonicalKey === canonicalKey);
+      if (bySource && byCanonical && bySource.id !== byCanonical.id) {
+        result.conflicts.push({ sourceKey: record.sourceKey, reason: "source_key_and_canonical_key_disagree" }); continue;
+      }
+      const current = bySource ?? byCanonical;
+      const aliases = [...new Set([record.canonicalName, ...record.aliases].map((value) => value.trim()))];
+      const aliasKeys = new Set(aliases.map(apartmentKey));
+      const aliasOwner = [...working.values()].find((item) => item.id !== current?.id && [item.canonicalName, ...item.aliases].some((alias) => aliasKeys.has(apartmentKey(alias))));
+      if (aliasOwner) { result.conflicts.push({ sourceKey: record.sourceKey, reason: "alias_belongs_to_another_apartment" }); continue; }
+      const now = new Date().toISOString();
+      const next: Apartment = {
+        id: current?.id ?? this.nextApartmentId++, sourceKey: record.sourceKey, canonicalKey,
+        canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl,
+        noteBody: record.noteBody, active: record.active, createdAt: current?.createdAt ?? now, updatedAt: now,
+      };
+      if (!current) { working.set(next.id, next); result.created += 1; }
+      else if (JSON.stringify({ ...current, id: 0, createdAt: "", updatedAt: "" }) === JSON.stringify({ ...next, id: 0, createdAt: "", updatedAt: "" })) result.skipped += 1;
+      else { working.set(next.id, next); result.updated += 1; }
+    }
+    if (!dryRun) { this.apartments.clear(); for (const [id, item] of working) this.apartments.set(id, item); }
+    return result;
   }
 }
 
@@ -168,6 +232,16 @@ function mapPayment(row: Record<string, unknown>): Payment {
   };
 }
 
+function mapApartment(row: Record<string, unknown>): Apartment {
+  return {
+    id: Number(row.id), sourceKey: String(row.source_key), canonicalKey: String(row.canonical_key),
+    canonicalName: String(row.canonical_name), aliases: Array.isArray(row.aliases) ? row.aliases.map(String) : [],
+    address: row.address == null ? null : String(row.address), mapsUrl: row.maps_url == null ? null : String(row.maps_url),
+    noteBody: row.note_body == null ? null : String(row.note_body), active: Boolean(row.active),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
 export class PostgresLedgerStore implements LedgerStore {
   private readonly pool: Pool;
   constructor(connectionString: string) { this.pool = new Pool({ connectionString }); }
@@ -188,7 +262,28 @@ export class PostgresLedgerStore implements LedgerStore {
       );
       CREATE UNIQUE INDEX IF NOT EXISTS payments_one_day_text ON payments (work_date) WHERE source = 'day_text';
       CREATE INDEX IF NOT EXISTS payments_date_idx ON payments (payment_date);
+      CREATE TABLE IF NOT EXISTS apartments (
+        id bigserial PRIMARY KEY,
+        source_key text NOT NULL UNIQUE,
+        canonical_key text NOT NULL UNIQUE,
+        canonical_name text NOT NULL,
+        aliases jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(aliases) = 'array'),
+        address text,
+        maps_url text,
+        note_body text,
+        active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS apartments_active_idx ON apartments (active);
     `);
+    for (const apartment of publicApartmentRecords()) {
+      await this.pool.query(`
+        INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, active)
+        VALUES ($1, $2, $3, $4::jsonb, true)
+        ON CONFLICT (canonical_key) DO NOTHING
+      `, [apartment.sourceKey, apartment.canonicalKey, apartment.canonicalName, JSON.stringify(apartment.aliases)]);
+    }
   }
 
   async health(): Promise<boolean> { try { await this.pool.query("SELECT 1"); return true; } catch { return false; } }
@@ -252,6 +347,11 @@ export class PostgresLedgerStore implements LedgerStore {
     finally { client.release(); }
   }
 
+  async deleteDay(dateIso: string): Promise<boolean> {
+    const result = await this.pool.query("DELETE FROM work_days WHERE date_iso=$1", [dateIso]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async getLedger(from?: string, to?: string): Promise<LedgerView> {
     const values: string[] = []; const clauses: string[] = [];
     if (from) { values.push(from); clauses.push(`date_iso >= $${values.length}`); }
@@ -290,4 +390,46 @@ export class PostgresLedgerStore implements LedgerStore {
     const result = await this.pool.query("DELETE FROM payments WHERE id=$1 AND source='manual'", [id]);
     return (result.rowCount ?? 0) > 0;
   }
+
+  async getActiveApartments(): Promise<Apartment[]> {
+    const result = await this.pool.query("SELECT * FROM apartments WHERE active=true ORDER BY canonical_name");
+    return result.rows.map(mapApartment);
+  }
+
+  async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
+    const client = await this.pool.connect();
+    const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
+    try {
+      await client.query("BEGIN");
+      const existingResult = await client.query("SELECT * FROM apartments FOR UPDATE");
+      const existing = existingResult.rows.map(mapApartment);
+      for (const record of records) {
+        const canonicalKey = apartmentKey(record.canonicalName);
+        const bySource = existing.find((item) => item.sourceKey === record.sourceKey);
+        const byCanonical = existing.find((item) => item.canonicalKey === canonicalKey);
+        if (bySource && byCanonical && bySource.id !== byCanonical.id) {
+          result.conflicts.push({ sourceKey: record.sourceKey, reason: "source_key_and_canonical_key_disagree" }); continue;
+        }
+        const current = bySource ?? byCanonical;
+        const aliases = [...new Set([record.canonicalName, ...record.aliases].map((value) => value.trim()))];
+        const aliasKeys = new Set(aliases.map(apartmentKey));
+        const aliasOwner = existing.find((item) => item.id !== current?.id && [item.canonicalName, ...item.aliases].some((alias) => aliasKeys.has(apartmentKey(alias))));
+        if (aliasOwner) { result.conflicts.push({ sourceKey: record.sourceKey, reason: "alias_belongs_to_another_apartment" }); continue; }
+        const comparable = { sourceKey: record.sourceKey, canonicalKey, canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl, noteBody: record.noteBody, active: record.active };
+        if (current && JSON.stringify({ sourceKey: current.sourceKey, canonicalKey: current.canonicalKey, canonicalName: current.canonicalName, aliases: current.aliases, address: current.address, mapsUrl: current.mapsUrl, noteBody: current.noteBody, active: current.active }) === JSON.stringify(comparable)) {
+          result.skipped += 1; continue;
+        }
+        const saved = current
+          ? await client.query(`UPDATE apartments SET source_key=$2, canonical_key=$3, canonical_name=$4, aliases=$5::jsonb, address=$6, maps_url=$7, note_body=$8, active=$9, updated_at=now() WHERE id=$1 RETURNING *`, [current.id, record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active])
+          : await client.query(`INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, address, maps_url, note_body, active) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8) RETURNING *`, [record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active]);
+        const mapped = mapApartment(saved.rows[0]);
+        if (current) { existing.splice(existing.indexOf(current), 1, mapped); result.updated += 1; }
+        else { existing.push(mapped); result.created += 1; }
+      }
+      if (dryRun) await client.query("ROLLBACK"); else await client.query("COMMIT");
+      return result;
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
+  }
 }
+

@@ -13,7 +13,10 @@ const schema = z.object({
   PREVIEW_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   PREVIEW_RATE_LIMIT_WINDOW: z.string().default("1 minute"),
   DATABASE_URL: z.string().min(1).default("postgresql://maidaid:maidaid@127.0.0.1:5432/maidaid"),
+  APARTMENT_IMPORT_TOKEN: z.string().default(""),
+  APARTMENT_CACHE_TTL_MS: z.coerce.number().int().positive().default(30_000),
 });
 
 export type Config = z.infer<typeof schema>;
 export function loadConfig(): Config { return schema.parse(process.env); }
+
