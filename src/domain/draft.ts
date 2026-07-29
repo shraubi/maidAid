@@ -31,6 +31,10 @@ export function generateShareText(day: ParsedDay, settings: Settings, snapshot?:
       workLines.push(`Check in ${formatMoneyCompact(calculateJobIncome(job, settings))}`);
       continue;
     }
+    if (job.workType === "orientation") {
+      workLines.push(`${job.object} ознакомление`);
+      continue;
+    }
     const minutes = jobMinutes(job);
     const jobExpenses = day.expenses.filter((expense) => (expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object)) && expense.amountCents > 0);
     const dryerCents = jobExpenses.filter((expense) => expense.category === "сушка").reduce((sum, expense) => sum + expense.amountCents, 0);

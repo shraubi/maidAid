@@ -138,5 +138,27 @@ Tiquetonne 3h + 3.60€ сушка + 5.09€ расходы`, now);
     ]);
     expect(calculateDay(parsed, settings)).toMatchObject({ minutes: 510, incomeCents: 8500, expensesCents: 1259 });
   });
+
+  it("strips checklist markers and extracts a trailing named companion", () => {
+    const parsed = parseDay(`29/07
+- [x] Monceau 11:00-13:30 самостоятельная уборка  сушка 3€
+
+- [x] Dominique 14:00-17:00 самостоятельная уборка сушка 3.6€ + 2.98€ расходы
+
+- [ ] 17:30 ознакомление Lévis c Laura`, now);
+
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.unparsedLines).toEqual([]);
+    expect(parsed.jobs).toEqual([
+      expect.objectContaining({ object: "Monceau", apartmentId: expect.any(Number), workType: "independent" }),
+      expect.objectContaining({ object: "Dominique", apartmentId: expect.any(Number), workType: "independent" }),
+      expect.objectContaining({ object: "Lévis", apartmentId: null, companion: "Laura", workType: "orientation" }),
+    ]);
+    expect(parsed.expenses).toEqual([
+      expect.objectContaining({ jobIndex: 0, object: "Monceau", category: "сушка", amountCents: 300 }),
+      expect.objectContaining({ jobIndex: 1, object: "Dominique", category: "сушка", amountCents: 360 }),
+      expect.objectContaining({ jobIndex: 1, object: "Dominique", category: "расходы", amountCents: 298 }),
+    ]);
+  });
 });
 
