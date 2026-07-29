@@ -57,6 +57,7 @@ function detectType(line: string): WorkType {
 function normalizeObject(value: string, apartments?: ApartmentLookup): string {
   const cleaned = value
     .replace(/^\s*\d+\s*[.)-]\s*/u, "")
+    .replace(/^\s*\[(?:\s|x|х|✓|✔)?\]\s*/iu, "")
     .replace(/^[\s:;,.-]+|[\s:;,.-]+$/g, "")
     .replace(/\s+/g, " ").trim();
   const apartment = apartments?.get(apartmentKey(cleaned));
@@ -69,7 +70,8 @@ function extractCompanion(line: string, apartments?: ApartmentLookup): string | 
     const value = match[1]!.trim();
     if (!/\d{1,2}(?::\d{2})?(?:\s*-\s*\d{1,2}(?::\d{2})?)?/.test(value) && !TYPE_HINT_RE.test(value)) return normalizeObject(value, apartments);
   }
-  return undefined;
+  const suffix = line.match(/\s+[cс]\s+([\p{L}][\p{L}'’.-]*)\s*$/iu);
+  return suffix ? normalizeObject(suffix[1]!, apartments) : undefined;
 }
 
 function amountCents(raw: string): number | null {
@@ -179,6 +181,7 @@ function parseJob(originalLine: string, dryerDefaultCents: number, apartments?: 
     .replace(/\b[A-Z]{1,3}\d{2,5}\b\s*(?:flight\s+number)?/giu, " ")
     .replace(/\([^)]*\)/g, " ").replace(/\([^)]*$/g, " ")
     .replace(TIME_TOKEN_RE, " ").replace(/изменения?/giu, " ")
+    .replace(/\s+[cс]\s+[\p{L}][\p{L}'’.-]*\s*$/iu, " ")
     .replace(/\s+-\s+|^\s*-\s*|\s*-\s*$/g, " ").replace(/\s+/g, " ").trim();
   const object = boldObject ? normalizeObject(boldObject, apartments) : normalizeObject(line, apartments);
   if (!object || (startMinutes === null && durationMinutes === null)) return null;
