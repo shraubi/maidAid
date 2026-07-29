@@ -46,5 +46,32 @@ Tiquetonne 3h + 3.60€ сушка + 5.09€ расходы
     });
     expect(text).toContain("Оплата наличными: 35€\nАванс: 135€");
   });
+
+  it("omits checklist markers and formats orientation as a concise entry", () => {
+    const day = parseDay(`29/07
+- [x] Monceau 11:00-13:30 самостоятельная уборка  сушка 3€
+
+- [x] Dominique 14:00-17:00 самостоятельная уборка сушка 3.6€ + 2.98€ расходы
+
+- [ ] 17:30 ознакомление Lévis c Laura`, new Date("2026-07-29T00:00:00Z"));
+    const text = generateShareText(day, settings, {
+      previous: { minutes: 1860, earnedCents: 0, receivedCents: 20000, outstandingCents: 0, expensesCents: 10404, checkinCents: 3000 },
+      total: { minutes: 2190, earnedCents: 0, receivedCents: 20000, outstandingCents: 0, expensesCents: 11362, checkinCents: 3000 },
+    });
+
+    expect(text).toBe(`29/07
+Monceau 2.5h + 3€ сушка + 0
+Dominique 3h + 3.60€ сушка + 2.98€ расходы
+Lévis ознакомление
+
+Сегодня: 5.5 h + 9.58€ расходы
+
+Было: 31 h + 104.04€ расходы + 30€ check in
+
+Всего: 36.5 h + 113.62€ расходы + 30€ check in
+
+Оплата наличными:
+Аванс: 200€`);
+  });
 });
 
