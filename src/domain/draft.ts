@@ -46,13 +46,12 @@ export function generateShareText(day: ParsedDay, settings: Settings, snapshot?:
   const unmatched = day.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !day.jobs.some((job) => job.object === expense.object)));
   if (unmatched.length) workLines.push(unmatched.map((expense) => `${formatMoneyCompact(expense.amountCents)} ${expense.category}`).join(" + "));
 
-  const receivedToday = Math.max(0, report.total.receivedCents - report.previous.receivedCents);
   const result = [day.displayDate ?? day.dateIso ?? "", workLines.join("\n"), "",
     summaryLine("Сегодня", { ...emptyTotals(), minutes: today.minutes, earnedCents: today.incomeCents,
       expensesCents: today.expensesCents, checkinCents: today.checkinCents }), "",
     summaryLine("Было", report.previous), "",
     summaryLine("Всего", report.total), "",
-    `Оплата наличными:${receivedToday > 0 ? ` ${formatMoneyCompact(receivedToday)}` : ""}`,
+    "Оплата наличными:",
     `Аванс: ${formatMoneyCompact(report.total.receivedCents)}`];
   return result.join("\n");
 }
