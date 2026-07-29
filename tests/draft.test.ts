@@ -38,13 +38,13 @@ Tiquetonne 3h + 3.60€ сушка + 5.09€ расходы
     expect(text).toContain("Оплата наличными:\nАванс: 100€");
   });
 
-  it("shows only the receipt recorded in the database for this day", () => {
+  it("keeps cash blank while receipts are treated as advances", () => {
     const day = parseDay("21/07\nTiquetonne 9-12 уборка", new Date("2026-07-28T00:00:00Z"));
     const text = generateShareText(day, settings, {
       previous: { minutes: 330, earnedCents: 5500, receivedCents: 10000, outstandingCents: -4500, expensesCents: 390, checkinCents: 0 },
       total: { minutes: 510, earnedCents: 8500, receivedCents: 13500, outstandingCents: -5000, expensesCents: 390, checkinCents: 0 },
     });
-    expect(text).toContain("Оплата наличными: 35€\nАванс: 135€");
+    expect(text).toContain("Оплата наличными:\nАванс: 135€");
   });
 
   it("omits checklist markers and formats orientation as a concise entry", () => {
