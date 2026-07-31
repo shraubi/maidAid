@@ -30,4 +30,9 @@ describe("public assets", () => {
     const manifest = JSON.parse(readFileSync(resolve("public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });
   });
+
+  it("refreshes the app shell from the network before using an offline fallback", () => {
+    const serviceWorker = readFileSync(resolve("public/sw.js"), "utf8");
+    expect(serviceWorker.indexOf("fetch(event.request)")).toBeLessThan(serviceWorker.indexOf("caches.match(event.request)"));
+  });
 });
