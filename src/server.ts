@@ -54,7 +54,18 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   const parse = async (text: string) => parseDay(text, new Date(), settings.dryerDefaultCents, await getApartmentLookup());
   app.addHook("onClose", async () => ledger.close());
   await app.register(rateLimit, { global: false, max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW });
-  await app.register(fastifyStatic, { root: publicRoot, wildcard: false });
+  await app.register(fastifyStatic, {
+    root: publicRoot,
+    wildcard: false,
+    cacheControl: false,
+    setHeaders(response, filePath) {
+      if (filePath.endsWith("sw.js")) {
+        response.setHeader("Cache-Control", "no-store");
+        return;
+      }
+      if (/\.(?:html|js|css|webmanifest)$/.test(filePath)) response.setHeader("Cache-Control", "no-cache");
+    },
+  });
 
   app.get("/health", async (_request, reply) => {
     const database = await ledger.health();
