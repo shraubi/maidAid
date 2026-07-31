@@ -17,6 +17,12 @@ let app: FastifyInstance | undefined;
 afterEach(async () => { await app?.close(); app = undefined; });
 
 describe("MaidAid HTTP API", () => {
+  it("prevents stale service workers and app shells", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    expect((await app.inject({ method: "GET", url: "/sw.js" })).headers["cache-control"]).toBe("no-store");
+    expect((await app.inject({ method: "GET", url: "/app.js" })).headers["cache-control"]).toBe("no-cache");
+  });
+
   it("returns a projected preview and authoritative share text after save", async () => {
     app = await buildApp(config, new MemoryLedgerStore());
     const text = "26/07\nBosquet 9-12 уборка\nсушка 4.2 + 11.67\n16:00 check in Dominique";
