@@ -27,9 +27,10 @@ button, textarea, input { font: inherit; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand img { border-radius: 14px; box-shadow: 0 10px 25px rgba(22, 64, 53, .16); }
 
-h1, h2, p { margin-top: 0; }
+h1, h2, h3, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(2rem, 7vw, 3.2rem); line-height: .95; letter-spacing: -.055em; }
 h2 { margin-bottom: 0; font-size: 1.35rem; letter-spacing: -.025em; }
+h3 { font-size: 1.05rem; }
 
 .eyebrow {
   margin-bottom: 5px;
@@ -124,13 +125,27 @@ button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
 .job strong, .expense strong { color: #183d34; }
 .job small { grid-column: 1 / -1; color: #667771; }
 .job .job-expenses { color: #ad613d; font-weight: 700; }
-.apartment-details { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
-.apartment-address { flex: 1 1 260px; color: #425e56; font-size: .88rem; }
-.maps-button { display: inline-flex; min-height: 38px; padding: 0 13px; align-items: center; border-radius: 10px; color: #fff; background: #2c6658; font-size: .82rem; font-weight: 800; text-decoration: none; }
+.apartments-today { margin-top: 24px; padding-top: 20px; border-top: 1px solid #dce2dc; }
+.apartments-today h3 { margin-bottom: 12px; color: #183d34; }
+.apartment-list { display: grid; gap: 10px; }
+.apartment-card { padding: 14px; border: 1px solid #dce2dc; border-radius: 13px; background: #fffefb; }
+.apartment-card strong { color: #183d34; }
+.apartment-address { overflow-wrap: anywhere; margin: 7px 0 0; color: #425e56; font-size: .9rem; line-height: 1.45; }
+.apartment-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.apartment-actions > a, .apartment-actions > button { position: relative; pointer-events: auto; touch-action: manipulation; cursor: pointer; }
+.apartment-info-button, .maps-button, .action-link { min-height: 42px; padding: 0 15px; font-size: .84rem; }
+.maps-button, .action-link { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 800; text-decoration: none; }
+.maps-button { color: #fff; background: #2c6658; }
 .dryer-button { color: #5f351f; background: #f0c39d; }
-.apartment-details details { flex: 1 0 100%; border-top: 1px solid #dce2dc; padding-top: 9px; }
-.apartment-details summary { cursor: pointer; color: #2c6658; font-weight: 750; }
-.apartment-details pre { margin-top: 9px; padding: 12px; font-size: .84rem; }
+.action-link.secondary { color: #173f35; background: #e5e9e5; }
+.apartment-page-hero { padding-bottom: 4px; }
+.apartment-page { display: grid; gap: 18px; }
+.apartment-page .back-button { width: fit-content; }
+.apartment-page h2 { font-size: clamp(1.55rem, 6vw, 2.2rem); }
+.apartment-page h3 { margin: 6px 0 -8px; color: #425e56; }
+.apartment-page-address { overflow-wrap: anywhere; margin: -8px 0 0; color: #425e56; line-height: 1.5; }
+.apartment-page .maps-button { width: fit-content; }
+.apartment-note { font-size: .95rem; }
 .totals {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -151,9 +166,8 @@ button:disabled { cursor: not-allowed; opacity: .42; transform: none; }
 .ledger-row-actions button { min-height: 34px; padding: 0 10px; font-size: .75rem; }
 .ledger-day-tabs { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 8px; border-top: 1px solid #dce2dc; padding-top: 9px; }
 .ledger-day-details { flex: 0 1 auto; }
-.ledger-day-details summary { cursor: pointer; color: #2c6658; font-weight: 750; }
 .ledger-day-details[open] { flex: 1 0 100%; }
-.ledger-day-details summary { width: max-content; padding: 8px 11px; border-radius: 9px; background: #e5e9e5; list-style: none; }
+.ledger-day-details summary { width: max-content; padding: 8px 11px; border-radius: 9px; cursor: pointer; color: #2c6658; background: #e5e9e5; font-weight: 750; list-style: none; }
 .ledger-day-details summary::-webkit-details-marker { display: none; }
 .ledger-detail-list { display: grid; gap: 7px; margin: 10px 0; }
 .ledger-detail-item { padding: 9px 11px; border-radius: 9px; background: #fffefb; }
@@ -184,6 +198,8 @@ pre {
   .panel { border-radius: 18px; }
   .editor-footer { align-items: flex-end; }
   .actions button { flex: 1; padding-inline: 10px; }
+  .apartment-actions > * { flex: 1 1 130px; }
+  .apartment-page .back-button, .apartment-page .maps-button { width: 100%; }
   .totals { grid-template-columns: 1fr; }
   .total { display: flex; justify-content: space-between; align-items: center; padding-inline: 14px; text-align: left; }
   .total strong { margin-top: 0; }
@@ -193,4 +209,6 @@ pre {
   .ledger-heading { align-items: stretch; flex-direction: column; }
   .ledger-heading .step-heading { margin-bottom: 0; }
 }
+
+
 
