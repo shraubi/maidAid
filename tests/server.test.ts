@@ -68,6 +68,7 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "POST", url: "/api/preview", payload: { text: "" } })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/health" })).json()).toMatchObject({ status: "ok", database: true });
     expect((await app.inject({ method: "GET", url: "/" })).headers["content-type"]).toContain("text/html");
+    expect((await app.inject({ method: "GET", url: "/apartment.html" })).headers["content-type"]).toContain("text/html");
   });
 
   it("protects, dry-runs and idempotently applies apartment imports", async () => {
@@ -83,11 +84,18 @@ describe("MaidAid HTTP API", () => {
     const dryRun = await app.inject({ method: "POST", url: "/api/admin/apartments/import?dryRun=true", headers, payload });
     expect(dryRun.json()).toMatchObject({ dryRun: true, accepted: 1, updated: 1, conflicts: [] });
     const before = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "26/07\nBosquet Test 9-12 уборка" } });
-    expect(before.json().parsed.jobs[0].apartmentId).toBeNull();
+    expect(before.json().parsed.jobs[0]).toMatchObject({
+      apartmentId: null, address: null, mapsUrl: null, noteBody: null,
+    });
     const imported = await app.inject({ method: "POST", url: "/api/admin/apartments/import", headers, payload });
     expect(imported.json()).toMatchObject({ dryRun: false, accepted: 1, updated: 1, conflicts: [] });
     const preview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "26/07\nBosquet Test 9-12 уборка" } });
-    expect(preview.json().parsed.jobs[0]).toMatchObject({ object: "Bosquet", address: "Test address", noteBody: "<script>alert(1)</script>" });
+    expect(preview.json().parsed.jobs[0]).toMatchObject({
+      object: "Bosquet",
+      address: "Test address",
+      mapsUrl: "https://www.google.com/maps/search/?api=1&query=Test",
+      noteBody: "<script>alert(1)</script>",
+    });
     const messyText = "28/07/2098 изменения\n*Bosquet Test* 9:00–12:00 - самостоятельная уборка / комментарий\nсушка 4,20 + 1.30\n16:00 check-in Bosquet Test - самостоятельное заселение\nАванс: 20€";
     const messyPreview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: messyText } });
     expect(messyPreview.json()).toMatchObject({ canShare: true, advanceCents: 2000, totals: { minutes: 180, incomeCents: 4000, expensesCents: 550 } });
@@ -103,4 +111,6 @@ describe("MaidAid HTTP API", () => {
     expect(repeated.json()).toMatchObject({ accepted: 1, skipped: 1, conflicts: [] });
   });
 });
+
+
 
