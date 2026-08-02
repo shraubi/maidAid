@@ -80,12 +80,16 @@
       </section>
 
       <section id="ledger" class="panel" aria-labelledby="ledger-title">
-        <div class="step-heading">
-          <span>₽</span>
-          <div>
-            <p class="eyebrow">Учёт</p>
-            <h2 id="ledger-title">История и оплаты</h2>
+        <div class="ledger-heading">
+          <div class="step-heading">
+            <span>₽</span>
+            <div>
+              <p class="eyebrow">Учёт</p>
+              <h2 id="ledger-title">История и оплаты</h2>
+              <p id="ledger-period-label" class="period-label"></p>
+            </div>
           </div>
+          <button id="periods-button" class="secondary compact-button" type="button">Предыдущие периоды</button>
         </div>
         <div id="ledger-totals" class="totals ledger-totals" aria-live="polite"></div>
         <form id="payment-form" class="payment-form">
@@ -111,6 +115,15 @@
           <button class="primary" type="submit">Проверить и сохранить</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="periods-dialog" class="edit-dialog periods-dialog">
+      <h2>Предыдущие периоды</h2>
+      <p class="privacy">Выберите месяц, чтобы посмотреть его часы, деньги, расходы и записи.</p>
+      <div id="periods-list" class="periods-list"></div>
+      <div class="actions">
+        <button id="periods-close" class="secondary" type="button">Закрыть</button>
+      </div>
     </dialog>
 
     <script type="module" src="/app.js"></script>
