@@ -1,6 +1,6 @@
 export const APARTMENT_STORAGE_KEY = "maidaid:selected-apartment";
 
-const GOOGLE_MAPS_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl"]);
+const GOOGLE_MAPS_HOSTS = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl", "goo.gl"]);
 
 export function safeMapsUrl(value) {
   try {
@@ -75,3 +75,5 @@ export function readSelectedApartment(storage) {
     return null;
   }
 }
+
+
