@@ -90,8 +90,11 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     if (input.data.kind) parsed.kind = input.data.kind;
     const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
     if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
-    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText: input.data.text, parsedDetails: parsed, totals: calculateDay(parsed, settings), advanceCents: parsed.advanceCents });
-    return { day: saved.day, runningBalance: saved.snapshot.total.outstandingCents, snapshot: saved.snapshot, shareText: generateShareText(parsed, settings, saved.snapshot) };
+    const totals = calculateDay(parsed, settings);
+    const projected = await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents);
+    const reportText = generateShareText(parsed, settings, projected);
+    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText: input.data.text, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText });
+    return { day: saved.day, runningBalance: saved.snapshot.total.outstandingCents, snapshot: saved.snapshot, shareText: reportText };
   });
 
   app.delete("/api/days/:dateIso", async (request, reply) => {
@@ -105,6 +108,8 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     if (!query.success || (query.data.from && query.data.to && query.data.from > query.data.to)) return reply.code(400).send({ error: "invalid_request" });
     return ledger.getLedger(query.data.from, query.data.to);
   });
+
+  app.get("/api/periods", async () => ({ periods: await ledger.listPeriods() }));
 
   app.post("/api/payments", async (request, reply) => {
     const input = paymentCreate.safeParse(request.body);
