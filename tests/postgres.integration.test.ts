@@ -13,10 +13,10 @@ describe.skipIf(!databaseUrl)("PostgreSQL ledger integration", () => {
   it("runs migrations and replaces a day and its parsed advance transactionally", async () => {
     const dateIso = "2099-12-31";
     const first = parseDay("31/12/2099\nBosquet 9-12 уборка\nАванс 50");
-    await store.saveDay({ dateIso, sourceText: "first", parsedDetails: first, totals: calculateDay(first, settings), advanceCents: first.advanceCents });
+    await store.saveDay({ dateIso, sourceText: "first", reportText: "first report", parsedDetails: first, totals: calculateDay(first, settings), advanceCents: first.advanceCents });
     await store.createPayment(dateIso, 1000, "manual survives");
     const second = parseDay("31/12/2099\nBosquet 9-13 уборка\nАванс 20");
-    await store.saveDay({ dateIso, sourceText: "second", parsedDetails: second, totals: calculateDay(second, settings), advanceCents: second.advanceCents });
+    await store.saveDay({ dateIso, sourceText: "second", reportText: "second report", parsedDetails: second, totals: calculateDay(second, settings), advanceCents: second.advanceCents });
     const ledger = await store.getLedger(dateIso, dateIso);
     expect(ledger.totals).toMatchObject({ minutes: 240, earnedCents: 4000, receivedCents: 3000, expensesCents: 0 });
     expect(ledger.rows.find((row) => row.rowType === "work")?.dateIso).toBe(dateIso);
@@ -26,4 +26,6 @@ describe.skipIf(!databaseUrl)("PostgreSQL ledger integration", () => {
     expect(afterDelete.totals).toMatchObject({ earnedCents: 0, receivedCents: 1000 });
   });
 });
+
+
 

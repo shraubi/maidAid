@@ -1,4 +1,4 @@
-const CACHE_NAME = "maidaid-shell-v15";
+const CACHE_NAME = "maidaid-shell-v16";
 const SHELL = [
   "/",
   "/index.html",
@@ -41,4 +41,6 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(event.request)),
   );
 });
+
+
 

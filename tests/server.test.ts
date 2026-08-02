@@ -33,6 +33,8 @@ describe("MaidAid HTTP API", () => {
     expect(saved.statusCode).toBe(200);
     expect(saved.json().shareText).toContain("Bosquet 3h + 4.20€ сушка + 11.67€ расходы");
     expect(saved.json().runningBalance).toBe(4000);
+    const workRow = (await app.inject({ method: "GET", url: "/api/ledger?from=2026-07-01&to=2026-07-31" })).json().rows.find((row: { rowType: string }) => row.rowType === "work");
+    expect(workRow.reportText).toBe(saved.json().shareText);
   });
 
   it("creates, edits and deletes manual payments", async () => {
@@ -109,4 +111,6 @@ describe("MaidAid HTTP API", () => {
     expect(repeated.json()).toMatchObject({ accepted: 1, skipped: 1, conflicts: [] });
   });
 });
+
+
 
