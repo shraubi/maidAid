@@ -31,13 +31,6 @@ describe("ledger semantics", () => {
     expect(await store.deletePayment(payment.id)).toBe(true);
   });
 
-  it("supports backdated filters and negative outstanding balances", async () => {
-    const store = new MemoryLedgerStore();
-    await store.createPayment("2026-07-01", 5000);
-    await store.createPayment("2026-07-20", 2000);
-    expect((await store.getLedger("2026-07-10", "2026-07-31")).totals).toMatchObject({ receivedCents: 2000, outstandingCents: -2000 });
-  });
-
   it("returns the newest ledger rows first", async () => {
     const store = new MemoryLedgerStore();
     await store.createPayment("2026-07-01", 5000);
@@ -45,6 +38,12 @@ describe("ledger semantics", () => {
     expect((await store.getLedger()).rows.map((row) => row.dateIso)).toEqual(["2026-07-28", "2026-07-01"]);
   });
 
+  it("supports backdated filters and negative outstanding balances", async () => {
+    const store = new MemoryLedgerStore();
+    await store.createPayment("2026-07-01", 5000);
+    await store.createPayment("2026-07-20", 2000);
+    expect((await store.getLedger("2026-07-10", "2026-07-31")).totals).toMatchObject({ receivedCents: 2000, outstandingCents: -2000 });
+  });
   it("starts report totals over at the beginning of each month", async () => {
     const store = new MemoryLedgerStore();
     const july = parsed("31/07\nBosquet 9-12 уборка");
@@ -57,4 +56,6 @@ describe("ledger semantics", () => {
     expect((await store.listPeriods()).map(({ period }) => period)).toEqual(["2026-08", "2026-07"]);
   });
 });
+
+
 
