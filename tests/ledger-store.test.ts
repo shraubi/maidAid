@@ -14,9 +14,9 @@ describe("ledger semantics", () => {
   it("replaces same-date work and its text advance without duplicating either", async () => {
     const store = new MemoryLedgerStore();
     const first = parsed("26/07\nBosquet 9-12 уборка\nАванс 50");
-    await store.saveDay({ dateIso: first.dateIso!, sourceText: "first", parsedDetails: first, totals: calculateDay(first, settings), advanceCents: first.advanceCents });
+    await store.saveDay({ dateIso: first.dateIso!, sourceText: "first", reportText: "first report", parsedDetails: first, totals: calculateDay(first, settings), advanceCents: first.advanceCents });
     const replacement = parsed("26/07\nBosquet 9-13 уборка\nАванс 20");
-    await store.saveDay({ dateIso: replacement.dateIso!, sourceText: "replacement", parsedDetails: replacement, totals: calculateDay(replacement, settings), advanceCents: replacement.advanceCents });
+    await store.saveDay({ dateIso: replacement.dateIso!, sourceText: "replacement", reportText: "replacement report", parsedDetails: replacement, totals: calculateDay(replacement, settings), advanceCents: replacement.advanceCents });
     expect((await store.getLedger()).totals).toMatchObject({ minutes: 240, earnedCents: 4000, receivedCents: 2000 });
   });
 
@@ -24,11 +24,18 @@ describe("ledger semantics", () => {
     const store = new MemoryLedgerStore();
     const payment = await store.createPayment("2026-07-20", 10000, "cash");
     const day = parsed("26/07\nBosquet 9-12 уборка\nАванс 50");
-    await store.saveDay({ dateIso: day.dateIso!, sourceText: "one", parsedDetails: day, totals: calculateDay(day, settings), advanceCents: day.advanceCents });
-    await store.saveDay({ dateIso: day.dateIso!, sourceText: "two", parsedDetails: day, totals: calculateDay(day, settings), advanceCents: 0 });
+    await store.saveDay({ dateIso: day.dateIso!, sourceText: "one", reportText: "one report", parsedDetails: day, totals: calculateDay(day, settings), advanceCents: day.advanceCents });
+    await store.saveDay({ dateIso: day.dateIso!, sourceText: "two", reportText: "two report", parsedDetails: day, totals: calculateDay(day, settings), advanceCents: 0 });
     expect((await store.getLedger()).totals.receivedCents).toBe(10000);
     expect((await store.updatePayment(payment.id, { amountCents: 9000 }))?.amountCents).toBe(9000);
     expect(await store.deletePayment(payment.id)).toBe(true);
+  });
+
+  it("supports backdated filters and negative outstanding balances", async () => {
+    const store = new MemoryLedgerStore();
+    await store.createPayment("2026-07-01", 5000);
+    await store.createPayment("2026-07-20", 2000);
+    expect((await store.getLedger("2026-07-10", "2026-07-31")).totals).toMatchObject({ receivedCents: 2000, outstandingCents: -2000 });
   });
 
   it("returns the newest ledger rows first", async () => {
@@ -38,11 +45,16 @@ describe("ledger semantics", () => {
     expect((await store.getLedger()).rows.map((row) => row.dateIso)).toEqual(["2026-07-28", "2026-07-01"]);
   });
 
-  it("supports backdated filters and negative outstanding balances", async () => {
+  it("starts report totals over at the beginning of each month", async () => {
     const store = new MemoryLedgerStore();
-    await store.createPayment("2026-07-01", 5000);
-    await store.createPayment("2026-07-20", 2000);
-    expect((await store.getLedger("2026-07-10", "2026-07-31")).totals).toMatchObject({ receivedCents: 2000, outstandingCents: -2000 });
+    const july = parsed("31/07\nBosquet 9-12 уборка");
+    const august = parseDay("01/08/2026\nBosquet 9-11 уборка", new Date("2026-08-02T00:00:00Z"));
+    await store.saveDay({ dateIso: july.dateIso!, sourceText: "july", reportText: "july report", parsedDetails: july, totals: calculateDay(july, settings), advanceCents: 0 });
+    const projected = await store.projectDay(august.dateIso!, calculateDay(august, settings), 0);
+    expect(projected.previous).toMatchObject({ minutes: 0, earnedCents: 0, expensesCents: 0 });
+    expect(projected.total).toMatchObject({ minutes: 120, earnedCents: 2000 });
+    await store.saveDay({ dateIso: august.dateIso!, sourceText: "august", reportText: "august report", parsedDetails: august, totals: calculateDay(august, settings), advanceCents: 0 });
+    expect((await store.listPeriods()).map(({ period }) => period)).toEqual(["2026-08", "2026-07"]);
   });
 });
 
