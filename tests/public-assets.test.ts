@@ -28,6 +28,23 @@ describe("public assets", () => {
     expect(app).not.toContain("writeSelectedApartment");
   });
 
+  it("drops stale coordinates when an address or Maps link is edited", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(app).toContain('$("#place-address").addEventListener("input", clearDerivedLocation)');
+    expect(app).toContain('$("#place-maps-url").addEventListener("input", clearDerivedLocation)');
+  });
+
+  it("renders typed map markers using the product palette", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    const styles = readFileSync(resolve("public/styles.css"), "utf8");
+    const html = readFileSync(resolve("public/index.html"), "utf8");
+    expect(app).toContain('map-marker--${appearance.colorClass}');
+    expect(styles).toContain(".map-marker--apartment");
+    expect(styles).toContain(".map-marker--laundry");
+    expect(styles).toContain(".map-marker--partner_restaurant");
+    expect(html).toContain('class="map-legend"');
+  });
+
   it("ships a valid web app manifest", () => {
     const manifest = JSON.parse(readFileSync(resolve("public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });

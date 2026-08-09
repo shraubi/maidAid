@@ -62,12 +62,37 @@ const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(module
 const projectRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(moduleDirectory, "../..") : resolve(moduleDirectory, "..");
 const leafletRoot = resolve(projectRoot, "node_modules/leaflet/dist");
 
-function coordinatesFromMapsUrl(value: string | null | undefined): { latitude: number; longitude: number } | null {
-  if (!value) return null;
-  const match = value.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/) ?? value.match(/[?&](?:query|q)=(-?\d+(?:\.\d+)?)[,%20]+(-?\d+(?:\.\d+)?)/);
+function coordinatePair(value: string): { latitude: number; longitude: number } | null {
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
   if (!match) return null;
   const latitude = Number(match[1]); const longitude = Number(match[2]);
   return latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180 ? { latitude, longitude } : null;
+}
+
+export function coordinatesFromMapsUrl(value: string | null | undefined): { latitude: number; longitude: number } | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const pathCoordinates = url.href.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+    if (pathCoordinates) return coordinatePair(`${pathCoordinates[1]},${pathCoordinates[2]}`);
+    const dataCoordinates = url.href.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+    if (dataCoordinates) return coordinatePair(`${dataCoordinates[1]},${dataCoordinates[2]}`);
+    for (const key of ["query", "q", "ll", "destination", "daddr"]) {
+      const coordinates = coordinatePair(url.searchParams.get(key) ?? "");
+      if (coordinates) return coordinates;
+    }
+  } catch { /* Invalid URLs are rejected by request validation. */ }
+  return null;
+}
+
+function hasLegacyBrokenCoordinates(item: { mapsUrl: string | null; latitude?: number | null; longitude?: number | null; locationSource?: LocationSource | null }): boolean {
+  if (item.locationSource !== "maps_link" || item.longitude !== 0 || item.latitude == null || !item.mapsUrl || coordinatesFromMapsUrl(item.mapsUrl)) return false;
+  try {
+    const url = new URL(item.mapsUrl);
+    const query = url.searchParams.get("query") ?? url.searchParams.get("q") ?? "";
+    const leadingNumber = query.match(/^\s*(-?\d+(?:\.\d+)?)\s+/);
+    return leadingNumber != null && Number(leadingNumber[1]) === item.latitude;
+  } catch { return false; }
 }
 
 async function resolveLocation(input: Record<string, unknown>, externalFetch: typeof fetch): Promise<{ latitude: number | null; longitude: number | null; locationSource: LocationSource | null; locationAccuracyMeters: number | null }> {
@@ -92,6 +117,23 @@ async function resolveLocation(input: Record<string, unknown>, externalFetch: ty
   return { latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null };
 }
 
+export async function repairLegacyMapCoordinates(ledger: LedgerStore, externalFetch: typeof fetch, delayMilliseconds = 1_100): Promise<number> {
+  const apartments = (await ledger.getActiveApartments()).filter(hasLegacyBrokenCoordinates);
+  const places = (await ledger.getSavedPlaces()).filter(hasLegacyBrokenCoordinates);
+  const targets = [
+    ...apartments.map((item) => ({ item, update: (location: Awaited<ReturnType<typeof resolveLocation>>) => ledger.updateApartment(item.id, location) })),
+    ...places.map((item) => ({ item, update: (location: Awaited<ReturnType<typeof resolveLocation>>) => ledger.updateSavedPlace(item.id, location) })),
+  ];
+  let repaired = 0;
+  for (const [index, target] of targets.entries()) {
+    if (index > 0 && delayMilliseconds > 0) await new Promise((resolveDelay) => setTimeout(resolveDelay, delayMilliseconds));
+    const location = await resolveLocation({ address: target.item.address, mapsUrl: target.item.mapsUrl }, externalFetch);
+    if (location.latitude == null || location.longitude == null) continue;
+    await target.update(location); repaired += 1;
+  }
+  return repaired;
+}
+
 function distanceMeters(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const radians = (value: number) => value * Math.PI / 180; const earth = 6_371_000;
   const dLat = radians(bLat - aLat); const dLon = radians(bLon - aLon);
@@ -111,6 +153,11 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   };
   const ledger = providedStore ?? new PostgresLedgerStore(config.DATABASE_URL);
   await ledger.initialize();
+  app.addHook("onListen", () => {
+    void repairLegacyMapCoordinates(ledger, externalFetch)
+      .then((repairedLocations) => { if (repairedLocations > 0) app.log.info({ repairedLocations }, "repaired legacy map coordinates"); })
+      .catch((error) => app.log.error({ err: error }, "failed to repair legacy map coordinates"));
+  });
   const parse = async (text: string) => parseDay(text, new Date(), settings.dryerDefaultCents, apartmentLookup(await ledger.getActiveApartments()));
   app.addHook("onClose", async () => ledger.close());
   await app.register(rateLimit, { global: false, max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW });

@@ -169,13 +169,28 @@ function renderPlacesMap() {
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(placesMap);
   }
   if (markerLayer) markerLayer.remove(); markerLayer = L.layerGroup().addTo(placesMap);
-  const located = mapItems.filter((item) => item.latitude != null && item.longitude != null);
+  const markerAppearance = {
+    apartment: { colorClass: "apartment" },
+    laundry: { colorClass: "laundry" },
+    partner_restaurant: { colorClass: "partner_restaurant" },
+  };
+  const located = mapItems.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && Math.abs(item.latitude) <= 90 && Math.abs(item.longitude) <= 180);
   located.forEach((item) => {
-    const color = item.kind === "apartment" ? "#173f35" : item.kind === "laundry" ? "#b76540" : "#7a526e";
-    const marker = L.circleMarker([item.latitude, item.longitude], { radius: 9, weight: 3, color: "#fffdf8", fillColor: color, fillOpacity: 1 }).addTo(markerLayer);
-    marker.bindTooltip(item.name); marker.on("click", () => openItemDetail(`${item.itemType}:${item.id}`));
+    const appearance = markerAppearance[item.kind] ?? markerAppearance.apartment;
+    const icon = L.divIcon({
+      className: "map-marker-icon",
+      html: `<span class="map-marker map-marker--${appearance.colorClass}"></span>`,
+      iconSize: [38, 44], iconAnchor: [19, 42], tooltipAnchor: [0, -34],
+    });
+    const marker = L.marker([item.latitude, item.longitude], { icon, title: item.name, alt: `${kindLabel(item.kind)}: ${item.name}`, riseOnHover: true }).addTo(markerLayer);
+    const tooltip = document.createElement("span");
+    const tooltipTitle = document.createElement("strong"); tooltipTitle.textContent = item.name; tooltip.append(tooltipTitle);
+    if (item.address) { const tooltipAddress = document.createElement("small"); tooltipAddress.textContent = item.address; tooltip.append(tooltipAddress); }
+    marker.bindTooltip(tooltip, { direction: "top", opacity: 1, className: "place-tooltip" });
+    marker.on("click", () => openItemDetail(`${item.itemType}:${item.id}`));
   });
-  if (located.length) { const bounds = L.latLngBounds(located.map((item) => [item.latitude, item.longitude])); placesMap.fitBounds(bounds, { padding: [35, 35], maxZoom: 15 }); }
+  if (located.length === 1) placesMap.setView([located[0].latitude, located[0].longitude], 15);
+  else if (located.length) { const bounds = L.latLngBounds(located.map((item) => [item.latitude, item.longitude])); placesMap.fitBounds(bounds, { padding: [54, 54], maxZoom: 15 }); }
   $("#map-empty").hidden = located.length > 0; $("#map-empty").textContent = located.length ? "" : "Пока ни у одной квартиры нет координат. Откройте список и укажите местоположение.";
 }
 
@@ -212,6 +227,12 @@ function resetPlaceForm() {
   $("#place-kind").disabled = false;
   $("#coordinate-picker").hidden = true; $("#place-form-error").hidden = true; $("#place-location-status").textContent = "Сначала попробуем определить точку по адресу.";
 }
+function clearDerivedLocation() {
+  $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
+  $("#place-location-status").textContent = "Местоположение будет определено по обновлённой ссылке или адресу.";
+}
+$("#place-address").addEventListener("input", clearDerivedLocation);
+$("#place-maps-url").addEventListener("input", clearDerivedLocation);
 function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${apartments.map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}</option>`).join("")}`; }
 function updatePlaceKind() { $("#place-apartment-link-label").hidden = $("#place-kind").value !== "laundry"; }
 $("#place-kind").addEventListener("change", updatePlaceKind);

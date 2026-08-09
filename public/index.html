@@ -57,7 +57,16 @@
           <button type="button" data-map-mode="map">Карта</button><button type="button" data-map-mode="list">Список</button>
         </div>
         <p id="map-error" class="notice error" role="alert" hidden></p>
-        <div id="map-mode-map" class="map-mode"><div id="places-map" aria-label="Карта квартир и сохранённых мест"></div><p id="map-empty" class="map-message" hidden></p></div>
+        <div id="map-mode-map" class="map-mode map-canvas-shell">
+          <div id="places-map" aria-label="Карта квартир и сохранённых мест"></div>
+          <aside class="map-legend" aria-label="Обозначения на карте">
+            <strong>Места</strong>
+            <span><i class="map-legend-dot map-legend-dot--apartment" aria-hidden="true"></i>Квартиры</span>
+            <span><i class="map-legend-dot map-legend-dot--laundry" aria-hidden="true"></i>Сушки</span>
+            <span><i class="map-legend-dot map-legend-dot--partner_restaurant" aria-hidden="true"></i>Партнёры</span>
+          </aside>
+          <p id="map-empty" class="map-message" hidden></p>
+        </div>
         <div id="map-mode-list" class="map-mode" hidden>
           <div class="list-toolbar"><input id="place-search" type="search" placeholder="Поиск по названию или адресу" aria-label="Поиск мест" /><select id="place-filter" aria-label="Тип места"><option value="all">Все места</option><option value="apartment">Квартиры</option><option value="laundry">Сушки</option><option value="partner_restaurant">Партнёры</option></select></div>
           <div id="place-list" class="place-list"></div>
