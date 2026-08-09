@@ -28,6 +28,12 @@ describe("public assets", () => {
     expect(app).not.toContain("writeSelectedApartment");
   });
 
+  it("drops stale coordinates when an address or Maps link is edited", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(app).toContain('$("#place-address").addEventListener("input", clearDerivedLocation)');
+    expect(app).toContain('$("#place-maps-url").addEventListener("input", clearDerivedLocation)');
+  });
+
   it("ships a valid web app manifest", () => {
     const manifest = JSON.parse(readFileSync(resolve("public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });
