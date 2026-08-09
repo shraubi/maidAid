@@ -17,13 +17,19 @@ test("release one hides future place-management controls", async ({ page, reques
 
 test("Today keeps its preview while navigating between sections", async ({ page }) => {
   await page.goto("/today");
-  await page.getByLabel("Вставьте сообщение целиком", { exact: true }).fill("05/08\nКвартира А 9-12 уборка");
-  await page.getByRole("button", { name: "Проверить", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Всё ли верно?" })).toBeVisible();
+  await page.getByRole("button", { name: "+ Квартира", exact: true }).click();
+  await page.getByPlaceholder("Например, Bosquet или Lauriston").fill("Bos");
+  await page.locator("[data-choose-apartment]", { hasText: "Bosquet" }).first().click();
+  await page.locator("[data-work-type]").selectOption("orientation");
+  await expect(page.getByLabel("Сушка, €")).toHaveCount(0);
+  await expect(page.getByLabel("Другие расходы, €")).toHaveCount(0);
+  await page.locator("[data-work-type]").selectOption("independent");
+  await page.getByRole("button", { name: "Сформировать отчёт", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
   await page.getByRole("link", { name: "Карта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Карта", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Всё ли верно?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
 });
 
 test("Map and list are equal views and a place can be added", async ({ page }, testInfo) => {
