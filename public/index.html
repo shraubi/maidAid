@@ -29,19 +29,16 @@
       <section id="view-today" class="app-view" aria-labelledby="today-title">
         <header class="view-heading"><p class="eyebrow">Рабочий день</p><h1 id="today-title">Сегодня</h1></header>
         <article id="today-editor" class="surface workflow-surface">
-          <label class="input-label" for="source-text">Вставьте сообщение целиком</label>
-          <textarea id="source-text" rows="11" maxlength="32768" placeholder="19/07&#10;10:00–12:30 Квартира А самостоятельная уборка"></textarea>
-          <div class="action-row"><span id="character-count" class="muted">0 / 32 768</span><button id="preview-button" class="primary" type="button">Проверить</button></div>
+          <div class="today-date"><span>Работы за</span><strong id="today-date-label"></strong></div>
+          <div id="today-job-list" class="today-job-list"></div>
+          <button id="add-today-job" class="secondary add-job-button" type="button">+ Квартира</button>
+          <div class="action-row action-row-end"><button id="preview-button" class="primary" type="button">Сформировать отчёт</button></div>
           <p id="request-error" class="notice error" role="alert" hidden></p>
         </article>
         <article id="today-preview" class="surface workflow-surface" hidden>
-          <div class="section-heading"><div><p class="eyebrow">Проверка</p><h2>Всё ли верно?</h2></div><button id="edit-button" class="ghost" type="button">← Исправить</button></div>
+          <div class="section-heading"><div><p class="eyebrow">Готовый отчёт</p><h2>Можно отправлять</h2></div><button id="edit-button" class="ghost" type="button">← Изменить</button></div>
           <div id="issue-list" class="notice error" role="alert" hidden></div>
           <div id="parsed-summary"></div>
-          <div class="action-row action-row-end"><button id="confirm-button" class="primary" type="button">Сохранить день</button></div>
-        </article>
-        <article id="today-result" class="surface workflow-surface" hidden>
-          <div class="section-heading"><div><p class="eyebrow">Готово</p><h2>День сохранён</h2></div><button id="result-edit" class="ghost" type="button">Изменить</button></div>
           <pre id="share-text"></pre>
           <div class="action-row"><button id="copy-button" class="secondary" type="button">Скопировать</button><button id="share-button" class="primary" type="button">Поделиться</button></div>
           <p id="share-status" class="notice success" role="status" hidden></p>
@@ -93,7 +90,7 @@
       <form id="place-form">
         <h2 id="place-form-title">Добавить место</h2><input id="place-edit-id" type="hidden" />
         <label>Тип<select id="place-kind"><option value="apartment">Квартира</option><option value="laundry">Сушка</option><option value="partner_restaurant">Ресторан-партнёр</option></select></label>
-        <label>Название<input id="place-name" required maxlength="200" /></label>
+        <label id="place-name-label"><span id="place-name-caption">Название</span><input id="place-name" maxlength="200" /></label>
         <label>Адрес<input id="place-address" maxlength="1000" placeholder="Основной способ найти точку" /></label>
         <label>Ссылка Maps<input id="place-maps-url" type="url" placeholder="Если адреса недостаточно" /></label>
         <label>Заметка<textarea id="place-note" rows="5" maxlength="20000"></textarea></label>

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/server.js";
 import type { Config } from "../src/config.js";
@@ -6,17 +6,30 @@ import { MemoryLedgerStore } from "../src/storage/ledger-store.js";
 
 const config: Config = {
   PORT: 3000, HOST: "127.0.0.1", LOG_LEVEL: "silent",
+  PRODUCT_RELEASE: 3,
   HOURLY_RATE_CENTS: 1000, ORIENTATION_FLAT_CENTS: 1000, PRACTICE_FLAT_CENTS: 1500,
   CHECKIN_FLAT_CENTS: 1000, DRYER_DEFAULT_CENTS: 390,
   PREVIEW_RATE_LIMIT_MAX: 100, PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
   DATABASE_URL: "postgresql://unused",
-  APARTMENT_IMPORT_TOKEN: "test-import-token", APARTMENT_CACHE_TTL_MS: 30_000,
+  APARTMENT_IMPORT_TOKEN: "test-import-token",
 };
 
 let app: FastifyInstance | undefined;
 afterEach(async () => { await app?.close(); app = undefined; });
 
 describe("MaidAid HTTP API", () => {
+  it("exposes only release-one product capabilities by default", async () => {
+    app = await buildApp({ ...config, PRODUCT_RELEASE: 1 }, new MemoryLedgerStore());
+    expect((await app.inject({ method: "GET", url: "/api/app-config" })).json()).toEqual({ productRelease: 1 });
+    expect((await app.inject({ method: "GET", url: "/api/apartments" })).statusCode).toBe(200);
+    expect((await app.inject({ method: "POST", url: "/api/apartments", payload: { canonicalName: "Hidden", aliases: [] } })).statusCode).toBe(404);
+    const located = await app.inject({ method: "PATCH", url: "/api/apartments/1", payload: { latitude: 48.8566, longitude: 2.3522, locationSource: "pin" } });
+    expect(located.statusCode).toBe(200);
+    expect(located.json().apartment).toMatchObject({ id: 1, latitude: 48.8566, longitude: 2.3522 });
+    expect((await app.inject({ method: "GET", url: "/api/places" })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/api/apartments/1/nearby-laundries" })).statusCode).toBe(404);
+  });
+
   it("prevents stale service workers and app shells", async () => {
     app = await buildApp(config, new MemoryLedgerStore());
     expect((await app.inject({ method: "GET", url: "/sw.js" })).headers["cache-control"]).toBe("no-store");
@@ -68,7 +81,78 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "POST", url: "/api/preview", payload: { text: "" } })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/health" })).json()).toMatchObject({ status: "ok", database: true });
     expect((await app.inject({ method: "GET", url: "/" })).headers["content-type"]).toContain("text/html");
-    expect((await app.inject({ method: "GET", url: "/apartment.html" })).headers["content-type"]).toContain("text/html");
+    expect((await app.inject({ method: "GET", url: "/map/apartments/1" })).headers["content-type"]).toContain("text/html");
+  });
+
+  it("creates apartments and saved places without mixing their storage", async () => {
+    const externalFetch = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).includes("nominatim")) return new Response(JSON.stringify([{ lat: "48.8566", lon: "2.3522" }]), { status: 200 });
+      return new Response("{}", { status: 500 });
+    }) as unknown as typeof fetch;
+    app = await buildApp(config, new MemoryLedgerStore(), externalFetch);
+    const createdApartment = await app.inject({ method: "POST", url: "/api/apartments", payload: { canonicalName: "Test Flat", aliases: [], address: "Paris" } });
+    expect(createdApartment.statusCode).toBe(201);
+    expect(createdApartment.json().apartment).toMatchObject({ canonicalName: "Test Flat", latitude: 48.8566, locationSource: "address" });
+    const apartmentId = createdApartment.json().apartment.id;
+    const createdPlace = await app.inject({ method: "POST", url: "/api/places", payload: { kind: "laundry", name: "Good Dryer", latitude: 48.857, longitude: 2.353, locationSource: "pin", apartmentId } });
+    expect(createdPlace.statusCode).toBe(201);
+    expect((await app.inject({ method: "GET", url: "/api/places" })).json().places).toEqual([expect.objectContaining({ kind: "laundry", name: "Good Dryer" })]);
+    expect((await app.inject({ method: "GET", url: `/api/apartments/${apartmentId}` })).json().preferredLaundry).toMatchObject({ name: "Good Dryer" });
+  });
+
+  it("previews structured work without creating apartments and creates them idempotently on save", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    const bosquet = (await app.inject({ method: "GET", url: "/api/apartments" })).json().apartments.find((item: { canonicalName: string }) => item.canonicalName === "Bosquet");
+    const payload = { format: "structured", dateIso: "2026-08-09", jobs: [
+      { apartmentId: bosquet.id, workType: "independent", durationMinutes: 180, dryerCents: 390, otherExpenseCents: 500 },
+      { newApartmentName: "Nouvelle Rue", workType: "orientation", dryerCents: 0, otherExpenseCents: 0 },
+    ] };
+    const preview = await app.inject({ method: "POST", url: "/api/preview", payload });
+    expect(preview.statusCode).toBe(200);
+    expect(preview.json()).toMatchObject({ canShare: true, totals: { minutes: 180, incomeCents: 4000, expensesCents: 890 } });
+    expect((await app.inject({ method: "GET", url: "/api/apartments" })).json().apartments).not.toContainEqual(expect.objectContaining({ canonicalName: "Nouvelle Rue" }));
+
+    const saved = await app.inject({ method: "POST", url: "/api/days", payload });
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json().day.parsedDetails.jobs[1]).toMatchObject({ object: "Nouvelle Rue", workType: "orientation", durationMinutes: 60 });
+    const afterFirstSave = (await app.inject({ method: "GET", url: "/api/apartments" })).json().apartments.filter((item: { canonicalName: string }) => item.canonicalName === "Nouvelle Rue");
+    expect(afterFirstSave).toEqual([expect.objectContaining({ address: null, latitude: null })]);
+    expect((await app.inject({ method: "POST", url: "/api/days", payload })).statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/api/apartments" })).json().apartments.filter((item: { canonicalName: string }) => item.canonicalName === "Nouvelle Rue")).toHaveLength(1);
+  });
+
+  it("rejects expenses for non-cleaning structured work", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    const response = await app.inject({ method: "POST", url: "/api/preview", payload: { format: "structured", dateIso: "2026-08-09", jobs: [
+      { apartmentId: 1, workType: "orientation", dryerCents: 390, otherExpenseCents: 0 },
+    ] } });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("accepts a laundry without an invented name", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    const response = await app.inject({ method: "POST", url: "/api/places", payload: { kind: "laundry", address: "24 Pl. du Marché Saint-Honoré" } });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().place).toMatchObject({ kind: "laundry", name: "Сушка", address: "24 Pl. du Marché Saint-Honoré" });
+  });
+
+  it("returns the three nearest OSM laundries and links a confirmed candidate", async () => {
+    const externalFetch = vi.fn(async () => new Response(JSON.stringify({ elements: [
+      { type: "node", id: 3, lat: 48.86, lon: 2.36, tags: { name: "Far" } },
+      { type: "node", id: 1, lat: 48.8567, lon: 2.3523, tags: { name: "Nearest", amenity: "dryer" } },
+      { type: "way", id: 2, center: { lat: 48.857, lon: 2.354 }, tags: { name: "Middle", shop: "laundry" } },
+      { type: "node", id: 4, lat: 48.87, lon: 2.37, tags: { name: "Excluded fourth" } },
+    ] }), { status: 200 })) as unknown as typeof fetch;
+    app = await buildApp(config, new MemoryLedgerStore(), externalFetch);
+    const apartment = (await app.inject({ method: "POST", url: "/api/apartments", payload: { canonicalName: "Located", aliases: [], latitude: 48.8566, longitude: 2.3522, locationSource: "pin" } })).json().apartment;
+    const nearby = await app.inject({ method: "GET", url: `/api/apartments/${apartment.id}/nearby-laundries` });
+    expect(nearby.statusCode).toBe(200);
+    expect(nearby.json().candidates).toHaveLength(3);
+    expect(nearby.json().candidates[0]).toMatchObject({ name: "Nearest", dryerConfirmed: true });
+    const candidate = nearby.json().candidates[0];
+    const linked = await app.inject({ method: "POST", url: `/api/apartments/${apartment.id}/laundry-links`, payload: { candidate: { osmType: candidate.osmType, osmId: candidate.osmId, name: candidate.name, address: candidate.address, latitude: candidate.latitude, longitude: candidate.longitude } } });
+    expect(linked.statusCode).toBe(200);
+    expect(linked.json().place).toMatchObject({ name: "Nearest", osmId: "1" });
   });
 
   it("protects, dry-runs and idempotently applies apartment imports", async () => {
@@ -111,6 +195,3 @@ describe("MaidAid HTTP API", () => {
     expect(repeated.json()).toMatchObject({ accepted: 1, skipped: 1, conflicts: [] });
   });
 });
-
-
-
