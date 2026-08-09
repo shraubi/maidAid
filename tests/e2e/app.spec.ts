@@ -20,6 +20,10 @@ test("Today keeps its preview while navigating between sections", async ({ page 
   await page.getByRole("button", { name: "+ Квартира", exact: true }).click();
   await page.getByPlaceholder("Например, Bosquet или Lauriston").fill("Bos");
   await page.locator("[data-choose-apartment]", { hasText: "Bosquet" }).first().click();
+  await page.locator("[data-work-type]").selectOption("orientation");
+  await expect(page.getByLabel("Сушка, €")).toHaveCount(0);
+  await expect(page.getByLabel("Другие расходы, €")).toHaveCount(0);
+  await page.locator("[data-work-type]").selectOption("independent");
   await page.getByRole("button", { name: "Сформировать отчёт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
   await page.getByRole("link", { name: "Карта", exact: true }).click();
