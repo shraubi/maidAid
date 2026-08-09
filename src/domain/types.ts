@@ -1,5 +1,7 @@
 export type WorkType = "independent" | "orientation" | "practice" | "checkin" | "unknown";
 export type DayKind = "schedule" | "actual";
+export type LocationSource = "address" | "maps_link" | "pin" | "geolocation" | "import" | "osm";
+export type SavedPlaceKind = "laundry" | "partner_restaurant";
 
 export interface Job {
   object: string;
@@ -25,7 +27,37 @@ export interface Apartment {
   address: string | null;
   mapsUrl: string | null;
   noteBody: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  locationSource?: LocationSource | null;
+  locationAccuracyMeters?: number | null;
   active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedPlace {
+  id: number;
+  kind: SavedPlaceKind;
+  name: string;
+  address: string | null;
+  note: string | null;
+  mapsUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  locationSource: LocationSource | null;
+  locationAccuracyMeters: number | null;
+  osmType: "node" | "way" | "relation" | null;
+  osmId: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApartmentPlaceLink {
+  apartmentId: number;
+  placeId: number;
+  preferred: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -94,4 +126,3 @@ export interface ReportSnapshot {
   previous: LedgerTotals;
   total: LedgerTotals;
 }
-

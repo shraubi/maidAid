@@ -15,15 +15,15 @@ function expectValidJavaScript(path: string): void {
 
 describe("public assets", () => {
   it("ships syntactically valid JavaScript modules", () => {
-    for (const path of ["public/app.js", "public/apartment-tools.js", "public/apartment.js", "public/sw.js"]) {
+    for (const path of ["public/app.js", "public/sw.js"]) {
       expectValidJavaScript(path);
     }
   });
 
-  it("renders apartment information as a direct navigation link", () => {
+  it("uses permanent apartment routes instead of session storage handoff", () => {
     const app = readFileSync(resolve("public/app.js"), "utf8");
-    expect(app).toContain('href="/apartment.html" data-apartment-info=');
-    expect(app).not.toContain('window.location.href = "/apartment.html"');
+    expect(app).toContain("/map/apartments/");
+    expect(app).not.toContain("writeSelectedApartment");
   });
 
   it("ships a valid web app manifest", () => {
@@ -31,8 +31,10 @@ describe("public assets", () => {
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });
   });
 
-  it("refreshes the app shell from the network before using an offline fallback", () => {
+  it("retires the legacy offline shell instead of handling fetches", () => {
     const serviceWorker = readFileSync(resolve("public/sw.js"), "utf8");
-    expect(serviceWorker.indexOf("fetch(event.request)")).toBeLessThan(serviceWorker.indexOf("caches.match(event.request)"));
+    expect(serviceWorker).toContain("registration.unregister()");
+    expect(serviceWorker).toContain('startsWith("maidaid-shell-")');
+    expect(serviceWorker).not.toContain('addEventListener("fetch"');
   });
 });
