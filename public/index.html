@@ -51,7 +51,7 @@
       <section id="view-map" class="app-view" aria-labelledby="map-title" hidden>
         <header class="view-heading map-heading">
           <div><p class="eyebrow">Адреса и полезные точки</p><h1 id="map-title">Карта</h1></div>
-          <button id="add-place-button" class="round-action" type="button" aria-label="Добавить место">+</button>
+          <button id="add-place-button" class="round-action" type="button" aria-label="Добавить место"><span aria-hidden="true"></span></button>
         </header>
         <div class="view-switch" role="group" aria-label="Вид раздела">
           <button type="button" data-map-mode="map">Карта</button><button type="button" data-map-mode="list">Список</button>
@@ -83,7 +83,7 @@
       <button class="dialog-close" data-close-dialog="place-form-dialog" aria-label="Закрыть">×</button>
       <form id="place-form">
         <h2 id="place-form-title">Добавить место</h2><input id="place-edit-id" type="hidden" />
-        <label>Тип<select id="place-kind"><option value="apartment">Квартира</option><option value="laundry">Хорошая сушка</option><option value="partner_restaurant">Ресторан-партнёр</option></select></label>
+        <label>Тип<select id="place-kind"><option value="apartment">Квартира</option><option value="laundry">Сушка</option><option value="partner_restaurant">Ресторан-партнёр</option></select></label>
         <label>Название<input id="place-name" required maxlength="200" /></label>
         <label>Адрес<input id="place-address" maxlength="1000" placeholder="Основной способ найти точку" /></label>
         <label>Ссылка Maps<input id="place-maps-url" type="url" placeholder="Если адреса недостаточно" /></label>

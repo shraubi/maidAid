@@ -311,4 +311,445 @@ export class MemoryLedgerStore implements LedgerStore {
   }
 
   async getSavedPlace(id: number): Promise<SavedPlace | null> {
-    const item = this.savedPlaces.get(id); return itãž<¶‰žËkºwµçUÑÕÉ¸ìÁÉ•Ù¥½ÕÌ°Ñ½Ñ…°ôì(€ô((€…Íå¹ŒÍ…Ù•…ä¡¥¹ÁÕÐèM…Ù•…å%¹ÁÕÐ¤èAÉ½µ¥Í”ñì‘…äèMÑ½É•‘…äìÍ¹…ÁÍ¡½ÐèI•Á½ÉÑM¹…ÁÍ¡½Ðôøì(€€€½¹ÍÐ±¥•¹Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹½¹¹•Ð ¤ì(€€€ÑÉäì(€€€€€…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰	%8ˆ¤ì(€€€€€½¹ÍÐÍ…Ù•€ô…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä¡€(€€€€€€€%9MIP%9Q<Ý½É­}‘…åÌ€¡‘…Ñ•}¥Í¼°Í½ÕÉ•}Ñ•áÐ°É•Á½ÉÑ}Ñ•áÐ°Á…ÉÍ•‘}‘•Ñ…¥±Ì°µ¥¹ÕÑ•Ì°•…É¹•‘}•¹ÑÌ°¡•­¥¹}•¹ÑÌ°•áÁ•¹Í•Í}•¹ÑÌ°ÕÁ‘…Ñ•‘}…Ð¤(€€€€€€€Y1UL€ Ä°€È°€Ì°€Ðèé©Í½¹ˆ°€Ô°€Ø°€Ü°€à°¹½Ü ¤¤(€€€€€€€=8=91%P€¡‘…Ñ•}¥Í¼¤<UAQMPÍ½ÕÉ•}Ñ•áÐõa1U¹Í½ÕÉ•}Ñ•áÐ°Á…ÉÍ•‘}‘•Ñ…¥±Ìõa1U¹Á…ÉÍ•‘}‘•Ñ…¥±Ì°(€€€€€€€€€É•Á½ÉÑ}Ñ•áÐõa1U¹É•Á½ÉÑ}Ñ•áÐ°(€€€€€€€€€µ¥¹ÕÑ•Ìõa1U¹µ¥¹ÕÑ•Ì°•…É¹•‘}•¹ÑÌõa1U¹•…É¹•‘}•¹ÑÌ°¡•­¥¹}•¹ÑÌõa1U¹¡•­¥¹}•¹ÑÌ°(€€€€€€€€€•áÁ•¹Í•Í}•¹ÑÌõa1U¹•áÁ•¹Í•Í}•¹ÑÌ°ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤(€€€€€€€IQUI9%9€¨(€€€€€€°m¥¹ÁÕÐ¹‘…Ñ•%Í¼°¥¹ÁÕÐ¹Í½ÕÉ•Q•áÐ°¥¹ÁÕÐ¹É•Á½ÉÑQ•áÐ°)M=8¹ÍÑÉ¥¹¥™ä¡¥¹ÁÕÐ¹Á…ÉÍ•‘•Ñ…¥±Ì¤°¥¹ÁÕÐ¹Ñ½Ñ…±Ì¹µ¥¹ÕÑ•Ì°¥¹ÁÕÐ¹Ñ½Ñ…±Ì¹¥¹½µ••¹ÑÌ°¥¹ÁÕÐ¹Ñ½Ñ…±Ì¹¡•­¥¹•¹ÑÌ°¥¹ÁÕÐ¹Ñ½Ñ…±Ì¹•áÁ•¹Í•Í•¹ÑÍt¤ì(€€€€€…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰1QI=4Á…åµ•¹ÑÌ]!IÍ½ÕÉ”ô‘…å}Ñ•áÐœ9Ý½É­}‘…Ñ”ôÄˆ°m¥¹ÁÕÐ¹‘…Ñ•%Í½t¤ì(€€€€€¥˜€¡¥¹ÁÕÐ¹…‘Ù…¹••¹ÑÌ€ø€À¤…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä (€€€€€€€€‰%9MIP%9Q<Á…åµ•¹ÑÌ€¡Á…åµ•¹Ñ}‘…Ñ”°…µ½Õ¹Ñ}•¹ÑÌ°¹½Ñ”°Í½ÕÉ”°Ý½É­}‘…Ñ”¤Y1UL€ Ä°È°ŸBCBËBÃB÷FƒBãBÜƒBûFFFGFBÀœ°‘…å}Ñ•áÐœ°Ä¤ˆ°(€€€€€€€m¥¹ÁÕÐ¹‘…Ñ•%Í¼°¥¹ÁÕÐ¹…‘Ù…¹••¹ÑÍt°(€€€€€€¤ì(€€€€€½¹ÍÐ™É½´€ôµ½¹Ñ¡MÑ…ÉÐ¡¥¹ÁÕÐ¹‘…Ñ•%Í¼¤ì(€€€€€½¹ÍÐÁÉ•Ù¥½ÕÌ€ô…Ý…¥ÐÑ¡¥Ì¹…É•…Ñ”¡±¥•¹Ð°€‰‘…Ñ•}¥Í¼€øô€È9‘…Ñ•}¥Í¼€ð€Äˆ°m¥¹ÁÕÐ¹‘…Ñ•%Í¼°™É½µt¤ì(€€€€€½¹ÍÐÑ½Ñ…°€ô…Ý…¥ÐÑ¡¥Ì¹…É•…Ñ”¡±¥•¹Ð°€‰‘…Ñ•}¥Í¼€øô€È9‘…Ñ•}¥Í¼€ðô€Äˆ°m¥¹ÁÕÐ¹‘…Ñ•%Í¼°™É½µt¤ì(€€€€€…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰=55%Pˆ¤ì(€€€€€É•ÑÕÉ¸ì‘…äèµ…Á…ä¡Í…Ù•¹É½ÝÍlÁt¤°Í¹…ÁÍ¡½ÐèìÁÉ•Ù¥½ÕÌ°Ñ½Ñ…°ôôì(€€€ô…Ñ €¡•ÉÉ½È¤ì…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰I=11	,ˆ¤ìÑ¡É½Ü•ÉÉ½Èìô(€€€™¥¹…±±äì±¥•¹Ð¹É•±•…Í” ¤ìô(€ô((€…Íå¹Œ‘•±•Ñ•…ä¡‘…Ñ•%Í¼èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ‰½½±•…¸øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰1QI=4Ý½É­}‘…åÌ]!I‘…Ñ•}¥Í¼ôÄˆ°m‘…Ñ•%Í½t¤ì(€€€É•ÑÕÉ¸€¡É•ÍÕ±Ð¹É½Ý½Õ¹Ð€üü€À¤€ø€Àì(€ô((€…Íå¹Œ•Ñ1•‘•È¡™É½´üèÍÑÉ¥¹œ°Ñ¼üèÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ1•‘•ÉY¥•Üøì(€€€½¹ÍÐÙ…±Õ•ÌèÍÑÉ¥¹mt€ômtì½¹ÍÐ±…ÕÍ•ÌèÍÑÉ¥¹mt€ômtì(€€€¥˜€¡™É½´¤ìÙ…±Õ•Ì¹ÁÕÍ ¡™É½´¤ì±…ÕÍ•Ì¹ÁÕÍ ¡‘…Ñ•}¥Í¼€øô€‘íÙ…±Õ•Ì¹±•¹Ñ¡õ€¤ìô(€€€¥˜€¡Ñ¼¤ìÙ…±Õ•Ì¹ÁÕÍ ¡Ñ¼¤ì±…ÕÍ•Ì¹ÁÕÍ ¡‘…Ñ•}¥Í¼€ðô€‘íÙ…±Õ•Ì¹±•¹Ñ¡õ€¤ìô(€€€½¹ÍÐ½¹‘¥Ñ¥½¸€ô±…ÕÍ•Ì¹±•¹Ñ €ü±…ÕÍ•Ì¹©½¥¸ ˆ9€ˆ¤€è€‰QIUˆì(€€€½¹ÍÐmÑ½Ñ…±Ì°‘…åÌ°Á…åµ•¹ÑÍt€ô…Ý…¥ÐAÉ½µ¥Í”¹…±°¡l(€€€€€Ñ¡¥Ì¹…É•…Ñ”¡Ñ¡¥Ì¹Á½½°°½¹‘¥Ñ¥½¸°Ù…±Õ•Ì¤°(€€€€€Ñ¡¥Ì¹Á½½°¹ÅÕ•Éä¡M1P€¨I=4Ý½É­}‘…åÌ]!I€‘í½¹‘¥Ñ¥½¹ô=IH	d‘…Ñ•}¥Í¼°ÕÁ‘…Ñ•‘}…Ñ€°Ù…±Õ•Ì¤°(€€€€€Ñ¡¥Ì¹Á½½°¹ÅÕ•Éä¡M1P€¨I=4Á…åµ•¹ÑÌ]!I€‘í½¹‘¥Ñ¥½¸¹É•Á±…•±° ‰‘…Ñ•}¥Í¼ˆ°€‰Á…åµ•¹Ñ}‘…Ñ”ˆ¥ô=IH	dÁ…åµ•¹Ñ}‘…Ñ”°¥‘€°Ù…±Õ•Ì¤°(€€€t¤ì(€€€½¹ÍÐÉ½ÝÌè1•‘•ÉI½Ýmt€ôl(€€€€€€¸¸¹‘…åÌ¹É½ÝÌ¹µ…À ¡É½Ü¤€ôø€¡ìÉ½ÝQåÁ”è€‰Ý½É¬ˆ…Ì½¹ÍÐ°€¸¸¹µ…Á…ä¡É½Ü¤ô¤¤°(€€€€€€¸¸¹Á…åµ•¹ÑÌ¹É½ÝÌ¹µ…À ¡É½Ü¤€ôø€¡ìÉ½ÝQåÁ”è€‰Á…åµ•¹Ðˆ…Ì½¹ÍÐ°€¸¸¹µ…ÁA…åµ•¹Ð¡É½Ü¤ô¤¤°(€€€t¹Í½ÉÐ ¡„°ˆ¤€ôøˆ¹‘…Ñ•%Í¼¹±½…±•½µÁ…É”¡„¹‘…Ñ•%Í¼¤ñð€¡„¹É½ÝQåÁ”€ôôô€‰Ý½É¬ˆ€ü€´Ä€è€Ä¤¤ì(€€€É•ÑÕÉ¸ìÑ½Ñ…±Ì°É½ÝÌôì(€ô((€…Íå¹Œ±¥ÍÑA•É¥½‘Ì ¤èAÉ½µ¥Í”ñ1•‘•ÉA•É¥½‘mtøì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€M1P%MQ%9PÑ½}¡…È¡Á•É¥½‘}‘…Ñ”°€eeedµ54œ¤LÁ•É¥½(€€€€€I=4€ (€€€€€€€M1P‘…Ñ•}¥Í¼LÁ•É¥½‘}‘…Ñ”I=4Ý½É­}‘…åÌ(€€€€€€€U9%=810(€€€€€€€M1PÁ…åµ•¹Ñ}‘…Ñ”LÁ•É¥½‘}‘…Ñ”I=4Á…åµ•¹ÑÌ(€€€€€€¤•¹ÑÉ¥•Ì(€€€€€=IH	dÁ•É¥½M(€€€€¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÌ¹µ…À ¡ìÁ•É¥½ô¤€ôø€¡ìÁ•É¥½èMÑÉ¥¹œ¡Á•É¥½¤°™É½´è€‘íÁ•É¥½‘ô´ÀÅ€°Ñ¼è€‘íÁ•É¥½‘ô´ÌÅ€ô¤¤ì(€ô((€…Íå¹ŒÉ•…Ñ•A…åµ•¹Ð¡‘…Ñ•%Í¼èÍÑÉ¥¹œ°…µ½Õ¹Ñ•¹ÑÌè¹Õµ‰•È°¹½Ñ”üèÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñA…åµ•¹Ðøì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä (€€€€€€‰%9MIP%9Q<Á…åµ•¹ÑÌ€¡Á…åµ•¹Ñ}‘…Ñ”±…µ½Õ¹Ñ}•¹ÑÌ±¹½Ñ”±Í½ÕÉ”¤Y1UL€ Ä°È°Ì°µ…¹Õ…°œ¤IQUI9%9€¨ˆ°(€€€€€m‘…Ñ•%Í¼°…µ½Õ¹Ñ•¹ÑÌ°¹½Ñ”ü¹ÑÉ¥´ ¤ñð¹Õ±±t°(€€€€¤ì(€€€É•ÑÕÉ¸µ…ÁA…åµ•¹Ð¡É•ÍÕ±Ð¹É½ÝÍlÁt¤ì(€ô((€…Íå¹ŒÕÁ‘…Ñ•A…åµ•¹Ð¡¥è¹Õµ‰•È°Ù…±Õ•Ìèì‘…Ñ•%Í¼üèÍÑÉ¥¹œì…µ½Õ¹Ñ•¹ÑÌüè¹Õµ‰•Èì¹½Ñ”üèÍÑÉ¥¹œð¹Õ±°ô¤èAÉ½µ¥Í”ñA…åµ•¹Ðð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€UAQÁ…åµ•¹ÑÌMPÁ…åµ•¹Ñ}‘…Ñ”õ=1M È±Á…åµ•¹Ñ}‘…Ñ”¤°…µ½Õ¹Ñ}•¹ÑÌõ=1M Ì±…µ½Õ¹Ñ}•¹ÑÌ¤°(€€€€€€€¹½Ñ”õM]!8€Ðèé‰½½±•…¸Q!8€Ô1M¹½Ñ”9°ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤(€€€€€]!I¥ôÄ9Í½ÕÉ”ôµ…¹Õ…°œIQUI9%9€¨(€€€€°m¥°Ù…±Õ•Ì¹‘…Ñ•%Í¼€üü¹Õ±°°Ù…±Õ•Ì¹…µ½Õ¹Ñ•¹ÑÌ€üü¹Õ±°°Ù…±Õ•Ì¹¹½Ñ”€„ôôÕ¹‘•™¥¹•°Ù…±Õ•Ì¹¹½Ñ”ü¹ÑÉ¥´ ¤ñð¹Õ±±t¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁA…åµ•¹Ð¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹Œ‘•±•Ñ•A…åµ•¹Ð¡¥è¹Õµ‰•È¤èAÉ½µ¥Í”ñ‰½½±•…¸øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰1QI=4Á…åµ•¹ÑÌ]!I¥ôÄ9Í½ÕÉ”ôµ…¹Õ…°œˆ°m¥‘t¤ì(€€€É•ÑÕÉ¸€¡É•ÍÕ±Ð¹É½Ý½Õ¹Ð€üü€À¤€ø€Àì(€ô((€…Íå¹Œ•ÑÑ¥Ù•Á…ÉÑµ•¹ÑÌ ¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹Ñmtøì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰M1P€¨I=4…Á…ÉÑµ•¹ÑÌ]!I…Ñ¥Ù”õÑÉÕ”=IH	d…¹½¹¥…±}¹…µ”ˆ¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÌ¹µ…À¡µ…ÁÁ…ÉÑµ•¹Ð¤ì(€ô((€…Íå¹Œ•ÑÁ…ÉÑµ•¹Ð¡¥è¹Õµ‰•È¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹Ðð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰M1P€¨I=4…Á…ÉÑµ•¹ÑÌ]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”ˆ°m¥‘t¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁÁ…ÉÑµ•¹Ð¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹ŒÉ•…Ñ•Á…ÉÑµ•¹Ð¡¥¹ÁÕÐèÁ…ÉÑµ•¹Ñ]É¥Ñ•%¹ÁÕÐ¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹Ðøì(€€€½¹ÍÐ…¹½¹¥…±-•ä€ô…Á…ÉÑµ•¹Ñ-•ä¡¥¹ÁÕÐ¹…¹½¹¥…±9…µ”¤ì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€%9MIP%9Q<…Á…ÉÑµ•¹ÑÌ€¡Í½ÕÉ•}­•ä±…¹½¹¥…±}­•ä±…¹½¹¥…±}¹…µ”±…±¥…Í•Ì±…‘‘É•ÍÌ±µ…ÁÍ}ÕÉ°±¹½Ñ•}‰½‘ä±±…Ñ¥ÑÕ‘”±±½¹¥ÑÕ‘”±±½…Ñ¥½¹}Í½ÕÉ”±±½…Ñ¥½¹}…ÕÉ…å}µ•Ñ•ÉÌ±…Ñ¥Ù”¤(€€€€€Y1UL€ Ä°È°Ì°Ðèé©Í½¹ˆ°Ô°Ø°Ü°à°ä°ÄÀ°ÄÄ±ÑÉÕ”¤IQUI9%9€¨(€€€€°mµ…¹Õ…°è‘í…¹½¹¥…±-•åôè‘í…Ñ”¹¹½Ü ¥õ€°…¹½¹¥…±-•ä°¥¹ÁÕÐ¹…¹½¹¥…±9…µ”°)M=8¹ÍÑÉ¥¹¥™ä¡l¸¸¹¹•ÜM•Ð¡m¥¹ÁÕÐ¹…¹½¹¥…±9…µ”°€¸¸¹¥¹ÁÕÐ¹…±¥…Í•Ít¥t¤°¥¹ÁÕÐ¹…‘‘É•ÍÌ°¥¹ÁÕÐ¹µ…ÁÍUÉ°°¥¹ÁÕÐ¹¹½Ñ•	½‘ä°¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”°¥¹ÁÕÐ¹±½¹¥ÑÕ‘”°¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”°¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÍt¤ì(€€€É•ÑÕÉ¸µ…ÁÁ…ÉÑµ•¹Ð¡É•ÍÕ±Ð¹É½ÝÍlÁt¤ì(€ô((€…Íå¹ŒÕÁ‘…Ñ•Á…ÉÑµ•¹Ð¡¥è¹Õµ‰•È°¥¹ÁÕÐèA…ÉÑ¥…°ñÁ…ÉÑµ•¹Ñ]É¥Ñ•%¹ÁÕÐø¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹Ðð¹Õ±°øì(€€€½¹ÍÐÕÉÉ•¹Ð€ô…Ý…¥ÐÑ¡¥Ì¹•ÑÁ…ÉÑµ•¹Ð¡¥¤ì¥˜€ …ÕÉÉ•¹Ð¤É•ÑÕÉ¸¹Õ±°ì(€€€½¹ÍÐ¹…µ”€ô¥¹ÁÕÐ¹…¹½¹¥…±9…µ”€üüÕÉÉ•¹Ð¹…¹½¹¥…±9…µ”ì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€UAQ…Á…ÉÑµ•¹ÑÌMP…¹½¹¥…±}­•äôÈ±…¹½¹¥…±}¹…µ”ôÌ±…±¥…Í•ÌôÐèé©Í½¹ˆ±…‘‘É•ÍÌôÔ±µ…ÁÍ}ÕÉ°ôØ±¹½Ñ•}‰½‘äôÜ°(€€€€€€€±…Ñ¥ÑÕ‘”ôà±±½¹¥ÑÕ‘”ôä±±½…Ñ¥½¹}Í½ÕÉ”ôÄÀ±±½…Ñ¥½¹}…ÕÉ…å}µ•Ñ•ÉÌôÄÄ±ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤(€€€€€]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”IQUI9%9€¨(€€€€°m¥°…Á…ÉÑµ•¹Ñ-•ä¡¹…µ”¤°¹…µ”°)M=8¹ÍÑÉ¥¹¥™ä¡¥¹ÁÕÐ¹…±¥…Í•Ì€ül¸¸¹¹•ÜM•Ð¡m¹…µ”°€¸¸¹¥¹ÁÕÐ¹…±¥…Í•Ít¥t€èÕÉÉ•¹Ð¹…±¥…Í•Ì¤°¥¹ÁÕÐ¹…‘‘É•ÍÌ€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹…‘‘É•ÍÌ€è¥¹ÁÕÐ¹…‘‘É•ÍÌ°¥¹ÁÕÐ¹µ…ÁÍUÉ°€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹µ…ÁÍUÉ°€è¥¹ÁÕÐ¹µ…ÁÍUÉ°°¥¹ÁÕÐ¹¹½Ñ•	½‘ä€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹¹½Ñ•	½‘ä€è¥¹ÁÕÐ¹¹½Ñ•	½‘ä°¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±…Ñ¥ÑÕ‘”€è¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”°¥¹ÁÕÐ¹±½¹¥ÑÕ‘”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½¹¥ÑÕ‘”€è¥¹ÁÕÐ¹±½¹¥ÑÕ‘”°¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½…Ñ¥½¹M½ÕÉ”€è¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”°¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ€è¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÍt¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁÁ…ÉÑµ•¹Ð¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹Œ¥µÁ½ÉÑÁ…ÉÑµ•¹ÑÌ¡É•½É‘ÌèÁ…ÉÑµ•¹Ñ%µÁ½ÉÑ%¹ÁÕÑmt°‘ÉåIÕ¸è‰½½±•…¸¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹Ñ%µÁ½ÉÑI•ÍÕ±Ðøì(€€€½¹ÍÐ±¥•¹Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹½¹¹•Ð ¤ì(€€€½¹ÍÐÉ•ÍÕ±ÐèÁ…ÉÑµ•¹Ñ%µÁ½ÉÑI•ÍÕ±Ð€ôìÉ•…Ñ•è€À°ÕÁ‘…Ñ•è€À°Í­¥ÁÁ•è€À°½¹™±¥ÑÌèmtôì(€€€ÑÉäì(€€€€€…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰	%8ˆ¤ì(€€€€€½¹ÍÐ•á¥ÍÑ¥¹I•ÍÕ±Ð€ô…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰M1P€¨I=4…Á…ÉÑµ•¹ÑÌ=HUAQˆ¤ì(€€€€€½¹ÍÐ•á¥ÍÑ¥¹œ€ô•á¥ÍÑ¥¹I•ÍÕ±Ð¹É½ÝÌ¹µ…À¡µ…ÁÁ…ÉÑµ•¹Ð¤ì(€€€€€™½È€¡½¹ÍÐÉ•½É½˜É•½É‘Ì¤ì(€€€€€€€½¹ÍÐ…¹½¹¥…±-•ä€ô…Á…ÉÑµ•¹Ñ-•ä¡É•½É¹…¹½¹¥…±9…µ”¤ì(€€€€€€€½¹ÍÐ‰åM½ÕÉ”€ô•á¥ÍÑ¥¹œ¹™¥¹ ¡¥Ñ•´¤€ôø¥Ñ•´¹Í½ÕÉ•-•ä€ôôôÉ•½É¹Í½ÕÉ•-•ä¤ì(€€€€€€€½¹ÍÐ‰å…¹½¹¥…°€ô•á¥ÍÑ¥¹œ¹™¥¹ ¡¥Ñ•´¤€ôø¥Ñ•´¹…¹½¹¥…±-•ä€ôôô…¹½¹¥…±-•ä¤ì(€€€€€€€¥˜€¡‰åM½ÕÉ”€˜˜‰å…¹½¹¥…°€˜˜‰åM½ÕÉ”¹¥€„ôô‰å…¹½¹¥…°¹¥¤ì(€€€€€€€€€É•ÍÕ±Ð¹½¹™±¥ÑÌ¹ÁÕÍ ¡ìÍ½ÕÉ•-•äèÉ•½É¹Í½ÕÉ•-•ä°É•…Í½¸è€‰Í½ÕÉ•}­•å}…¹‘}…¹½¹¥…±}­•å}‘¥Í…É•”ˆô¤ì½¹Ñ¥¹Õ”ì(€€€€€€€ô(€€€€€€€½¹ÍÐÕÉÉ•¹Ð€ô‰åM½ÕÉ”€üü‰å…¹½¹¥…°ì(€€€€€€€½¹ÍÐ…±¥…Í•Ì€ôl¸¸¹¹•ÜM•Ð¡mÉ•½É¹…¹½¹¥…±9…µ”°€¸¸¹É•½É¹…±¥…Í•Ít¹µ…À ¡Ù…±Õ”¤€ôøÙ…±Õ”¹ÑÉ¥´ ¤¤¥tì(€€€€€€€½¹ÍÐ…±¥…Í-•åÌ€ô¹•ÜM•Ð¡…±¥…Í•Ì¹µ…À¡…Á…ÉÑµ•¹Ñ-•ä¤¤ì(€€€€€€€½¹ÍÐ…±¥…Í=Ý¹•È€ô•á¥ÍÑ¥¹œ¹™¥¹ ¡¥Ñ•´¤€ôø¥Ñ•´¹¥€„ôôÕÉÉ•¹Ðü¹¥€˜˜m¥Ñ•´¹…¹½¹¥…±9…µ”°€¸¸¹¥Ñ•´¹…±¥…Í•Ít¹Í½µ” ¡…±¥…Ì¤€ôø…±¥…Í-•åÌ¹¡…Ì¡…Á…ÉÑµ•¹Ñ-•ä¡…±¥…Ì¤¤¤¤ì(€€€€€€€¥˜€¡…±¥…Í=Ý¹•È¤ìÉ•ÍÕ±Ð¹½¹™±¥ÑÌ¹ÁÕÍ ¡ìÍ½ÕÉ•-•äèÉ•½É¹Í½ÕÉ•-•ä°É•…Í½¸è€‰…±¥…Í}‰•±½¹Í}Ñ½}…¹½Ñ¡•É}…Á…ÉÑµ•¹Ðˆô¤ì½¹Ñ¥¹Õ”ìô(€€€€€€€½¹ÍÐ½µÁ…É…‰±”€ôìÍ½ÕÉ•-•äèÉ•½É¹Í½ÕÉ•-•ä°…¹½¹¥…±-•ä°…¹½¹¥…±9…µ”èÉ•½É¹…¹½¹¥…±9…µ”°…±¥…Í•Ì°…‘‘É•ÍÌèÉ•½É¹…‘‘É•ÍÌ°µ…ÁÍUÉ°èÉ•½É¹µ…ÁÍUÉ°°¹½Ñ•	½‘äèÉ•½É¹¹½Ñ•	½‘ä°±…Ñ¥ÑÕ‘”èÉ•½É¹±…Ñ¥ÑÕ‘”€üüÕÉÉ•¹Ðü¹±…Ñ¥ÑÕ‘”€üü¹Õ±°°±½¹¥ÑÕ‘”èÉ•½É¹±½¹¥ÑÕ‘”€üüÕÉÉ•¹Ðü¹±½¹¥ÑÕ‘”€üü¹Õ±°°…Ñ¥Ù”èÉ•½É¹…Ñ¥Ù”ôì(€€€€€€€¥˜€¡ÕÉÉ•¹Ð€˜˜)M=8¹ÍÑÉ¥¹¥™ä¡ìÍ½ÕÉ•-•äèÕÉÉ•¹Ð¹Í½ÕÉ•-•ä°…¹½¹¥…±-•äèÕÉÉ•¹Ð¹…¹½¹¥…±-•ä°…¹½¹¥…±9…µ”èÕÉÉ•¹Ð¹…¹½¹¥…±9…µ”°…±¥…Í•ÌèÕÉÉ•¹Ð¹…±¥…Í•Ì°…‘‘É•ÍÌèÕÉÉ•¹Ð¹…‘‘É•ÍÌ°µ…ÁÍUÉ°èÕÉÉ•¹Ð¹µ…ÁÍUÉ°°¹½Ñ•	½‘äèÕÉÉ•¹Ð¹¹½Ñ•	½‘ä°±…Ñ¥ÑÕ‘”èÕÉÉ•¹Ð¹±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”èÕÉÉ•¹Ð¹±½¹¥ÑÕ‘”°…Ñ¥Ù”èÕÉÉ•¹Ð¹…Ñ¥Ù”ô¤€ôôô)M=8¹ÍÑÉ¥¹¥™ä¡½µÁ…É…‰±”¤¤ì(€€€€€€€€€É•ÍÕ±Ð¹Í­¥ÁÁ•€¬ô€Äì½¹Ñ¥¹Õ”ì(€€€€€€€ô(€€€€€€€½¹ÍÐÍ…Ù•€ôÕÉÉ•¹Ð(€€€€€€€€€€ü…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä¡UAQ…Á…ÉÑµ•¹ÑÌMPÍ½ÕÉ•}­•äôÈ°…¹½¹¥…±}­•äôÌ°…¹½¹¥…±}¹…µ”ôÐ°…±¥…Í•ÌôÔèé©Í½¹ˆ°…‘‘É•ÍÌôØ°µ…ÁÍ}ÕÉ°ôÜ°¹½Ñ•}‰½‘äôà°±…Ñ¥ÑÕ‘”ôä°±½¹¥ÑÕ‘”ôÄÀ°±½…Ñ¥½¹}Í½ÕÉ”õM]!8€äèé‘½Õ‰±”ÁÉ•¥Í¥½¸%L9U10Q!8±½…Ñ¥½¹}Í½ÕÉ”1M€¥µÁ½ÉÐœ9°…Ñ¥Ù”ôÄÄ°ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤]!I¥ôÄIQUI9%9€©€°mÕÉÉ•¹Ð¹¥°É•½É¹Í½ÕÉ•-•ä°…¹½¹¥…±-•ä°É•½É¹…¹½¹¥…±9…µ”°)M=8¹ÍÑÉ¥¹¥™ä¡…±¥…Í•Ì¤°É•½É¹…‘‘É•ÍÌ°É•½É¹µ…ÁÍUÉ°°É•½É¹¹½Ñ•	½‘ä°É•½É¹±…Ñ¥ÑÕ‘”€üüÕÉÉ•¹Ð¹±…Ñ¥ÑÕ‘”°É•½É¹±½¹¥ÑÕ‘”€üüÕÉÉ•¹Ð¹±½¹¥ÑÕ‘”°É•½É¹…Ñ¥Ù•t¤(€€€€€€€€€€è…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä¡%9MIP%9Q<…Á…ÉÑµ•¹ÑÌ€¡Í½ÕÉ•}­•ä°…¹½¹¥…±}­•ä°…¹½¹¥…±}¹…µ”°…±¥…Í•Ì°…‘‘É•ÍÌ°µ…ÁÍ}ÕÉ°°¹½Ñ•}‰½‘ä°±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”°±½…Ñ¥½¹}Í½ÕÉ”°…Ñ¥Ù”¤Y1UL€ Ä°È°Ì°Ðèé©Í½¹ˆ°Ô°Ø°Ü°à°ä±M]!8€àèé‘½Õ‰±”ÁÉ•¥Í¥½¸%L9U10Q!89U101M€¥µÁ½ÉÐœ9°ÄÀ¤IQUI9%9€©€°mÉ•½É¹Í½ÕÉ•-•ä°…¹½¹¥…±-•ä°É•½É¹…¹½¹¥…±9…µ”°)M=8¹ÍÑÉ¥¹¥™ä¡…±¥…Í•Ì¤°É•½É¹…‘‘É•ÍÌ°É•½É¹µ…ÁÍUÉ°°É•½É¹¹½Ñ•	½‘ä°É•½É¹±…Ñ¥ÑÕ‘”€üü¹Õ±°°É•½É¹±½¹¥ÑÕ‘”€üü¹Õ±°°É•½É¹…Ñ¥Ù•t¤ì(€€€€€€€½¹ÍÐµ…ÁÁ•€ôµ…ÁÁ…ÉÑµ•¹Ð¡Í…Ù•¹É½ÝÍlÁt¤ì(€€€€€€€¥˜€¡ÕÉÉ•¹Ð¤ì•á¥ÍÑ¥¹œ¹ÍÁ±¥”¡•á¥ÍÑ¥¹œ¹¥¹‘•á=˜¡ÕÉÉ•¹Ð¤°€Ä°µ…ÁÁ•¤ìÉ•ÍÕ±Ð¹ÕÁ‘…Ñ•€¬ô€Äìô(€€€€€€€•±Í”ì•á¥ÍÑ¥¹œ¹ÁÕÍ ¡µ…ÁÁ•¤ìÉ•ÍÕ±Ð¹É•…Ñ•€¬ô€Äìô(€€€€€ô(€€€€€¥˜€¡‘ÉåIÕ¸¤…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰I=11	,ˆ¤ì•±Í”…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰=55%Pˆ¤ì(€€€€€É•ÑÕÉ¸É•ÍÕ±Ðì(€€€ô…Ñ €¡•ÉÉ½È¤ì…Ý…¥Ð±¥•¹Ð¹ÅÕ•Éä ‰I=11	,ˆ¤ìÑ¡É½Ü•ÉÉ½Èìô(€€€™¥¹…±±äì±¥•¹Ð¹É•±•…Í” ¤ìô(€ô(((€…Íå¹Œ•ÑM…Ù•‘A±…•Ì ¤èAÉ½µ¥Í”ñM…Ù•‘A±…•mtøì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰M1P€¨I=4Í…Ù•‘}Á±…•Ì]!I…Ñ¥Ù”õÑÉÕ”=IH	d¹…µ”ˆ¤ìÉ•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÌ¹µ…À¡µ…ÁM…Ù•‘A±…”¤ì(€ô((€…Íå¹Œ•ÑM…Ù•‘A±…”¡¥è¹Õµ‰•È¤èAÉ½µ¥Í”ñM…Ù•‘A±…”ð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰M1P€¨I=4Í…Ù•‘}Á±…•Ì]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”ˆ°m¥‘t¤ìÉ•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁM…Ù•‘A±…”¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹ŒÉ•…Ñ•M…Ù•‘A±…”¡¥¹ÁÕÐèM…Ù•‘A±…•]É¥Ñ•%¹ÁÕÐ¤èAÉ½µ¥Í”ñM…Ù•‘A±…”øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€%9MIP%9Q<Í…Ù•‘}Á±…•Ì€¡­¥¹±¹…µ”±…‘‘É•ÍÌ±¹½Ñ”±µ…ÁÍ}ÕÉ°±±…Ñ¥ÑÕ‘”±±½¹¥ÑÕ‘”±±½…Ñ¥½¹}Í½ÕÉ”±±½…Ñ¥½¹}…ÕÉ…å}µ•Ñ•ÉÌ±½Íµ}ÑåÁ”±½Íµ}¥¤(€€€€€Y1UL€ Ä°È°Ì°Ð°Ô°Ø°Ü°à°ä°ÄÀ°ÄÄ¤(€€€€€=8=91%P€¡½Íµ}ÑåÁ”±½Íµ}¥¤]!I½Íµ}ÑåÁ”%L9=P9U109½Íµ}¥%L9=P9U10<UAQMP…Ñ¥Ù”õÑÉÕ”±ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤(€€€€€IQUI9%9€¨(€€€€°m¥¹ÁÕÐ¹­¥¹°¥¹ÁÕÐ¹¹…µ”°¥¹ÁÕÐ¹…‘‘É•ÍÌ°¥¹ÁÕÐ¹¹½Ñ”°¥¹ÁÕÐ¹µ…ÁÍUÉ°°¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”°¥¹ÁÕÐ¹±½¹¥ÑÕ‘”°¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”°¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ°¥¹ÁÕÐ¹½ÍµQåÁ”€üü¹Õ±°°¥¹ÁÕÐ¹½Íµ%€üü¹Õ±±t¤ì(€€€É•ÑÕÉ¸µ…ÁM…Ù•‘A±…”¡É•ÍÕ±Ð¹É½ÝÍlÁt¤ì(€ô((€…Íå¹ŒÕÁ‘…Ñ•M…Ù•‘A±…”¡¥è¹Õµ‰•È°¥¹ÁÕÐèA…ÉÑ¥…°ñM…Ù•‘A±…•]É¥Ñ•%¹ÁÕÐø¤èAÉ½µ¥Í”ñM…Ù•‘A±…”ð¹Õ±°øì(€€€½¹ÍÐÕÉÉ•¹Ð€ô…Ý…¥ÐÑ¡¥Ì¹•ÑM…Ù•‘A±…”¡¥¤ì¥˜€ …ÕÉÉ•¹Ð¤É•ÑÕÉ¸¹Õ±°ì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡UAQÍ…Ù•‘}Á±…•ÌMP­¥¹ôÈ±¹…µ”ôÌ±…‘‘É•ÍÌôÐ±¹½Ñ”ôÔ±µ…ÁÍ}ÕÉ°ôØ±±…Ñ¥ÑÕ‘”ôÜ±±½¹¥ÑÕ‘”ôà±±½…Ñ¥½¹}Í½ÕÉ”ôä±±½…Ñ¥½¹}…ÕÉ…å}µ•Ñ•ÉÌôÄÀ±ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”IQUI9%9€©€°m¥°¥¹ÁÕÐ¹­¥¹€üüÕÉÉ•¹Ð¹­¥¹°¥¹ÁÕÐ¹¹…µ”€üüÕÉÉ•¹Ð¹¹…µ”°¥¹ÁÕÐ¹…‘‘É•ÍÌ€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹…‘‘É•ÍÌ€è¥¹ÁÕÐ¹…‘‘É•ÍÌ°¥¹ÁÕÐ¹¹½Ñ”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹¹½Ñ”€è¥¹ÁÕÐ¹¹½Ñ”°¥¹ÁÕÐ¹µ…ÁÍUÉ°€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹µ…ÁÍUÉ°€è¥¹ÁÕÐ¹µ…ÁÍUÉ°°¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±…Ñ¥ÑÕ‘”€è¥¹ÁÕÐ¹±…Ñ¥ÑÕ‘”°¥¹ÁÕÐ¹±½¹¥ÑÕ‘”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½¹¥ÑÕ‘”€è¥¹ÁÕÐ¹±½¹¥ÑÕ‘”°¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½…Ñ¥½¹M½ÕÉ”€è¥¹ÁÕÐ¹±½…Ñ¥½¹M½ÕÉ”°¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ€ôôôÕ¹‘•™¥¹•€üÕÉÉ•¹Ð¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ€è¥¹ÁÕÐ¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÍt¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁM…Ù•‘A±…”¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹Œ…É¡¥Ù•M…Ù•‘A±…”¡¥è¹Õµ‰•È¤èAÉ½µ¥Í”ñ‰½½±•…¸øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰UAQÍ…Ù•‘}Á±…•ÌMP…Ñ¥Ù”õ™…±Í”±ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”ˆ°m¥‘t¤ìÉ•ÑÕÉ¸€¡É•ÍÕ±Ð¹É½Ý½Õ¹Ð€üü€À¤€ø€Àì(€ô((€…Íå¹Œ™¥¹‘M…Ù•‘A±…•	å=Í´¡½ÍµQåÁ”è9½¹9Õ±±…‰±”ñM…Ù•‘A±…•l‰½ÍµQåÁ”‰tø°½Íµ%èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñM…Ù•‘A±…”ð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä ‰M1P€¨I=4Í…Ù•‘}Á±…•Ì]!I½Íµ}ÑåÁ”ôÄ9½Íµ}¥ôÈ9…Ñ¥Ù”õÑÉÕ”ˆ°m½ÍµQåÁ”°½Íµ%‘t¤ìÉ•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁM…Ù•‘A±…”¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹Œ•ÑAÉ•™•ÉÉ•‘1…Õ¹‘Éä¡…Á…ÉÑµ•¹Ñ%è¹Õµ‰•È¤èAÉ½µ¥Í”ñM…Ù•‘A±…”ð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡M1PÁ±…”¸¨I=4…Á…ÉÑµ•¹Ñ}Á±…•}±¥¹­Ì±¥¹¬)=%8Í…Ù•‘}Á±…•ÌÁ±…”=8Á±…”¹¥õ±¥¹¬¹Á±…•}¥]!I±¥¹¬¹…Á…ÉÑµ•¹Ñ}¥ôÄ9±¥¹¬¹ÁÉ•™•ÉÉ•õÑÉÕ”9Á±…”¹…Ñ¥Ù”õÑÉÕ•€°m…Á…ÉÑµ•¹Ñ%‘t¤ì(€€€É•ÑÕÉ¸É•ÍÕ±Ð¹É½ÝÍlÁt€üµ…ÁM…Ù•‘A±…”¡É•ÍÕ±Ð¹É½ÝÍlÁt¤€è¹Õ±°ì(€ô((€…Íå¹ŒÍ•ÑAÉ•™•ÉÉ•‘1…Õ¹‘Éä¡…Á…ÉÑµ•¹Ñ%è¹Õµ‰•È°Á±…•%è¹Õµ‰•È¤èAÉ½µ¥Í”ñÁ…ÉÑµ•¹ÑA±…•1¥¹¬ð¹Õ±°øì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥ÐÑ¡¥Ì¹Á½½°¹ÅÕ•Éä¡€(€€€€€%9MIP%9Q<…Á…ÉÑµ•¹Ñ}Á±…•}±¥¹­Ì€¡…Á…ÉÑµ•¹Ñ}¥±Á±…•}¥±ÁÉ•™•ÉÉ•¤M1P€Ä°È±ÑÉÕ”(€€€€€]!Ia%MQL€¡M1P€ÄI=4…Á…ÉÑµ•¹ÑÌ]!I¥ôÄ9…Ñ¥Ù”õÑÉÕ”¤(€€€€€€€9a%MQL€¡M1P€ÄI=4Í…Ù•‘}Á±…•Ì]!I¥ôÈ9­¥¹ô±…Õ¹‘Éäœ9…Ñ¥Ù”õÑÉÕ”¤(€€€€€=8=91%P€¡…Á…ÉÑµ•¹Ñ}¥¤<UAQMPÁ±…•}¥õa1U¹Á±…•}¥±ÁÉ•™•ÉÉ•õÑÉÕ”±ÕÁ‘…Ñ•‘}…Ðõ¹½Ü ¤(€€€€€IQUI9%9€¨(€€€€°m…Á…ÉÑµ•¹Ñ%°Á±…•%‘t¤ì(€€€½¹ÍÐÉ½Ü€ôÉ•ÍÕ±Ð¹É½ÝÍlÁtìÉ•ÑÕÉ¸É½Ü€üì…Á…ÉÑµ•¹Ñ%è9Õµ‰•È¡É½Ü¹…Á…ÉÑµ•¹Ñ}¥¤°Á±…•%è9Õµ‰•È¡É½Ü¹Á±…•}¥¤°ÁÉ•™•ÉÉ•è	½½±•…¸¡É½Ü¹ÁÉ•™•ÉÉ•¤°É•…Ñ•‘Ðè¹•Ü…Ñ”¡MÑÉ¥¹œ¡É½Ü¹É•…Ñ•‘}…Ð¤¤¹Ñ½%M=MÑÉ¥¹œ ¤°ÕÁ‘…Ñ•‘Ðè¹•Ü…Ñ”¡MÑÉ¥¹œ¡É½Ü¹ÕÁ‘…Ñ•‘}…Ð¤¤¹Ñ½%M=MÑÉ¥¹œ ¤ô€è¹Õ±°ì(€ô)ô
+    const item = this.savedPlaces.get(id); return item?.active ? { ...item } : null;
+  }
+
+  async createSavedPlace(input: SavedPlaceWriteInput): Promise<SavedPlace> {
+    if (input.osmType && input.osmId) {
+      const existing = await this.findSavedPlaceByOsm(input.osmType, input.osmId);
+      if (existing) return existing;
+    }
+    const now = new Date().toISOString(); const id = this.nextSavedPlaceId++;
+    const place: SavedPlace = { id, ...input, osmType: input.osmType ?? null, osmId: input.osmId ?? null, active: true, createdAt: now, updatedAt: now };
+    this.savedPlaces.set(id, place); return { ...place };
+  }
+
+  async updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null> {
+    const current = this.savedPlaces.get(id); if (!current?.active) return null;
+    const next: SavedPlace = { ...current, ...input, updatedAt: new Date().toISOString() };
+    this.savedPlaces.set(id, next); return { ...next };
+  }
+
+  async archiveSavedPlace(id: number): Promise<boolean> {
+    const current = this.savedPlaces.get(id); if (!current?.active) return false;
+    this.savedPlaces.set(id, { ...current, active: false, updatedAt: new Date().toISOString() });
+    for (const [apartmentId, link] of this.apartmentPlaceLinks) if (link.placeId === id) this.apartmentPlaceLinks.delete(apartmentId);
+    return true;
+  }
+
+  async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
+    const item = [...this.savedPlaces.values()].find((place) => place.active && place.osmType === osmType && place.osmId === osmId);
+    return item ? { ...item } : null;
+  }
+
+  async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {
+    const link = this.apartmentPlaceLinks.get(apartmentId); return link ? this.getSavedPlace(link.placeId) : null;
+  }
+
+  async setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null> {
+    const apartment = await this.getApartment(apartmentId); const place = await this.getSavedPlace(placeId);
+    if (!apartment || place?.kind !== "laundry") return null;
+    const now = new Date().toISOString(); const current = this.apartmentPlaceLinks.get(apartmentId);
+    const link: ApartmentPlaceLink = { apartmentId, placeId, preferred: true, createdAt: current?.createdAt ?? now, updatedAt: now };
+    this.apartmentPlaceLinks.set(apartmentId, link); return { ...link };
+  }
+}
+
+function mapTotals(row: Record<string, string | number | null>): LedgerTotals {
+  const earnedCents = Number(row.earned_cents ?? 0);
+  const receivedCents = Number(row.received_cents ?? 0);
+  return {
+    minutes: Number(row.minutes ?? 0), earnedCents, receivedCents,
+    outstandingCents: earnedCents - receivedCents,
+    expensesCents: Number(row.expenses_cents ?? 0), checkinCents: Number(row.checkin_cents ?? 0),
+  };
+}
+
+export function normalizeDateIso(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  const text = String(value);
+  const iso = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (iso) return iso;
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? text : parsed.toISOString().slice(0, 10);
+}
+
+function mapDay(row: Record<string, unknown>): StoredDay {
+  return {
+    dateIso: normalizeDateIso(row.date_iso), sourceText: String(row.source_text), reportText: row.report_text == null ? null : String(row.report_text), parsedDetails: row.parsed_details as ParsedDay,
+    minutes: Number(row.minutes), incomeCents: Number(row.earned_cents), checkinCents: Number(row.checkin_cents),
+    expensesCents: Number(row.expenses_cents), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapPayment(row: Record<string, unknown>): Payment {
+  return {
+    id: Number(row.id), dateIso: normalizeDateIso(row.payment_date), amountCents: Number(row.amount_cents),
+    note: row.note == null ? null : String(row.note), source: String(row.source) as Payment["source"],
+    workDate: row.work_date == null ? null : normalizeDateIso(row.work_date),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapApartment(row: Record<string, unknown>): Apartment {
+  return {
+    id: Number(row.id), sourceKey: String(row.source_key), canonicalKey: String(row.canonical_key),
+    canonicalName: String(row.canonical_name), aliases: Array.isArray(row.aliases) ? row.aliases.map(String) : [],
+    address: row.address == null ? null : String(row.address), mapsUrl: row.maps_url == null ? null : String(row.maps_url),
+    noteBody: row.note_body == null ? null : String(row.note_body),
+    latitude: row.latitude == null ? null : Number(row.latitude), longitude: row.longitude == null ? null : Number(row.longitude),
+    locationSource: row.location_source == null ? null : String(row.location_source) as LocationSource,
+    locationAccuracyMeters: row.location_accuracy_meters == null ? null : Number(row.location_accuracy_meters),
+    active: Boolean(row.active),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapSavedPlace(row: Record<string, unknown>): SavedPlace {
+  return {
+    id: Number(row.id), kind: String(row.kind) as SavedPlaceKind, name: String(row.name),
+    address: row.address == null ? null : String(row.address), note: row.note == null ? null : String(row.note),
+    mapsUrl: row.maps_url == null ? null : String(row.maps_url), latitude: row.latitude == null ? null : Number(row.latitude),
+    longitude: row.longitude == null ? null : Number(row.longitude),
+    locationSource: row.location_source == null ? null : String(row.location_source) as LocationSource,
+    locationAccuracyMeters: row.location_accuracy_meters == null ? null : Number(row.location_accuracy_meters),
+    osmType: row.osm_type == null ? null : String(row.osm_type) as SavedPlace["osmType"],
+    osmId: row.osm_id == null ? null : String(row.osm_id), active: Boolean(row.active),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+export class PostgresLedgerStore implements LedgerStore {
+  private readonly pool: Pool;
+  constructor(connectionString: string) { this.pool = new Pool({ connectionString }); }
+
+  async initialize(): Promise<void> {
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS work_days (
+        date_iso date PRIMARY KEY, source_text text NOT NULL, parsed_details jsonb NOT NULL,
+        report_text text,
+        minutes integer NOT NULL CHECK (minutes >= 0), earned_cents integer NOT NULL CHECK (earned_cents >= 0),
+        checkin_cents integer NOT NULL DEFAULT 0 CHECK (checkin_cents >= 0),
+        expenses_cents integer NOT NULL CHECK (expenses_cents >= 0), updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS payments (
+        id bigserial PRIMARY KEY, payment_date date NOT NULL, amount_cents integer NOT NULL CHECK (amount_cents > 0),
+        note text, source text NOT NULL CHECK (source IN ('manual', 'day_text')),
+        work_date date REFERENCES work_days(date_iso) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS payments_one_day_text ON payments (work_date) WHERE source = 'day_text';
+      CREATE INDEX IF NOT EXISTS payments_date_idx ON payments (payment_date);
+      CREATE TABLE IF NOT EXISTS apartments (
+        id bigserial PRIMARY KEY,
+        source_key text NOT NULL UNIQUE,
+        canonical_key text NOT NULL UNIQUE,
+        canonical_name text NOT NULL,
+        aliases jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(aliases) = 'array'),
+        address text,
+        maps_url text,
+        note_body text,
+        active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS apartments_active_idx ON apartments (active);
+      ALTER TABLE work_days ADD COLUMN IF NOT EXISTS report_text text;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS latitude double precision;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS longitude double precision;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS location_source text;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS location_accuracy_meters double precision;
+      CREATE TABLE IF NOT EXISTS saved_places (
+        id bigserial PRIMARY KEY,
+        kind text NOT NULL CHECK (kind IN ('laundry', 'partner_restaurant')),
+        name text NOT NULL,
+        address text,
+        note text,
+        maps_url text,
+        latitude double precision,
+        longitude double precision,
+        location_source text,
+        location_accuracy_meters double precision,
+        osm_type text CHECK (osm_type IS NULL OR osm_type IN ('node', 'way', 'relation')),
+        osm_id text,
+        active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        CHECK ((latitude IS NULL AND longitude IS NULL) OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS saved_places_osm_unique ON saved_places (osm_type, osm_id) WHERE osm_type IS NOT NULL AND osm_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS saved_places_active_idx ON saved_places (active, kind);
+      CREATE TABLE IF NOT EXISTS apartment_place_links (
+        apartment_id bigint PRIMARY KEY REFERENCES apartments(id) ON DELETE CASCADE,
+        place_id bigint NOT NULL REFERENCES saved_places(id) ON DELETE CASCADE,
+        preferred boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+    for (const apartment of publicApartmentRecords()) {
+      await this.pool.query(`
+        INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, active)
+        VALUES ($1, $2, $3, $4::jsonb, true)
+        ON CONFLICT (canonical_key) DO NOTHING
+      `, [apartment.sourceKey, apartment.canonicalKey, apartment.canonicalName, JSON.stringify(apartment.aliases)]);
+    }
+    await this.pool.query(`
+      WITH recalculated AS (
+        SELECT day.date_iso, COALESCE(SUM(
+          CASE WHEN job->>'workType' = 'independent'
+            THEN COALESCE(
+              NULLIF(job->>'durationMinutes', '')::int,
+              NULLIF(job->>'endMinutes', '')::int - NULLIF(job->>'startMinutes', '')::int,
+              0
+            )
+            ELSE 0
+          END
+        ), 0)::int AS minutes
+        FROM work_days AS day
+        LEFT JOIN LATERAL jsonb_array_elements(COALESCE(day.parsed_details->'jobs', '[]'::jsonb)) AS job ON true
+        GROUP BY day.date_iso
+      )
+      UPDATE work_days AS day
+      SET minutes = recalculated.minutes
+      FROM recalculated
+      WHERE day.date_iso = recalculated.date_iso AND day.minutes IS DISTINCT FROM recalculated.minutes
+    `);
+  }
+
+  async health(): Promise<boolean> { try { await this.pool.query("SELECT 1"); return true; } catch { return false; } }
+  async close(): Promise<void> { await this.pool.end(); }
+
+  private async aggregate(client: Pool | PoolClient, condition = "TRUE", values: unknown[] = []): Promise<LedgerTotals> {
+    const result = await client.query(`
+      SELECT
+        COALESCE((SELECT SUM(minutes) FROM work_days WHERE ${condition}), 0)::int AS minutes,
+        COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE ${condition}), 0)::int AS earned_cents,
+        COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE ${condition}), 0)::int AS expenses_cents,
+        COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE ${condition}), 0)::int AS checkin_cents,
+        COALESCE((SELECT SUM(amount_cents) FROM payments WHERE ${condition.replaceAll("date_iso", "payment_date")}), 0)::int AS received_cents
+    `, values);
+    return mapTotals(result.rows[0]);
+  }
+
+  async projectDay(dateIso: string, totals: DayTotals, advanceCents: number): Promise<ReportSnapshot> {
+    const from = monthStart(dateIso);
+    const [previous, baseResult] = await Promise.all([
+      this.aggregate(this.pool, "date_iso >= $2 AND date_iso < $1", [dateIso, from]),
+      this.pool.query(`
+        SELECT
+          COALESCE((SELECT SUM(minutes) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS minutes,
+          COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS earned_cents,
+          COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS expenses_cents,
+          COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS checkin_cents,
+          COALESCE((SELECT SUM(amount_cents) FROM payments WHERE payment_date >= $2 AND payment_date <= $1 AND NOT (source='day_text' AND work_date=$1)), 0)::int AS received_cents
+      `, [dateIso, from]),
+    ]);
+    const base = mapTotals(baseResult.rows[0]);
+    const total = finishTotals({
+      minutes: base.minutes + totals.minutes, earnedCents: base.earnedCents + totals.incomeCents,
+      receivedCents: base.receivedCents + advanceCents, expensesCents: base.expensesCents + totals.expensesCents,
+      checkinCents: base.checkinCents + totals.checkinCents,
+    });
+    return { previous, total };
+  }
+
+  async saveDay(input: SaveDayInput): Promise<{ day: StoredDay; snapshot: ReportSnapshot }> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const saved = await client.query(`
+        INSERT INTO work_days (date_iso, source_text, report_text, parsed_details, minutes, earned_cents, checkin_cents, expenses_cents, updated_at)
+        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, now())
+        ON CONFLICT (date_iso) DO UPDATE SET source_text=EXCLUDED.source_text, parsed_details=EXCLUDED.parsed_details,
+          report_text=EXCLUDED.report_text,
+          minutes=EXCLUDED.minutes, earned_cents=EXCLUDED.earned_cents, checkin_cents=EXCLUDED.checkin_cents,
+          expenses_cents=EXCLUDED.expenses_cents, updated_at=now()
+        RETURNING *
+      `, [input.dateIso, input.sourceText, input.reportText, JSON.stringify(input.parsedDetails), input.totals.minutes, input.totals.incomeCents, input.totals.checkinCents, input.totals.expensesCents]);
+      await client.query("DELETE FROM payments WHERE source='day_text' AND work_date=$1", [input.dateIso]);
+      if (input.advanceCents > 0) await client.query(
+        "INSERT INTO payments (payment_date, amount_cents, note, source, work_date) VALUES ($1,$2,'ÐÐ²Ð°Ð½Ñ Ð¸Ð· Ð¾Ñ‚Ñ‡Ñ‘Ñ‚Ð°','day_text',$1)",
+        [input.dateIso, input.advanceCents],
+      );
+      const from = monthStart(input.dateIso);
+      const previous = await this.aggregate(client, "date_iso >= $2 AND date_iso < $1", [input.dateIso, from]);
+      const total = await this.aggregate(client, "date_iso >= $2 AND date_iso <= $1", [input.dateIso, from]);
+      await client.query("COMMIT");
+      return { day: mapDay(saved.rows[0]), snapshot: { previous, total } };
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
+  }
+
+  async deleteDay(dateIso: string): Promise<boolean> {
+    const result = await this.pool.query("DELETE FROM work_days WHERE date_iso=$1", [dateIso]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getLedger(from?: string, to?: string): Promise<LedgerView> {
+    const values: string[] = []; const clauses: string[] = [];
+    if (from) { values.push(from); clauses.push(`date_iso >= $${values.length}`); }
+    if (to) { values.push(to); clauses.push(`date_iso <= $${values.length}`); }
+    const condition = clauses.length ? clauses.join(" AND ") : "TRUE";
+    const [totals, days, payments] = await Promise.all([
+      this.aggregate(this.pool, condition, values),
+      this.pool.query(`SELECT * FROM work_days WHERE ${condition} ORDER BY date_iso, updated_at`, values),
+      this.pool.query(`SELECT * FROM payments WHERE ${condition.replaceAll("date_iso", "payment_date")} ORDER BY payment_date, id`, values),
+    ]);
+    const rows: LedgerRow[] = [
+      ...days.rows.map((row) => ({ rowType: "work" as const, ...mapDay(row) })),
+      ...payments.rows.map((row) => ({ rowType: "payment" as const, ...mapPayment(row) })),
+    ].sort((a, b) => b.dateIso.localeCompare(a.dateIso) || (a.rowType === "work" ? -1 : 1));
+    return { totals, rows };
+  }
+
+  async listPeriods(): Promise<LedgerPeriod[]> {
+    const result = await this.pool.query(`
+      SELECT DISTINCT to_char(period_date, 'YYYY-MM') AS period
+      FROM (
+        SELECT date_iso AS period_date FROM work_days
+        UNION ALL
+        SELECT payment_date AS period_date FROM payments
+      ) entries
+      ORDER BY period DESC
+    `);
+    return result.rows.map(({ period }) => ({ period: String(period), from: `${period}-01`, to: `${period}-31` }));
+  }
+
+  async createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment> {
+    const result = await this.pool.query(
+      "INSERT INTO payments (payment_date,amount_cents,note,source) VALUES ($1,$2,$3,'manual') RETURNING *",
+      [dateIso, amountCents, note?.trim() || null],
+    );
+    return mapPayment(result.rows[0]);
+  }
+
+  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null> {
+    const result = await this.pool.query(`
+      UPDATE payments SET payment_date=COALESCE($2,payment_date), amount_cents=COALESCE($3,amount_cents),
+        note=CASE WHEN $4::boolean THEN $5 ELSE note END, updated_at=now()
+      WHERE id=$1 AND source='manual' RETURNING *
+    `, [id, values.dateIso ?? null, values.amountCents ?? null, values.note !== undefined, values.note?.trim() || null]);
+    return result.rows[0] ? mapPayment(result.rows[0]) : null;
+  }
+
+  async deletePayment(id: number): Promise<boolean> {
+    const result = await this.pool.query("DELETE FROM payments WHERE id=$1 AND source='manual'", [id]);
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getActiveApartments(): Promise<Apartment[]> {
+    const result = await this.pool.query("SELECT * FROM apartments WHERE active=true ORDER BY canonical_name");
+    return result.rows.map(mapApartment);
+  }
+
+  async getApartment(id: number): Promise<Apartment | null> {
+    const result = await this.pool.query("SELECT * FROM apartments WHERE id=$1 AND active=true", [id]);
+    return result.rows[0] ? mapApartment(result.rows[0]) : null;
+  }
+
+  async createApartment(input: ApartmentWriteInput): Promise<Apartment> {
+    const canonicalKey = apartmentKey(input.canonicalName);
+    const result = await this.pool.query(`
+      INSERT INTO apartments (source_key,canonical_key,canonical_name,aliases,address,maps_url,note_body,latitude,longitude,location_source,location_accuracy_meters,active)
+      VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,true) RETURNING *
+    `, [`manual:${canonicalKey}:${Date.now()}`, canonicalKey, input.canonicalName, JSON.stringify([...new Set([input.canonicalName, ...input.aliases])]), input.address, input.mapsUrl, input.noteBody, input.latitude, input.longitude, input.locationSource, input.locationAccuracyMeters]);
+    return mapApartment(result.rows[0]);
+  }
+
+  async updateApartment(id: number, input: Partial<ApartmentWriteInput>): Promise<Apartment | null> {
+    const current = await this.getApartment(id); if (!current) return null;
+    const name = input.canonicalName ?? current.canonicalName;
+    const result = await this.pool.query(`
+      UPDATE apartments SET canonical_key=$2,canonical_name=$3,aliases=$4::jsonb,address=$5,maps_url=$6,note_body=$7,
+        latitude=$8,longitude=$9,location_source=$10,location_accuracy_meters=$11,updated_at=now()
+      WHERE id=$1 AND active=true RETURNING *
+    `, [id, apartmentKey(name), name, JSON.stringify(input.aliases ? [...new Set([name, ...input.aliases])] : current.aliases), input.address === undefined ? current.address : input.address, input.mapsUrl === undefined ? current.mapsUrl : input.mapsUrl, input.noteBody === undefined ? current.noteBody : input.noteBody, input.latitude === undefined ? current.latitude : input.latitude, input.longitude === undefined ? current.longitude : input.longitude, input.locationSource === undefined ? current.locationSource : input.locationSource, input.locationAccuracyMeters === undefined ? current.locationAccuracyMeters : input.locationAccuracyMeters]);
+    return result.rows[0] ? mapApartment(result.rows[0]) : null;
+  }
+
+  async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
+    const client = await this.pool.connect();
+    const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
+    try {
+      await client.query("BEGIN");
+      const existingResult = await client.query("SELECT * FROM apartments FOR UPDATE");
+      const existing = existingResult.rows.map(mapApartment);
+      for (const record of records) {
+        const canonicalKey = apartmentKey(record.canonicalName);
+        const bySource = existing.find((item) => item.sourceKey === record.sourceKey);
+        const byCanonical = existing.find((item) => item.canonicalKey === canonicalKey);
+        if (bySource && byCanonical && bySource.id !== byCanonical.id) {
+          result.conflicts.push({ sourceKey: record.sourceKey, reason: "source_key_and_canonical_key_disagree" }); continue;
+        }
+        const current = bySource ?? byCanonical;
+        const aliases = [...new Set([record.canonicalName, ...record.aliases].map((value) => value.trim()))];
+        const aliasKeys = new Set(aliases.map(apartmentKey));
+        const aliasOwner = existing.find((item) => item.id !== current?.id && [item.canonicalName, ...item.aliases].some((alias) => aliasKeys.has(apartmentKey(alias))));
+        if (aliasOwner) { result.conflicts.push({ sourceKey: record.sourceKey, reason: "alias_belongs_to_another_apartment" }); continue; }
+        const comparable = { sourceKey: record.sourceKey, canonicalKey, canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl, noteBody: record.noteBody, latitude: record.latitude ?? current?.latitude ?? null, longitude: record.longitude ?? current?.longitude ?? null, active: record.active };
+        if (current && JSON.stringify({ sourceKey: current.sourceKey, canonicalKey: current.canonicalKey, canonicalName: current.canonicalName, aliases: current.aliases, address: current.address, mapsUrl: current.mapsUrl, noteBody: current.noteBody, latitude: current.latitude, longitude: current.longitude, active: current.active }) === JSON.stringify(comparable)) {
+          result.skipped += 1; continue;
+        }
+        const saved = current
+          ? await client.query(`UPDATE apartments SET source_key=$2, canonical_key=$3, canonical_name=$4, aliases=$5::jsonb, address=$6, maps_url=$7, note_body=$8, latitude=$9, longitude=$10, location_source=CASE WHEN $9::double precision IS NULL THEN location_source ELSE 'import' END, active=$11, updated_at=now() WHERE id=$1 RETURNING *`, [current.id, record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.latitude ?? current.latitude, record.longitude ?? current.longitude, record.active])
+          : await client.query(`INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, address, maps_url, note_body, latitude, longitude, location_source, active) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,CASE WHEN $8::double precision IS NULL THEN NULL ELSE 'import' END,$10) RETURNING *`, [record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.latitude ?? null, record.longitude ?? null, record.active]);
+        const mapped = mapApartment(saved.rows[0]);
+        if (current) { existing.splice(existing.indexOf(current), 1, mapped); result.updated += 1; }
+        else { existing.push(mapped); result.created += 1; }
+      }
+      if (dryRun) await client.query("ROLLBACK"); else await client.query("COMMIT");
+      return result;
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
+  }
+
+
+  async getSavedPlaces(): Promise<SavedPlace[]> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE active=true ORDER BY name"); return result.rows.map(mapSavedPlace);
+  }
+
+  async getSavedPlace(id: number): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE id=$1 AND active=true", [id]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async createSavedPlace(input: SavedPlaceWriteInput): Promise<SavedPlace> {
+    const result = await this.pool.query(`
+      INSERT INTO saved_places (kind,name,address,note,maps_url,latitude,longitude,location_source,location_accuracy_meters,osm_type,osm_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (osm_type,osm_id) WHERE osm_type IS NOT NULL AND osm_id IS NOT NULL DO UPDATE SET active=true,updated_at=now()
+      RETURNING *
+    `, [input.kind, input.name, input.address, input.note, input.mapsUrl, input.latitude, input.longitude, input.locationSource, input.locationAccuracyMeters, input.osmType ?? null, input.osmId ?? null]);
+    return mapSavedPlace(result.rows[0]);
+  }
+
+  async updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null> {
+    const current = await this.getSavedPlace(id); if (!current) return null;
+    const result = await this.pool.query(`UPDATE saved_places SET kind=$2,name=$3,address=$4,note=$5,maps_url=$6,latitude=$7,longitude=$8,location_source=$9,location_accuracy_meters=$10,updated_at=now() WHERE id=$1 AND active=true RETURNING *`, [id, input.kind ?? current.kind, input.name ?? current.name, input.address === undefined ? current.address : input.address, input.note === undefined ? current.note : input.note, input.mapsUrl === undefined ? current.mapsUrl : input.mapsUrl, input.latitude === undefined ? current.latitude : input.latitude, input.longitude === undefined ? current.longitude : input.longitude, input.locationSource === undefined ? current.locationSource : input.locationSource, input.locationAccuracyMeters === undefined ? current.locationAccuracyMeters : input.locationAccuracyMeters]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async archiveSavedPlace(id: number): Promise<boolean> {
+    const result = await this.pool.query("UPDATE saved_places SET active=false,updated_at=now() WHERE id=$1 AND active=true", [id]); return (result.rowCount ?? 0) > 0;
+  }
+
+  async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE osm_type=$1 AND osm_id=$2 AND active=true", [osmType, osmId]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {
+    const result = await this.pool.query(`SELECT place.* FROM apartment_place_links link JOIN saved_places place ON place.id=link.place_id WHERE link.apartment_id=$1 AND link.preferred=true AND place.active=true`, [apartmentId]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null> {
+    const result = await this.pool.query(`
+      INSERT INTO apartment_place_links (apartment_id,place_id,preferred) SELECT $1,$2,true
+      WHERE EXISTS (SELECT 1 FROM apartments WHERE id=$1 AND active=true)
+        AND EXISTS (SELECT 1 FROM saved_places WHERE id=$2 AND kind='laundry' AND active=true)
+      ON CONFLICT (apartment_id) DO UPDATE SET place_id=EXCLUDED.place_id,preferred=true,updated_at=now()
+      RETURNING *
+    `, [apartmentId, placeId]);
+    const row = result.rows[0]; return row ? { apartmentId: Number(row.apartment_id), placeId: Number(row.place_id), preferred: Boolean(row.preferred), createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString() } : null;
+  }
+}
