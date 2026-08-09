@@ -297,7 +297,7 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const result = await ledger.importApartments(input.data.apartments, dryRun);
     return { dryRun, accepted: result.created + result.updated + result.skipped, ...result };
   });
-  for (const route of ["/today", "/map", "/ledger", "/map/apartments/:id"]) app.get(route, async (_request, reply) => reply.sendFile("index.html"));
+  for (const route of ["/today", "/map", "/ledger", "/map/apartments/:id", "/apartment.html"]) app.get(route, async (_request, reply) => reply.sendFile("index.html"));
   return app;
 }
 
