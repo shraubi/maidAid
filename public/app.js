@@ -305,10 +305,14 @@ async function removeLegacyOffline() {
   try { if ("caches" in globalThis) for (const key of await caches.keys()) if (key.startsWith("maidaid-shell-")) await caches.delete(key); } catch {}
 }
 
-await removeLegacyOffline();
-try { productRelease = Number((await api("/api/app-config")).productRelease) || 1; } catch { productRelease = 1; }
-$("#add-place-button").hidden = productRelease < 2;
-$("#place-filter").hidden = productRelease < 2;
-await showRoute(routeFromPath());
-const directApartment = location.pathname.match(/^\/map\/apartments\/(\d+)$/);
-if (directApartment) await openApartmentDetail(Number(directApartment[1]), false);
+async function initializeApp() {
+  await removeLegacyOffline();
+  try { productRelease = Number((await api("/api/app-config")).productRelease) || 1; } catch { productRelease = 1; }
+  $("#add-place-button").hidden = productRelease < 2;
+  $("#place-filter").hidden = productRelease < 2;
+  await showRoute(routeFromPath());
+  const directApartment = location.pathname.match(/^\/map\/apartments\/(\d+)$/);
+  if (directApartment) await openApartmentDetail(Number(directApartment[1]), false);
+}
+
+void initializeApp();
