@@ -8,27 +8,13 @@ import { z } from "zod";
 import { calculateDay } from "./domain/calculations.js";
 import { generateShareText } from "./domain/draft.js";
 import { parseDay } from "./domain/parser.js";
-import type { Expense, Job, LocationSource, ParsedDay, SavedPlace, Settings, WorkType } from "./domain/types.js";
+import type { LocationSource, SavedPlace, Settings } from "./domain/types.js";
 import { apartmentKey, apartmentLookup } from "./domain/apartments.js";
 import { loadConfig, type Config } from "./config.js";
 import { PostgresLedgerStore, type LedgerStore } from "./storage/ledger-store.js";
 
+const previewBody = z.object({ kind: z.enum(["actual", "schedule"]).optional(), text: z.string().trim().min(1).max(32 * 1024) }).strict();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const textDayBody = z.object({ kind: z.enum(["actual", "schedule"]).optional(), text: z.string().trim().min(1).max(32 * 1024) }).strict();
-const structuredJob = z.object({
-  apartmentId: z.number().int().positive().optional(),
-  newApartmentName: z.string().trim().min(1).max(200).optional(),
-  workType: z.enum(["independent", "orientation", "practice", "checkin"]),
-  durationMinutes: z.number().int().min(30).max(300).refine((value) => value % 30 === 0).optional(),
-  dryerCents: z.number().int().nonnegative().default(0),
-  otherExpenseCents: z.number().int().nonnegative().default(0),
-}).strict().superRefine((value, context) => {
-  if ((value.apartmentId == null) === (value.newApartmentName == null)) context.addIssue({ code: "custom", message: "Choose one apartment", path: ["apartmentId"] });
-  if (value.workType === "independent" && value.durationMinutes == null) context.addIssue({ code: "custom", message: "Cleaning duration is required", path: ["durationMinutes"] });
-  if (value.workType !== "independent" && (value.dryerCents > 0 || value.otherExpenseCents > 0)) context.addIssue({ code: "custom", message: "Expenses apply only to cleaning work", path: ["dryerCents"] });
-});
-const structuredDayBody = z.object({ format: z.literal("structured"), dateIso: date, jobs: z.array(structuredJob).min(1).max(50) }).strict();
-const previewBody = z.union([textDayBody, structuredDayBody]);
 const paymentCreate = z.object({ dateIso: date, amountCents: z.number().int().positive(), note: z.string().max(500).optional() }).strict();
 const paymentPatch = z.object({ dateIso: date.optional(), amountCents: z.number().int().positive().optional(), note: z.string().max(500).nullable().optional() }).strict().refine((value) => Object.keys(value).length > 0);
 const paymentParams = z.object({ id: z.coerce.number().int().positive() });
@@ -60,7 +46,7 @@ const apartmentCreate = z.object({
 }).strict();
 const apartmentPatch = apartmentCreate.partial();
 const placeCreate = z.object({
-  kind: z.enum(["laundry", "partner_restaurant"]), name: z.string().trim().max(200).optional(),
+  kind: z.enum(["laundry", "partner_restaurant"]), name: z.string().trim().min(1).max(200),
   note: nullableText(20_000), apartmentId: z.number().int().positive().optional(), ...locationInput,
 }).strict();
 const placePatch = placeCreate.omit({ apartmentId: true }).partial();
@@ -148,65 +134,6 @@ export async function repairLegacyMapCoordinates(ledger: LedgerStore, externalFe
   return repaired;
 }
 
-type StructuredDayInput = z.infer<typeof structuredDayBody>;
-
-function structuredDuration(workType: WorkType, durationMinutes?: number): number {
-  if (workType === "independent") return durationMinutes ?? 180;
-  return workType === "checkin" ? 30 : 60;
-}
-
-function structuredSourceLine(name: string, workType: WorkType, durationMinutes: number, dryerCents: number, otherExpenseCents: number): string {
-  const type = { independent: "уборка", orientation: "ознакомление", practice: "практика", checkin: "check in", unknown: "" }[workType];
-  const hours = Number((durationMinutes / 60).toFixed(2));
-  const expenses = [dryerCents > 0 ? `сушка ${(dryerCents / 100).toFixed(2)}€` : "", otherExpenseCents > 0 ? `расходы ${(otherExpenseCents / 100).toFixed(2)}€` : ""].filter(Boolean).join(" + ");
-  return `${name} ${hours}h ${type}${expenses ? ` ${expenses}` : ""}`;
-}
-
-async function buildStructuredDay(input: StructuredDayInput, ledger: LedgerStore, createMissing: boolean): Promise<{ parsed: ParsedDay; sourceText: string }> {
-  const activeApartments = await ledger.getActiveApartments();
-  const byId = new Map(activeApartments.map((apartment) => [apartment.id, apartment]));
-  const byKey = apartmentLookup(activeApartments);
-  const jobs: Job[] = [];
-  const expenses: Expense[] = [];
-  const sourceLines: string[] = [];
-
-  for (const inputJob of input.jobs) {
-    let apartment = inputJob.apartmentId ? byId.get(inputJob.apartmentId) : undefined;
-    const requestedName = inputJob.newApartmentName?.trim();
-    if (!apartment && requestedName) apartment = byKey.get(apartmentKey(requestedName));
-    if (!apartment && requestedName && createMissing) {
-      try {
-        apartment = await ledger.createApartment({ canonicalName: requestedName, aliases: [], address: null, mapsUrl: null, noteBody: null, latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null });
-      } catch {
-        apartment = apartmentLookup(await ledger.getActiveApartments()).get(apartmentKey(requestedName));
-      }
-      if (apartment) {
-        byId.set(apartment.id, apartment);
-        for (const alias of [apartment.canonicalName, ...apartment.aliases]) byKey.set(apartmentKey(alias), apartment);
-      }
-    }
-    if (createMissing && requestedName && !apartment) throw new Error("apartment_create_failed");
-    if (!apartment && !requestedName) throw new Error("apartment_not_found");
-    const object = apartment?.canonicalName ?? requestedName!;
-    const durationMinutes = structuredDuration(inputJob.workType, inputJob.durationMinutes);
-    const sourceLine = structuredSourceLine(object, inputJob.workType, durationMinutes, inputJob.dryerCents, inputJob.otherExpenseCents);
-    const jobIndex = jobs.length;
-    jobs.push({
-      object, apartmentId: apartment?.id ?? null, address: apartment?.address ?? null, mapsUrl: apartment?.mapsUrl ?? null,
-      noteBody: apartment?.noteBody ?? null, startMinutes: null, endMinutes: null, durationMinutes, endInferred: false,
-      workType: inputJob.workType, sourceLine,
-    });
-    if (inputJob.dryerCents > 0) expenses.push({ category: "сушка", object, jobIndex, amountCents: inputJob.dryerCents, sourceLine });
-    if (inputJob.otherExpenseCents > 0) expenses.push({ category: "расходы", object, jobIndex, amountCents: inputJob.otherExpenseCents, sourceLine });
-    sourceLines.push(sourceLine);
-  }
-
-  const [year, month, day] = input.dateIso.split("-");
-  const displayDate = `${day}/${month}`;
-  const parsed: ParsedDay = { dateIso: input.dateIso, displayDate, kind: "actual", jobs, expenses, advanceCents: 0, unparsedLines: [], issues: [] };
-  return { parsed, sourceText: [`${day}/${month}/${year}`, ...sourceLines].join("\n") };
-}
-
 function distanceMeters(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const radians = (value: number) => value * Math.PI / 180; const earth = 6_371_000;
   const dLat = radians(bLat - aLat); const dLon = radians(bLon - aLon);
@@ -284,9 +211,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   app.get("/api/places", async (_request, reply) => productRelease >= 2 ? { places: await ledger.getSavedPlaces() } : reply.code(404).send({ error: "not_found" }));
   app.post("/api/places", async (request, reply) => {
     if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
-    const input = placeCreate.safeParse(request.body); if (!input.success || (input.success && input.data.kind === "partner_restaurant" && !input.data.name)) return reply.code(400).send({ error: "invalid_request" });
+    const input = placeCreate.safeParse(request.body); if (!input.success) return reply.code(400).send({ error: "invalid_request" });
     const location = await resolveLocation(input.data, externalFetch);
-    const place = await ledger.createSavedPlace({ kind: input.data.kind, name: input.data.name || "Сушка", address: input.data.address ?? null, note: input.data.note ?? null, mapsUrl: input.data.mapsUrl ?? null, ...location });
+    const place = await ledger.createSavedPlace({ kind: input.data.kind, name: input.data.name, address: input.data.address ?? null, note: input.data.note ?? null, mapsUrl: input.data.mapsUrl ?? null, ...location });
     if (input.data.kind === "laundry" && input.data.apartmentId) await ledger.setPreferredLaundry(input.data.apartmentId, place.id);
     return reply.code(201).send({ place });
   });
@@ -295,11 +222,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const params = idParams.safeParse(request.params); const input = placePatch.safeParse(request.body);
     if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
     const current = await ledger.getSavedPlace(params.data.id); if (!current) return reply.code(404).send({ error: "place_not_found" });
-    if ((input.data.kind ?? current.kind) === "partner_restaurant" && input.data.name !== undefined && !input.data.name) return reply.code(400).send({ error: "invalid_request" });
     const locationChanged = input.data.address !== undefined || input.data.mapsUrl !== undefined || input.data.latitude !== undefined || input.data.longitude !== undefined;
     const location = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters };
-    const values = { ...input.data, ...(input.data.kind === "laundry" && !input.data.name ? { name: "Сушка" } : {}), ...location };
-    const place = await ledger.updateSavedPlace(params.data.id, values); return { place };
+    const place = await ledger.updateSavedPlace(params.data.id, { ...input.data, ...location }); return { place };
   });
   app.delete("/api/places/:id", async (request, reply) => {
     if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
@@ -344,31 +269,25 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   app.post("/api/preview", { bodyLimit: 32 * 1024, config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
     const input = previewBody.safeParse(request.body);
     if (!input.success) return reply.code(400).send({ error: "invalid_request", issues: input.error.issues.map(({ path, message }) => ({ path, message })) });
-    let parsed: ParsedDay; let sourceText: string;
-    try {
-      if ("format" in input.data) ({ parsed, sourceText } = await buildStructuredDay(input.data, ledger, false));
-      else { parsed = await parse(input.data.text); sourceText = input.data.text; if (input.data.kind) parsed.kind = input.data.kind; }
-    } catch { return reply.code(422).send({ error: "invalid_day" }); }
+    const parsed = await parse(input.data.text);
+    if (input.data.kind) parsed.kind = input.data.kind;
     const totals = calculateDay(parsed, settings);
     const canShare = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
     const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents) : null;
-    return { parsed, sourceText, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
+    return { parsed, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
   });
 
   app.post("/api/days", { config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
     const input = previewBody.safeParse(request.body);
     if (!input.success) return reply.code(400).send({ error: "invalid_request" });
-    let parsed: ParsedDay; let sourceText: string;
-    try {
-      if ("format" in input.data) ({ parsed, sourceText } = await buildStructuredDay(input.data, ledger, true));
-      else { parsed = await parse(input.data.text); sourceText = input.data.text; if (input.data.kind) parsed.kind = input.data.kind; }
-    } catch { return reply.code(422).send({ error: "invalid_day" }); }
+    const parsed = await parse(input.data.text);
+    if (input.data.kind) parsed.kind = input.data.kind;
     const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
     if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
     const totals = calculateDay(parsed, settings);
     const projected = await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents);
     const reportText = generateShareText(parsed, settings, projected);
-    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText });
+    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText: input.data.text, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText });
     return { day: saved.day, runningBalance: saved.snapshot.total.outstandingCents, snapshot: saved.snapshot, shareText: reportText };
   });
 
