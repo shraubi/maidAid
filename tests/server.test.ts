@@ -121,6 +121,14 @@ describe("MaidAid HTTP API", () => {
     expect((await app.inject({ method: "GET", url: "/api/apartments" })).json().apartments.filter((item: { canonicalName: string }) => item.canonicalName === "Nouvelle Rue")).toHaveLength(1);
   });
 
+  it("rejects expenses for non-cleaning structured work", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    const response = await app.inject({ method: "POST", url: "/api/preview", payload: { format: "structured", dateIso: "2026-08-09", jobs: [
+      { apartmentId: 1, workType: "orientation", dryerCents: 390, otherExpenseCents: 0 },
+    ] } });
+    expect(response.statusCode).toBe(400);
+  });
+
   it("accepts a laundry without an invented name", async () => {
     app = await buildApp(config, new MemoryLedgerStore());
     const response = await app.inject({ method: "POST", url: "/api/places", payload: { kind: "laundry", address: "24 Pl. du Marché Saint-Honoré" } });
