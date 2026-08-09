@@ -9,9 +9,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "preview:local": "npm run build && node scripts/local-preview.mjs",
-    "test": "vitest run --exclude tests/e2e/**",
+    "test": "vitest run --exclude \"tests/e2e/**\"",
     "test:e2e": "npm run build && playwright test",
-    "test:watch": "vitest --exclude tests/e2e/**"
+    "test:watch": "vitest --exclude \"tests/e2e/**\""
   },
   "engines": {
     "node": ">=22"
