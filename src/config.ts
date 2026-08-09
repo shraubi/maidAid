@@ -18,5 +18,9 @@ const schema = z.object({
 });
 
 type ParsedConfig = z.infer<typeof schema>;
-export type Config = Omit<ParsedConfig, "PRODUCT_RELEASE"> & { PRODUCT_RELEASE?: number };
+export type Config = Omit<ParsedConfig, "PRODUCT_RELEASE"> & {
+  PRODUCT_RELEASE?: number;
+  /** Legacy test/deployment input; the apartment API is now database-backed. */
+  APARTMENT_CACHE_TTL_MS?: number;
+};
 export function loadConfig(): Config { return schema.parse(process.env); }
