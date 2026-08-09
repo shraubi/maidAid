@@ -45,6 +45,23 @@ describe("public assets", () => {
     expect(html).toContain('class="map-legend"');
   });
 
+  it("uses structured Today cards with apartment search and a duration wheel", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    const html = readFileSync(resolve("public/index.html"), "utf8");
+    expect(html).toContain('id="today-job-list"');
+    expect(html).not.toContain('id="source-text"');
+    expect(app).toContain('format: "structured"');
+    expect(app).toContain("apartmentMatches");
+    expect(app).toContain('class="duration-wheel"');
+  });
+
+  it("renders place kinds on their own line and makes laundry names optional", () => {
+    const styles = readFileSync(resolve("public/styles.css"), "utf8");
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(styles).toContain(".place-kind { display: block;");
+    expect(app).toContain('laundry ? "Название (необязательно)"');
+  });
+
   it("ships a valid web app manifest", () => {
     const manifest = JSON.parse(readFileSync(resolve("public/manifest.webmanifest"), "utf8"));
     expect(manifest).toMatchObject({ name: "MaidAid", start_url: "/", display: "standalone" });
