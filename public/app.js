@@ -31,6 +31,7 @@ let todayJobs = [];
 let nextTodayJobId = 1;
 let latestDayPayload = null;
 let daySaved = false;
+let selectedTodayDateIso = null;
 let mapMode = (() => { try { return new URLSearchParams(location.search).get("view") || localStorage.getItem("maidaid:map-view") || "map"; } catch { return "map"; } })();
 const today = new Date();
 const calendarPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -73,7 +74,19 @@ function setTodayState(state) {
 
 const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const localDateIso = () => { const value = new Date(); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; };
-const displayTodayDate = () => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date());
+const displayTodayDate = (dateIso) => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date(`${dateIso}T12:00:00`));
+selectedTodayDateIso = localDateIso();
+$("#today-date-input").value = selectedTodayDateIso;
+
+function updateTodayDateLabel() {
+  $("#today-date-label").textContent = selectedTodayDateIso === localDateIso() ? "Сегодня" : displayTodayDate(selectedTodayDateIso);
+}
+$("#today-date-input").addEventListener("change", (event) => {
+  selectedTodayDateIso = event.target.value || localDateIso();
+  event.target.value = selectedTodayDateIso;
+  latestPreview = null; latestDayPayload = null; daySaved = false;
+  updateTodayDateLabel();
+});
 
 function addTodayJob() {
   todayJobs.push({ id: nextTodayJobId++, apartmentId: null, newApartmentName: "", query: "", workType: "independent", durationMinutes: 180, dryer: "", otherExpense: "" });
@@ -96,7 +109,7 @@ function durationWheel(job) {
 }
 
 function renderTodayJobs() {
-  $("#today-date-label").textContent = displayTodayDate();
+  updateTodayDateLabel();
   $("#today-job-list").innerHTML = todayJobs.length ? todayJobs.map((job, index) => {
     const apartment = apartments.find((item) => item.id === job.apartmentId);
     const value = apartment?.canonicalName ?? job.newApartmentName ?? job.query;
@@ -144,7 +157,7 @@ $("#today-job-list").addEventListener("wheel", (event) => { const wheel = event.
 function moneyCents(value, label) { if (!String(value).trim()) return 0; const amount = Number(String(value).replace(",", ".")); if (!Number.isFinite(amount) || amount < 0) throw new Error(`${label}: укажите корректную сумму`); return Math.round(amount * 100); }
 function buildTodayPayload() {
   if (!todayJobs.length) throw new Error("Добавьте хотя бы одну квартиру");
-  return { format: "structured", dateIso: localDateIso(), jobs: todayJobs.map((job, index) => {
+  return { format: "structured", dateIso: selectedTodayDateIso, jobs: todayJobs.map((job, index) => {
     if (!job.apartmentId && !job.newApartmentName) throw new Error(`Квартира ${index + 1}: выберите вариант из поиска или создайте новую`);
     return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes, dryerCents: moneyCents(job.dryer, "Сушка"), otherExpenseCents: moneyCents(job.otherExpense, "Другие расходы") } : { dryerCents: 0, otherExpenseCents: 0 }) };
   }) };
@@ -212,7 +225,7 @@ $$('[data-map-mode]').forEach((button) => button.addEventListener("click", () =>
 
 function renderPlaceList() {
   const query = $("#place-search").value.trim().toLocaleLowerCase("ru"); const filter = $("#place-filter").value;
-  const visible = mapItems.filter((item) => (filter === "all" || item.kind === filter) && (!query || [item.name, item.address, ...(item.aliases ?? [])].filter(Boolean).some((value) => String(value).toLocaleLowerCase("ru").includes(query))));
+  const visible = mapItems.filter((item) => (filter === "all" || item.kind === filter) && (!query || [item.name, item.address, ...(item.aliases ?? [])].filter(Boolean).some((value) => String(value).toLocaleLowerCase("ru").includes(query)))).sort((a, b) => Number(!(a.itemType === "apartment" && a.latitude == null)) - Number(!(b.itemType === "apartment" && b.latitude == null)) || String(a.name).localeCompare(String(b.name), "ru"));
   $("#place-list").innerHTML = visible.length ? visible.map((item) => {
     const needsLocation = item.itemType === "apartment" && item.latitude == null;
     const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
@@ -279,18 +292,21 @@ async function openApartmentDetail(id, push = true) {
     const { apartment, preferredLaundry } = await api(`/api/apartments/${id}`);
     const mapLink = mapsHref(apartment);
     const editLabel = apartment.latitude == null ? "Указать место" : "Изменить";
-    const releaseActions = `${productRelease >= 3 ? `<button class="secondary" data-find-laundry="${apartment.id}" type="button">Сушки рядом</button>` : ""}<button class="ghost" data-edit-item="apartment:${apartment.id}" type="button">${editLabel}</button>`;
-    $("#place-detail").innerHTML = `<span class="place-kind">Квартира</span><h2>${escapeHtml(apartment.canonicalName)}</h2><p class="detail-address ${apartment.latitude == null ? "missing-location" : ""}">${escapeHtml(apartment.address || (apartment.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"))}</p>${apartment.noteBody ? `<pre class="detail-note">${escapeHtml(apartment.noteBody)}</pre>` : ""}${preferredLaundry ? `<div class="notice success"><strong>Выбранная сушка</strong><br>${escapeHtml(preferredLaundry.name)}</div>` : ""}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}${releaseActions}</div>`;
+    const releaseActions = `${productRelease >= 2 ? `<button class="secondary" data-choose-laundry="${apartment.id}" type="button">${preferredLaundry ? "Сменить сушку" : "Выбрать сушку"}</button>` : ""}<button class="ghost" data-edit-item="apartment:${apartment.id}" type="button">${editLabel}</button>`;
+    const laundryTitle = preferredLaundry && ["сушка", "прачечная"].includes(String(preferredLaundry.name).trim().toLocaleLowerCase("ru")) ? (preferredLaundry.address || preferredLaundry.name) : preferredLaundry?.name;
+    const laundryMapLink = preferredLaundry ? mapsHref(preferredLaundry) : null;
+    const laundryCard = preferredLaundry ? `${laundryMapLink ? `<a class="notice success preferred-laundry-card" href="${escapeHtml(laundryMapLink)}" target="_blank" rel="noopener noreferrer">` : `<div class="notice success preferred-laundry-card">`}<strong>Выбранная сушка</strong><br>${escapeHtml(laundryTitle)}${laundryMapLink ? `<span>Открыть на карте →</span></a>` : "</div>"}` : "";
+    $("#place-detail").innerHTML = `<span class="place-kind">Квартира</span><h2>${escapeHtml(apartment.canonicalName)}</h2><p class="detail-address ${apartment.latitude == null ? "missing-location" : ""}">${escapeHtml(apartment.address || (apartment.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"))}</p>${apartment.noteBody ? `<pre class="detail-note">${escapeHtml(apartment.noteBody)}</pre>` : ""}${laundryCard}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}${releaseActions}</div>`;
     $("#place-detail-dialog").showModal();
     if (push && location.pathname !== `/map/apartments/${id}`) history.pushState({}, "", `/map/apartments/${id}?view=${mapMode}`);
   } catch { $("#map-error").textContent = "Не удалось открыть квартиру."; $("#map-error").hidden = false; }
 }
 
 $("#place-detail").addEventListener("click", async (event) => {
-  const edit = event.target.closest("[data-edit-item]"); const archive = event.target.closest("[data-archive-place]"); const laundry = event.target.closest("[data-find-laundry]");
+  const edit = event.target.closest("[data-edit-item]"); const archive = event.target.closest("[data-archive-place]"); const laundry = event.target.closest("[data-choose-laundry]");
   if (edit) { $("#place-detail-dialog").close(); openEditForm(edit.dataset.editItem); }
   if (archive && confirm("Убрать это место в архив?")) { await api(`/api/places/${archive.dataset.archivePlace}`, { method: "DELETE" }); $("#place-detail-dialog").close(); mapItems = []; await loadMapItems(true); }
-  if (laundry) { $("#place-detail-dialog").close(); await findNearbyLaundry(Number(laundry.dataset.findLaundry)); }
+  if (laundry) { $("#place-detail-dialog").close(); await openLaundryPicker(Number(laundry.dataset.chooseLaundry)); }
 });
 
 function resetPlaceForm() {
@@ -304,7 +320,7 @@ function clearDerivedLocation() {
 }
 $("#place-address").addEventListener("input", clearDerivedLocation);
 $("#place-maps-url").addEventListener("input", clearDerivedLocation);
-function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${apartments.map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}</option>`).join("")}`; }
+function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${[...apartments].sort((a, b) => Number(a.latitude != null) - Number(b.latitude != null) || a.canonicalName.localeCompare(b.canonicalName, "ru")).map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}${item.latitude == null ? " · не заполнена" : ""}</option>`).join("")}`; }
 function updatePlaceKind() {
   const laundry = $("#place-kind").value === "laundry";
   $("#place-apartment-link-label").hidden = !laundry;
@@ -344,12 +360,28 @@ $("#place-form").addEventListener("submit", async (event) => {
       const payload = { canonicalName: $("#place-name").value, noteBody: $("#place-note").value || null, ...common }; if (!editKey) payload.aliases = [];
       const endpoint = editKey ? `/api/apartments/${editKey.split(":")[1]}` : "/api/apartments"; await api(endpoint, { method: editKey ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
     } else {
-      const payload = { kind, name: $("#place-name").value, note: $("#place-note").value || null, apartmentId: $("#place-apartment-link").value ? Number($("#place-apartment-link").value) : undefined, ...common };
-      const endpoint = editKey ? `/api/places/${editKey.split(":")[1]}` : "/api/places"; if (editKey) delete payload.apartmentId; await api(endpoint, { method: editKey ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      const apartmentId = $("#place-apartment-link").value ? Number($("#place-apartment-link").value) : undefined;
+      const payload = { kind, name: $("#place-name").value, note: $("#place-note").value || null, apartmentId, ...common };
+      const endpoint = editKey ? `/api/places/${editKey.split(":")[1]}` : "/api/places"; if (editKey) delete payload.apartmentId; const saved = await api(endpoint, { method: editKey ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      if (editKey && kind === "laundry" && apartmentId) await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ placeId: saved.place.id }) });
     }
     $("#place-form-dialog").close(); mapItems = []; await loadMapItems(true);
   } catch (caught) { error.textContent = caught.message === "apartment_exists" ? "Квартира с таким названием уже существует." : "Не удалось сохранить место."; error.hidden = false; }
 });
+
+async function openLaundryPicker(apartmentId) {
+  const results = $("#laundry-results");
+  const laundries = savedPlaces.filter((item) => item.kind === "laundry");
+  const cards = laundries.map((item) => {
+    const generic = ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
+    const title = generic ? (item.address || "Сушка без адреса") : item.name;
+    const subtitle = generic ? "" : item.address;
+    return `<article class="laundry-card"><strong>${escapeHtml(title)}</strong>${subtitle ? `<p class="muted">${escapeHtml(subtitle)}</p>` : ""}<button class="primary" data-link-laundry="${item.id}" type="button">Связать с квартирой</button></article>`;
+  }).join("");
+  results.dataset.apartmentId = apartmentId;
+  results.innerHTML = `<p class="muted">Выберите сохранённую сушку.</p><div class="laundry-list">${cards || "<p>Сначала добавьте сушку через кнопку + на карте.</p>"}</div>${productRelease >= 3 ? `<div class="detail-actions"><button class="secondary" data-find-nearby="${apartmentId}" type="button">Найти новые рядом</button></div>` : ""}`;
+  $("#laundry-dialog").showModal();
+}
 
 async function findNearbyLaundry(apartmentId) {
   const results = $("#laundry-results"); results.innerHTML = "<p class=\"muted\">Ищу ближайшие варианты…</p>"; $("#laundry-dialog").showModal();
@@ -360,8 +392,12 @@ async function findNearbyLaundry(apartmentId) {
   } catch (error) { results.innerHTML = `<p class="notice error">${error.message === "apartment_location_required" ? "Сначала укажите адрес или координаты квартиры." : "Поиск сушек временно недоступен."}</p>`; }
 }
 $("#laundry-results").addEventListener("click", async (event) => {
+  const nearby = event.target.closest("[data-find-nearby]"); if (nearby) { await findNearbyLaundry(Number(nearby.dataset.findNearby)); return; }
+  const linked = event.target.closest("[data-link-laundry]");
+  const apartmentId = Number($("#laundry-results").dataset.apartmentId);
+  if (linked) { await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ placeId: Number(linked.dataset.linkLaundry) }) }); $("#laundry-dialog").close(); mapItems = []; await loadMapItems(true); await openApartmentDetail(apartmentId, false); return; }
   const button = event.target.closest("[data-select-laundry]"); if (!button) return;
-  const candidate = $("#laundry-results")._candidates?.[Number(button.dataset.selectLaundry)]; const apartmentId = Number($("#laundry-results").dataset.apartmentId); if (!candidate) return;
+  const candidate = $("#laundry-results")._candidates?.[Number(button.dataset.selectLaundry)]; if (!candidate) return;
   await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ candidate: { osmType: candidate.osmType, osmId: candidate.osmId, name: candidate.name, address: candidate.address, latitude: candidate.latitude, longitude: candidate.longitude } }) });
   $("#laundry-dialog").close(); mapItems = []; await loadMapItems(true); await openApartmentDetail(apartmentId, false);
 });

@@ -109,26 +109,50 @@ function hasLegacyBrokenCoordinates(item: { mapsUrl: string | null; latitude?: n
   } catch { return false; }
 }
 
-async function resolveLocation(input: Record<string, unknown>, externalFetch: typeof fetch): Promise<{ latitude: number | null; longitude: number | null; locationSource: LocationSource | null; locationAccuracyMeters: number | null }> {
+async function resolveLocation(input: Record<string, unknown>, externalFetch: typeof fetch): Promise<{ latitude: number | null; longitude: number | null; locationSource: LocationSource | null; locationAccuracyMeters: number | null; inferredAddress?: string }> {
   const latitude = typeof input.latitude === "number" ? input.latitude : null;
   const longitude = typeof input.longitude === "number" ? input.longitude : null;
   if (latitude != null && longitude != null) return { latitude, longitude, locationSource: input.locationSource as LocationSource ?? "pin", locationAccuracyMeters: typeof input.locationAccuracyMeters === "number" ? input.locationAccuracyMeters : null };
-  const fromUrl = coordinatesFromMapsUrl(typeof input.mapsUrl === "string" ? input.mapsUrl : null);
-  if (fromUrl) return { ...fromUrl, locationSource: "maps_link", locationAccuracyMeters: null };
-  const address = typeof input.address === "string" ? input.address.trim() : "";
-  if (address) {
+  const mapsUrl = typeof input.mapsUrl === "string" ? input.mapsUrl : null;
+  let expandedMapsUrl = mapsUrl;
+  let inferredAddress = "";
+  if (mapsUrl) {
     try {
-      const url = new URL("https://nominatim.openstreetmap.org/search");
-      url.searchParams.set("q", address); url.searchParams.set("format", "jsonv2"); url.searchParams.set("limit", "1");
-      const response = await externalFetch(url, { headers: { "user-agent": "MaidAid/0.1", accept: "application/json" }, signal: AbortSignal.timeout(6_000) });
-      if (response.ok) {
-        const body = await response.json() as Array<{ lat?: string; lon?: string }>;
-        const hit = body[0]; const resolvedLatitude = Number(hit?.lat); const resolvedLongitude = Number(hit?.lon);
-        if (Number.isFinite(resolvedLatitude) && Number.isFinite(resolvedLongitude)) return { latitude: resolvedLatitude, longitude: resolvedLongitude, locationSource: "address", locationAccuracyMeters: null };
+      const shortUrl = new URL(mapsUrl);
+      if (shortUrl.hostname === "maps.app.goo.gl") {
+        const response = await externalFetch(shortUrl, { redirect: "manual", headers: { "user-agent": "MaidAid/0.1" }, signal: AbortSignal.timeout(6_000) });
+        const redirect = response.headers.get("location") ?? response.url;
+        if (redirect) {
+          const expanded = new URL(redirect, shortUrl);
+          if (["google.com", "www.google.com", "maps.google.com"].includes(expanded.hostname)) {
+            expandedMapsUrl = expanded.href;
+            const query = expanded.searchParams.get("q") ?? expanded.searchParams.get("query") ?? "";
+            if (query && !coordinatePair(query)) inferredAddress = query;
+          }
+        }
       }
-    } catch { /* A place may still be saved without coordinates. */ }
+    } catch { /* The original link is still saved and can be fixed manually. */ }
   }
-  return { latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null };
+  const fromUrl = coordinatesFromMapsUrl(expandedMapsUrl);
+  if (fromUrl) return { ...fromUrl, locationSource: "maps_link", locationAccuracyMeters: null };
+  const address = (typeof input.address === "string" ? input.address.trim() : "") || inferredAddress;
+  if (address) {
+    const addressCandidates = [address];
+    if (inferredAddress.includes(",")) addressCandidates.push(inferredAddress.slice(inferredAddress.indexOf(",") + 1).trim());
+    for (const candidate of [...new Set(addressCandidates)]) {
+      try {
+        const url = new URL("https://nominatim.openstreetmap.org/search");
+        url.searchParams.set("q", candidate); url.searchParams.set("format", "jsonv2"); url.searchParams.set("limit", "1");
+        const response = await externalFetch(url, { headers: { "user-agent": "MaidAid/0.1", accept: "application/json" }, signal: AbortSignal.timeout(6_000) });
+        if (response.ok) {
+          const body = await response.json() as Array<{ lat?: string; lon?: string }>;
+          const hit = body[0]; const resolvedLatitude = Number(hit?.lat); const resolvedLongitude = Number(hit?.lon);
+          if (Number.isFinite(resolvedLatitude) && Number.isFinite(resolvedLongitude)) return { latitude: resolvedLatitude, longitude: resolvedLongitude, locationSource: "address", locationAccuracyMeters: null, ...(inferredAddress ? { inferredAddress } : {}) };
+        }
+      } catch { /* Try the next address variant before falling back to manual placement. */ }
+    }
+  }
+  return { latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null, ...(inferredAddress ? { inferredAddress } : {}) };
 }
 
 export async function repairLegacyMapCoordinates(ledger: LedgerStore, externalFetch: typeof fetch, delayMilliseconds = 1_100): Promise<number> {
@@ -264,9 +288,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   app.post("/api/apartments", async (request, reply) => {
     if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
     const input = apartmentCreate.safeParse(request.body); if (!input.success) return reply.code(400).send({ error: "invalid_request" });
-    const location = await resolveLocation(input.data, externalFetch);
+    const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
     try {
-      const apartment = await ledger.createApartment({ canonicalName: input.data.canonicalName, aliases: input.data.aliases, address: input.data.address ?? null, mapsUrl: input.data.mapsUrl ?? null, noteBody: input.data.noteBody ?? null, ...location });
+      const apartment = await ledger.createApartment({ canonicalName: input.data.canonicalName, aliases: input.data.aliases, address: input.data.address ?? inferredAddress ?? null, mapsUrl: input.data.mapsUrl ?? null, noteBody: input.data.noteBody ?? null, ...location });
       return reply.code(201).send({ apartment });
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
@@ -275,9 +299,10 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
     const current = await ledger.getApartment(params.data.id); if (!current) return reply.code(404).send({ error: "apartment_not_found" });
     const locationChanged = input.data.address !== undefined || input.data.mapsUrl !== undefined || input.data.latitude !== undefined || input.data.longitude !== undefined;
-    const location = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters };
+    const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
+    const { inferredAddress, ...location } = resolved;
     try {
-      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...location }); return { apartment };
+      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location }); return { apartment };
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
 
@@ -285,8 +310,8 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   app.post("/api/places", async (request, reply) => {
     if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
     const input = placeCreate.safeParse(request.body); if (!input.success || (input.success && input.data.kind === "partner_restaurant" && !input.data.name)) return reply.code(400).send({ error: "invalid_request" });
-    const location = await resolveLocation(input.data, externalFetch);
-    const place = await ledger.createSavedPlace({ kind: input.data.kind, name: input.data.name || "Сушка", address: input.data.address ?? null, note: input.data.note ?? null, mapsUrl: input.data.mapsUrl ?? null, ...location });
+    const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
+    const place = await ledger.createSavedPlace({ kind: input.data.kind, name: input.data.name || "Сушка", address: input.data.address ?? inferredAddress ?? null, note: input.data.note ?? null, mapsUrl: input.data.mapsUrl ?? null, ...location });
     if (input.data.kind === "laundry" && input.data.apartmentId) await ledger.setPreferredLaundry(input.data.apartmentId, place.id);
     return reply.code(201).send({ place });
   });
@@ -297,8 +322,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const current = await ledger.getSavedPlace(params.data.id); if (!current) return reply.code(404).send({ error: "place_not_found" });
     if ((input.data.kind ?? current.kind) === "partner_restaurant" && input.data.name !== undefined && !input.data.name) return reply.code(400).send({ error: "invalid_request" });
     const locationChanged = input.data.address !== undefined || input.data.mapsUrl !== undefined || input.data.latitude !== undefined || input.data.longitude !== undefined;
-    const location = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters };
-    const values = { ...input.data, ...(input.data.kind === "laundry" && !input.data.name ? { name: "Сушка" } : {}), ...location };
+    const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
+    const { inferredAddress, ...location } = resolved;
+    const values = { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...(input.data.kind === "laundry" && !input.data.name ? { name: "Сушка" } : {}), ...location };
     const place = await ledger.updateSavedPlace(params.data.id, values); return { place };
   });
   app.delete("/api/places/:id", async (request, reply) => {
@@ -432,3 +458,4 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
 async function start(): Promise<void> { const config = loadConfig(); const app = await buildApp(config); await app.listen({ port: config.PORT, host: config.HOST }); }
 const entryPoint = typeof process !== "undefined" && process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
 if (import.meta.url === entryPoint) await start();
+

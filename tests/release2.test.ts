@@ -45,7 +45,12 @@ describe("release two places", () => {
 
   it("creates every place type using the location fallback order", async () => {
     const externalFetch = vi.fn(async (input: string | URL | Request) => {
+      if (String(input).includes("maps.app.goo.gl")) {
+        return new Response(null, { status: 302, headers: { location: "https://maps.google.com/maps?q=Laverie+Test,+48+Rue+de+Berri,+75008+Paris" } });
+      }
       if (String(input).includes("nominatim")) {
+        const query = new URL(String(input)).searchParams.get("q") ?? "";
+        if (query.startsWith("Laverie Test")) return new Response("[]", { status: 200 });
         return new Response(JSON.stringify([{ lat: "48.8566", lon: "2.3522" }]), { status: 200 });
       }
       return new Response("{}", { status: 500 });
@@ -81,6 +86,13 @@ describe("release two places", () => {
     expect(laundryResponse.statusCode).toBe(201);
     expect(laundryResponse.json().place).toMatchObject({ kind: "laundry", locationSource: "maps_link", latitude: 48.857, longitude: 2.353 });
 
+    const shortLinkLaundry = await app.inject({
+      method: "POST",
+      url: "/api/places",
+      payload: { kind: "laundry", mapsUrl: "https://maps.app.goo.gl/example" },
+    });
+    expect(shortLinkLaundry.json().place).toMatchObject({ name: "Сушка", address: "Laverie Test, 48 Rue de Berri, 75008 Paris", locationSource: "address", latitude: 48.8566, longitude: 2.3522 });
+
     const partnerResponse = await app.inject({
       method: "POST",
       url: "/api/places",
@@ -99,7 +111,8 @@ describe("release two places", () => {
 
     const apartmentDetail = await app.inject({ method: "GET", url: `/api/apartments/${apartment.id}` });
     expect(apartmentDetail.json().preferredLaundry).toMatchObject({ name: "Сушка А" });
-    expect((await app.inject({ method: "GET", url: "/api/places" })).json().places).toHaveLength(2);
+    expect((await app.inject({ method: "GET", url: "/api/places" })).json().places).toHaveLength(3);
     expect((await app.inject({ method: "GET", url: `/api/apartments/${apartment.id}/nearby-laundries` })).statusCode).toBe(404);
   });
 });
+
