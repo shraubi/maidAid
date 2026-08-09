@@ -106,7 +106,7 @@ function renderTodayJobs() {
       <label class="apartment-search-label">Название или улица<div class="apartment-combobox"><input class="apartment-search" data-apartment-search="${job.id}" value="${escapeHtml(value)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Например, Bosquet или Lauriston" /><div class="apartment-results" data-apartment-results="${job.id}" role="listbox" hidden></div></div>${selectedState}</label>
       <label>Тип<select data-work-type="${job.id}"><option value="independent"${job.workType === "independent" ? " selected" : ""}>Уборка</option><option value="orientation"${job.workType === "orientation" ? " selected" : ""}>Ознакомление</option><option value="practice"${job.workType === "practice" ? " selected" : ""}>Практика</option><option value="checkin"${job.workType === "checkin" ? " selected" : ""}>Check-in</option></select></label>
       ${job.workType === "independent" ? `<div class="duration-field"><span>Сколько часов</span>${durationWheel(job)}</div>` : ""}
-      <div class="job-expense-fields"><label>Сушка, €<input data-job-expense="dryer" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.dryer)}" placeholder="0" /></label><label>Другие расходы, €<input data-job-expense="otherExpense" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.otherExpense)}" placeholder="0" /></label></div>
+      ${job.workType === "independent" ? `<div class="job-expense-fields"><label>Сушка, €<input data-job-expense="dryer" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.dryer)}" placeholder="0" /></label><label>Другие расходы, €<input data-job-expense="otherExpense" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.otherExpense)}" placeholder="0" /></label></div>` : ""}
     </article>`;
   }).join("") : `<div class="today-empty"><strong>Добавьте первую квартиру</strong><p>Каждая работа будет отдельной карточкой.</p></div>`;
 }
@@ -127,7 +127,7 @@ $("#today-job-list").addEventListener("input", (event) => {
   if (search) { const job = todayJobs.find((item) => item.id === Number(search.dataset.apartmentSearch)); if (job) { job.query = search.value; job.apartmentId = null; job.newApartmentName = ""; showApartmentResults(search); } return; }
   const expense = event.target.closest("[data-job-expense]"); if (expense) { const job = todayJobs.find((item) => item.id === Number(expense.dataset.jobId)); if (job) job[expense.dataset.jobExpense] = expense.value; }
 });
-$("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; renderTodayJobs(); } } });
+$("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; if (job.workType !== "independent") { job.dryer = ""; job.otherExpense = ""; } renderTodayJobs(); } } });
 $("#today-job-list").addEventListener("click", (event) => {
   const remove = event.target.closest("[data-remove-job]"); if (remove) { todayJobs = todayJobs.filter((job) => job.id !== Number(remove.dataset.removeJob)); renderTodayJobs(); return; }
   const choice = event.target.closest("[data-choose-apartment]"); if (choice) { const job = todayJobs.find((item) => item.id === Number(choice.dataset.jobId)); const apartment = apartments.find((item) => item.id === Number(choice.dataset.chooseApartment)); if (job && apartment) { job.apartmentId = apartment.id; job.newApartmentName = ""; job.query = apartment.canonicalName; renderTodayJobs(); } return; }
@@ -146,7 +146,7 @@ function buildTodayPayload() {
   if (!todayJobs.length) throw new Error("Добавьте хотя бы одну квартиру");
   return { format: "structured", dateIso: localDateIso(), jobs: todayJobs.map((job, index) => {
     if (!job.apartmentId && !job.newApartmentName) throw new Error(`Квартира ${index + 1}: выберите вариант из поиска или создайте новую`);
-    return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes } : {}), dryerCents: moneyCents(job.dryer, "Сушка"), otherExpenseCents: moneyCents(job.otherExpense, "Другие расходы") };
+    return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes, dryerCents: moneyCents(job.dryer, "Сушка"), otherExpenseCents: moneyCents(job.otherExpense, "Другие расходы") } : { dryerCents: 0, otherExpenseCents: 0 }) };
   }) };
 }
 
