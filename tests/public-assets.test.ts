@@ -4,13 +4,15 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 function expectValidJavaScript(path: string): void {
-  const result = ts.transpileModule(readFileSync(resolve(path), "utf8"), {
+  const source = readFileSync(resolve(path), "utf8");
+  const result = ts.transpileModule(source, {
     fileName: path,
     reportDiagnostics: true,
     compilerOptions: { allowJs: true, module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
   });
   const errors = result.diagnostics?.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error) ?? [];
   expect(errors.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"))).toEqual([]);
+  expect(() => new Function(source)).not.toThrow();
 }
 
 describe("public assets", () => {
