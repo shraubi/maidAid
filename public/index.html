@@ -29,7 +29,7 @@
       <section id="view-today" class="app-view" aria-labelledby="today-title">
         <header class="view-heading"><p class="eyebrow">Рабочий день</p><h1 id="today-title">Сегодня</h1></header>
         <article id="today-editor" class="surface workflow-surface">
-          <div class="today-date"><span>Работы за</span><strong id="today-date-label"></strong></div>
+          <div class="today-date"><span>Работы за</span><label class="today-date-control"><strong id="today-date-label">Сегодня</strong><input id="today-date-input" type="date" aria-label="Дата рабочего дня" /></label></div>
           <div id="today-job-list" class="today-job-list"></div>
           <button id="add-today-job" class="secondary add-job-button" type="button">+ Квартира</button>
           <div class="action-row action-row-end"><button id="preview-button" class="primary" type="button">Сформировать отчёт</button></div>
@@ -94,7 +94,7 @@
         <label>Адрес<input id="place-address" maxlength="1000" placeholder="Основной способ найти точку" /></label>
         <label>Ссылка Maps<input id="place-maps-url" type="url" placeholder="Если адреса недостаточно" /></label>
         <label>Заметка<textarea id="place-note" rows="5" maxlength="20000"></textarea></label>
-        <label id="place-apartment-link-label" hidden>Для квартиры<select id="place-apartment-link"><option value="">Не связывать</option></select></label>
+        <label id="place-apartment-link-label" hidden>Связать с квартирой<select id="place-apartment-link"><option value="">Не связывать</option></select></label>
         <input id="place-latitude" type="hidden" /><input id="place-longitude" type="hidden" /><input id="place-location-source" type="hidden" /><input id="place-location-accuracy" type="hidden" />
         <div id="coordinate-picker" hidden><p class="muted">Нажмите на нужную точку.</p><div id="picker-map"></div></div>
         <p id="place-location-status" class="muted">Сначала попробуем определить точку по адресу.</p>
@@ -103,7 +103,7 @@
         <div class="action-row action-row-end"><button class="primary" type="submit">Сохранить</button></div>
       </form>
     </dialog>
-    <dialog id="laundry-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="laundry-dialog" aria-label="Закрыть">×</button><h2>Сушки рядом</h2><div id="laundry-results"></div></dialog>
+    <dialog id="laundry-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="laundry-dialog" aria-label="Закрыть">×</button><h2>Сушка для квартиры</h2><div id="laundry-results"></div></dialog>
     <dialog id="payment-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="payment-dialog" aria-label="Закрыть">×</button><form id="payment-form"><h2>Добавить оплату</h2><label>Дата<input id="payment-date" type="date" required /></label><label>Сумма, €<input id="payment-amount" type="number" min="0.01" step="0.01" required /></label><label>Примечание<input id="payment-note" maxlength="500" /></label><div class="action-row action-row-end"><button class="primary" type="submit">Добавить</button></div></form></dialog>
     <dialog id="periods-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="periods-dialog" aria-label="Закрыть">×</button><h2>Выберите месяц</h2><div id="periods-list" class="periods-list"></div></dialog>
     <dialog id="day-edit-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="day-edit-dialog" aria-label="Закрыть">×</button><form id="day-edit-form"><h2>Изменить рабочий день</h2><p id="day-edit-date" class="muted"></p><textarea id="day-edit-text" rows="11" maxlength="32768" required></textarea><p id="day-edit-error" class="notice error" hidden></p><div class="action-row action-row-end"><button class="primary" type="submit">Проверить и сохранить</button></div></form></dialog>
@@ -112,3 +112,4 @@
     <script type="module" src="/app.js"></script>
   </body>
 </html>
+
