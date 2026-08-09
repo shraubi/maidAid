@@ -17,6 +17,8 @@ test("release one hides future place-management controls", async ({ page, reques
 
 test("Today keeps its preview while navigating between sections", async ({ page }) => {
   await page.goto("/today");
+  await page.getByLabel("Дата рабочего дня").fill("2026-08-08");
+  await expect(page.locator("#today-date-label")).toHaveText("8 августа");
   await page.getByRole("button", { name: "+ Квартира", exact: true }).click();
   await page.getByPlaceholder("Например, Bosquet или Lauriston").fill("Bos");
   await page.locator("[data-choose-apartment]", { hasText: "Bosquet" }).first().click();
@@ -26,10 +28,23 @@ test("Today keeps its preview while navigating between sections", async ({ page 
   await page.locator("[data-work-type]").selectOption("independent");
   await page.getByRole("button", { name: "Сформировать отчёт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
+  await expect(page.locator("#parsed-summary")).toContainText("08/08");
   await page.getByRole("link", { name: "Карта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Карта", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
+});
+
+test("an apartment can choose an already saved laundry", async ({ page, request }, testInfo) => {
+  test.skip(productRelease < 2, "available from release two");
+  const address = `19 rue de la Buanderie, Paris · ${testInfo.project.name}`;
+  await request.post("/api/places", { data: { kind: "laundry", name: "", address } });
+  await page.goto("/map/apartments/1?view=list");
+  await page.getByRole("button", { name: /(?:Выбрать|Сменить) сушку/ }).click();
+  const card = page.locator(".laundry-card", { hasText: address });
+  await card.getByRole("button", { name: "Связать с квартирой" }).click();
+  await expect(page.getByText("Выбранная сушка")).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`Выбранная сушка ${address}`) })).toBeVisible();
 });
 
 test("Map and list are equal views and a place can be added", async ({ page }, testInfo) => {
@@ -51,8 +66,8 @@ test("release two offers every place type and manual laundry linking", async ({ 
 
   await page.getByRole("button", { name: "Добавить место" }).click();
   await page.locator("#place-kind").selectOption("laundry");
-  await expect(page.getByLabel("Для квартиры")).toBeVisible();
-  await page.getByLabel("Для квартиры").selectOption({ index: 1 });
+  await expect(page.getByLabel("Связать с квартирой")).toBeVisible();
+  await page.getByLabel("Связать с квартирой").selectOption({ index: 1 });
   const laundryName = `Сушка ${testInfo.project.name}`;
   await page.getByLabel("Название", { exact: true }).fill(laundryName);
   await page.getByLabel("Ссылка Maps").fill("https://www.google.com/maps?q=48.857,2.353");
@@ -83,3 +98,4 @@ test("mobile layout has no horizontal overflow", async ({ page }, testInfo) => {
   expect(dimensions.scroll).toBe(dimensions.client);
   await expect(page.locator(".mobile-nav")).toBeVisible();
 });
+
