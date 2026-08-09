@@ -27,6 +27,10 @@ let pickerMap = null;
 let markerLayer = null;
 let productRelease = 1;
 let activeRoute = "today";
+let todayJobs = [];
+let nextTodayJobId = 1;
+let latestDayPayload = null;
+let daySaved = false;
 let mapMode = (() => { try { return new URLSearchParams(location.search).get("view") || localStorage.getItem("maidaid:map-view") || "map"; } catch { return "map"; } })();
 const today = new Date();
 const calendarPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -45,6 +49,7 @@ async function showRoute(route, push = false) {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
   if (push) history.pushState({}, "", route === "today" ? "/today" : `/${route}`);
+  if (route === "today") { await loadApartments(); renderTodayJobs(); }
   if (route === "map") await loadMapItems();
   if (route === "ledger") await loadLedger();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -64,11 +69,86 @@ window.addEventListener("popstate", async () => {
 function setTodayState(state) {
   $("#today-editor").hidden = state !== "editor";
   $("#today-preview").hidden = state !== "preview";
-  $("#today-result").hidden = state !== "result";
 }
 
-const textarea = $("#source-text");
-textarea.addEventListener("input", () => { $("#character-count").textContent = `${textarea.value.length.toLocaleString("ru-RU")} / 32 768`; });
+const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const localDateIso = () => { const value = new Date(); return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`; };
+const displayTodayDate = () => new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long" }).format(new Date());
+
+function addTodayJob() {
+  todayJobs.push({ id: nextTodayJobId++, apartmentId: null, newApartmentName: "", query: "", workType: "independent", durationMinutes: 180, dryer: "", otherExpense: "" });
+  renderTodayJobs();
+}
+
+function apartmentMatches(query) {
+  const needle = normalizeSearch(query);
+  return apartments.map((apartment) => {
+    const names = [apartment.canonicalName, ...(apartment.aliases ?? [])].map(normalizeSearch);
+    const addressTokens = normalizeSearch(apartment.address).split(" ").filter(Boolean);
+    const rank = names.some((name) => name.startsWith(needle)) ? 0 : addressTokens.some((part) => part.startsWith(needle)) ? 1 : 2;
+    return { apartment, rank };
+  }).filter(({ rank }) => !needle || rank < 2).sort((a, b) => a.rank - b.rank || a.apartment.canonicalName.localeCompare(b.apartment.canonicalName, "ru")).slice(0, 8).map(({ apartment }) => apartment);
+}
+
+function durationWheel(job) {
+  const values = [-60, -30, 0, 30, 60].map((offset) => job.durationMinutes + offset).filter((value) => value >= 30 && value <= 300);
+  return `<div class="duration-wheel" role="spinbutton" tabindex="0" aria-label="Длительность уборки" aria-valuemin="30" aria-valuemax="300" aria-valuenow="${job.durationMinutes}" data-duration-wheel="${job.id}">${values.map((value) => `<button class="duration-option${value === job.durationMinutes ? " is-selected" : ""}" data-duration="${value}" type="button" aria-pressed="${value === job.durationMinutes}">${formatHours(value)}</button>`).join("")}</div>`;
+}
+
+function renderTodayJobs() {
+  $("#today-date-label").textContent = displayTodayDate();
+  $("#today-job-list").innerHTML = todayJobs.length ? todayJobs.map((job, index) => {
+    const apartment = apartments.find((item) => item.id === job.apartmentId);
+    const value = apartment?.canonicalName ?? job.newApartmentName ?? job.query;
+    const selectedState = apartment ? `<small class="apartment-selection">${escapeHtml(apartment.address || "Адрес нужно добавить")}</small>` : job.newApartmentName ? `<small class="apartment-selection needs-attention">Новая квартира · адрес нужно добавить</small>` : "";
+    return `<article class="today-job-card" data-today-job="${job.id}">
+      <div class="today-job-heading"><strong>Квартира ${index + 1}</strong><button class="ghost remove-job" data-remove-job="${job.id}" type="button" aria-label="Удалить квартиру">Удалить</button></div>
+      <label class="apartment-search-label">Название или улица<div class="apartment-combobox"><input class="apartment-search" data-apartment-search="${job.id}" value="${escapeHtml(value)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Например, Bosquet или Lauriston" /><div class="apartment-results" data-apartment-results="${job.id}" role="listbox" hidden></div></div>${selectedState}</label>
+      <label>Тип<select data-work-type="${job.id}"><option value="independent"${job.workType === "independent" ? " selected" : ""}>Уборка</option><option value="orientation"${job.workType === "orientation" ? " selected" : ""}>Ознакомление</option><option value="practice"${job.workType === "practice" ? " selected" : ""}>Практика</option><option value="checkin"${job.workType === "checkin" ? " selected" : ""}>Check-in</option></select></label>
+      ${job.workType === "independent" ? `<div class="duration-field"><span>Сколько часов</span>${durationWheel(job)}</div>` : ""}
+      <div class="job-expense-fields"><label>Сушка, €<input data-job-expense="dryer" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.dryer)}" placeholder="0" /></label><label>Другие расходы, €<input data-job-expense="otherExpense" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.otherExpense)}" placeholder="0" /></label></div>
+    </article>`;
+  }).join("") : `<div class="today-empty"><strong>Добавьте первую квартиру</strong><p>Каждая работа будет отдельной карточкой.</p></div>`;
+}
+
+function showApartmentResults(input) {
+  const job = todayJobs.find((item) => item.id === Number(input.dataset.apartmentSearch)); if (!job) return;
+  const host = $(`[data-apartment-results="${job.id}"]`); const matches = apartmentMatches(input.value); const query = input.value.trim();
+  const exact = query && apartments.some((apartment) => [apartment.canonicalName, ...(apartment.aliases ?? [])].some((value) => normalizeSearch(value) === normalizeSearch(query)));
+  host.innerHTML = `${matches.map((apartment) => `<button data-choose-apartment="${apartment.id}" data-job-id="${job.id}" type="button" role="option"><strong>${escapeHtml(apartment.canonicalName)}</strong><small>${escapeHtml(apartment.address || "Адрес нужно добавить")}</small></button>`).join("")}${query && !exact ? `<button class="create-apartment-option" data-create-apartment="${job.id}" type="button" role="option">+ Создать «${escapeHtml(query)}»</button>` : ""}`;
+  host.hidden = false; input.setAttribute("aria-expanded", "true");
+}
+
+$("#add-today-job").addEventListener("click", addTodayJob);
+$("#today-job-list").addEventListener("focusin", (event) => { if (event.target.matches(".apartment-search")) showApartmentResults(event.target); });
+$("#today-job-list").addEventListener("focusout", (event) => { if (event.target.matches(".apartment-search")) setTimeout(() => { const host = $(`[data-apartment-results="${event.target.dataset.apartmentSearch}"]`); if (host) host.hidden = true; event.target.setAttribute("aria-expanded", "false"); }, 120); });
+$("#today-job-list").addEventListener("input", (event) => {
+  const search = event.target.closest("[data-apartment-search]");
+  if (search) { const job = todayJobs.find((item) => item.id === Number(search.dataset.apartmentSearch)); if (job) { job.query = search.value; job.apartmentId = null; job.newApartmentName = ""; showApartmentResults(search); } return; }
+  const expense = event.target.closest("[data-job-expense]"); if (expense) { const job = todayJobs.find((item) => item.id === Number(expense.dataset.jobId)); if (job) job[expense.dataset.jobExpense] = expense.value; }
+});
+$("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; renderTodayJobs(); } } });
+$("#today-job-list").addEventListener("click", (event) => {
+  const remove = event.target.closest("[data-remove-job]"); if (remove) { todayJobs = todayJobs.filter((job) => job.id !== Number(remove.dataset.removeJob)); renderTodayJobs(); return; }
+  const choice = event.target.closest("[data-choose-apartment]"); if (choice) { const job = todayJobs.find((item) => item.id === Number(choice.dataset.jobId)); const apartment = apartments.find((item) => item.id === Number(choice.dataset.chooseApartment)); if (job && apartment) { job.apartmentId = apartment.id; job.newApartmentName = ""; job.query = apartment.canonicalName; renderTodayJobs(); } return; }
+  const create = event.target.closest("[data-create-apartment]"); if (create) { const job = todayJobs.find((item) => item.id === Number(create.dataset.createApartment)); if (job && job.query.trim()) { job.apartmentId = null; job.newApartmentName = job.query.trim(); renderTodayJobs(); } return; }
+  const duration = event.target.closest("[data-duration]"); if (duration) { const card = duration.closest("[data-today-job]"); const job = todayJobs.find((item) => item.id === Number(card.dataset.todayJob)); if (job) { job.durationMinutes = Number(duration.dataset.duration); renderTodayJobs(); } }
+});
+$("#today-job-list").addEventListener("keydown", (event) => {
+  const search = event.target.closest("[data-apartment-search]");
+  if (search && ["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); const options = [...$(`[data-apartment-results="${search.dataset.apartmentSearch}"]`).querySelectorAll("button")]; (event.key === "ArrowDown" ? options[0] : options.at(-1))?.focus(); return; }
+  const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel || !["ArrowLeft", "ArrowRight"].includes(event.key)) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.key === "ArrowRight" ? 30 : -30))); renderTodayJobs(); $(`[data-duration-wheel="${job.id}"]`)?.focus(); }
+});
+$("#today-job-list").addEventListener("wheel", (event) => { const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.deltaY > 0 || event.deltaX > 0 ? 30 : -30))); renderTodayJobs(); } }, { passive: false });
+
+function moneyCents(value, label) { if (!String(value).trim()) return 0; const amount = Number(String(value).replace(",", ".")); if (!Number.isFinite(amount) || amount < 0) throw new Error(`${label}: укажите корректную сумму`); return Math.round(amount * 100); }
+function buildTodayPayload() {
+  if (!todayJobs.length) throw new Error("Добавьте хотя бы одну квартиру");
+  return { format: "structured", dateIso: localDateIso(), jobs: todayJobs.map((job, index) => {
+    if (!job.apartmentId && !job.newApartmentName) throw new Error(`Квартира ${index + 1}: выберите вариант из поиска или создайте новую`);
+    return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes } : {}), dryerCents: moneyCents(job.dryer, "Сушка"), otherExpenseCents: moneyCents(job.otherExpense, "Другие расходы") };
+  }) };
+}
 
 function renderPreview(data) {
   const problems = [...data.issues.map((issue) => issue.message), ...data.unparsedLines.map((line) => `Не распознано: ${line}`)];
@@ -77,45 +157,27 @@ function renderPreview(data) {
   const jobs = data.parsed.jobs.map((job, jobIndex) => {
     const expenses = data.parsed.expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
     const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
-    const apartmentAction = job.apartmentId
-      ? `<button class="ghost" data-preview-apartment="${job.apartmentId}" type="button">Открыть квартиру</button>`
-      : productRelease >= 2 ? `<button class="ghost" data-add-unknown-apartment="${escapeHtml(job.object)}" type="button">+ Добавить квартиру</button>` : "";
-    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}<small>${apartmentAction}</small></article>`;
+    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}</article>`;
   }).join("");
   const unmatched = data.parsed.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !data.parsed.jobs.some((job) => job.object === expense.object)));
   const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
   $("#parsed-summary").innerHTML = `<p class="muted">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</p><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>`;
-  $("#confirm-button").disabled = !data.canShare;
+  $("#share-text").textContent = data.shareText;
+  $("#share-status").hidden = true;
   setTodayState("preview");
 }
 
 $("#preview-button").addEventListener("click", async () => {
-  const button = $("#preview-button"); $("#request-error").hidden = true; button.disabled = true; button.textContent = "Проверяю…";
-  try { latestPreview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: textarea.value }) }); renderPreview(latestPreview); }
-  catch { $("#request-error").textContent = "Не удалось проверить сообщение."; $("#request-error").hidden = false; }
-  finally { button.disabled = false; button.textContent = "Проверить"; }
+  const button = $("#preview-button"); const error = $("#request-error"); error.hidden = true; button.disabled = true; button.textContent = "Собираю…";
+  try { latestDayPayload = buildTodayPayload(); latestPreview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); if (!latestPreview.canShare) throw new Error("Проверьте заполненные работы"); daySaved = false; renderPreview(latestPreview); }
+  catch (caught) { error.textContent = caught.message || "Не удалось сформировать отчёт."; error.hidden = false; }
+  finally { button.disabled = false; button.textContent = "Сформировать отчёт"; }
 });
-$("#edit-button").addEventListener("click", () => { setTodayState("editor"); textarea.focus(); });
-$("#result-edit").addEventListener("click", () => { setTodayState("editor"); textarea.focus(); });
-$("#confirm-button").addEventListener("click", async () => {
-  if (!latestPreview?.canShare) return;
-  const button = $("#confirm-button"); button.disabled = true;
-  try {
-    const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: textarea.value }) });
-    latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; $("#share-status").hidden = true;
-    selectedPeriod = saved.day.dateIso.slice(0, 7); setTodayState("result");
-  } catch { $("#request-error").textContent = "Не удалось сохранить день."; $("#request-error").hidden = false; setTodayState("editor"); }
-  finally { button.disabled = false; }
-});
-$("#parsed-summary").addEventListener("click", async (event) => {
-  const apartmentButton = event.target.closest("[data-preview-apartment]");
-  const addButton = event.target.closest("[data-add-unknown-apartment]");
-  if (apartmentButton) { await showRoute("map", true); await openApartmentDetail(Number(apartmentButton.dataset.previewApartment)); }
-  if (addButton) openPlaceForm("apartment", addButton.dataset.addUnknownApartment);
-});
-async function copyResult() { await navigator.clipboard.writeText(latestPreview.shareText); $("#share-status").textContent = "Текст скопирован."; $("#share-status").hidden = false; }
+$("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
+async function saveTodayFromReport() { if (daySaved) return; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; }
+async function copyResult() { const status = $("#share-status"); try { await saveTodayFromReport(); await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = "notice error"; status.textContent = daySaved ? "День сохранён, но текст не скопирован." : "Не удалось сохранить день."; } status.hidden = false; }
 $("#copy-button").addEventListener("click", copyResult);
-$("#share-button").addEventListener("click", async () => { if (navigator.share) { try { await navigator.share({ text: latestPreview.shareText }); return; } catch {} } await copyResult(); });
+$("#share-button").addEventListener("click", async () => { const status = $("#share-status"); try { await saveTodayFromReport(); if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); status.className = "notice success"; status.textContent = "День сохранён, отчёт отправлен."; status.hidden = false; return; } await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = daySaved ? "notice success" : "notice error"; status.textContent = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; } status.hidden = false; });
 
 function normalizeMapItems() {
   mapItems = [
@@ -124,12 +186,17 @@ function normalizeMapItems() {
   ];
 }
 
+async function loadApartments(force = false) {
+  if (apartments.length && !force) return;
+  apartments = (await api("/api/apartments")).apartments;
+}
+
 async function loadMapItems(force = false) {
   if (mapItems.length && !force) { applyMapMode(); return; }
   try {
-    const apartmentData = await api("/api/apartments");
+    await loadApartments(force);
     const placeData = productRelease >= 2 ? await api("/api/places") : { places: [] };
-    apartments = apartmentData.apartments; savedPlaces = placeData.places; normalizeMapItems(); renderPlaceList(); renderPlacesMap(); fillApartmentSelect(); applyMapMode();
+    savedPlaces = placeData.places; normalizeMapItems(); renderPlaceList(); renderPlacesMap(); fillApartmentSelect(); applyMapMode();
   } catch { $("#map-error").textContent = "Не удалось загрузить места."; $("#map-error").hidden = false; }
 }
 
@@ -148,10 +215,13 @@ function renderPlaceList() {
   const visible = mapItems.filter((item) => (filter === "all" || item.kind === filter) && (!query || [item.name, item.address, ...(item.aliases ?? [])].filter(Boolean).some((value) => String(value).toLocaleLowerCase("ru").includes(query))));
   $("#place-list").innerHTML = visible.length ? visible.map((item) => {
     const needsLocation = item.itemType === "apartment" && item.latitude == null;
+    const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
+    const title = genericLaundry ? (item.address || "Адрес не указан") : item.name;
+    const description = genericLaundry ? (item.latitude == null ? "Нужно указать местоположение" : "") : (item.address || (item.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"));
     const action = needsLocation
       ? `<button class="secondary" data-locate-apartment="${item.id}" type="button">Указать место</button>`
       : `<button class="secondary" data-open-item="${item.itemType}:${item.id}" type="button">Открыть</button>`;
-    return `<article class="place-card"><div><span class="place-kind">${kindLabel(item.kind)}</span><strong>${escapeHtml(item.name)}</strong><p class="${item.latitude == null ? "missing-location" : ""}">${escapeHtml(item.address || (item.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"))}</p></div>${action}</article>`;
+    return `<article class="place-card"><div class="place-card-main"><span class="place-kind">${kindLabel(item.kind)}</span><strong>${escapeHtml(title)}</strong>${description ? `<p class="${item.latitude == null ? "missing-location" : ""}">${escapeHtml(description)}</p>` : ""}</div>${action}</article>`;
   }).join("") : "<p class=\"muted\">Ничего не найдено.</p>";
 }
 $("#place-search").addEventListener("input", renderPlaceList); $("#place-filter").addEventListener("change", renderPlaceList);
@@ -199,7 +269,8 @@ async function openItemDetail(key, push = true) {
   if (type === "apartment") return openApartmentDetail(id, push);
   const item = savedPlaces.find((place) => place.id === id); if (!item) return;
   const mapLink = mapsHref(item);
-  $("#place-detail").innerHTML = `<span class="place-kind">${kindLabel(item.kind)}</span><h2>${escapeHtml(item.name)}</h2><p class="detail-address">${escapeHtml(item.address || "Адрес не указан")}</p>${item.note ? `<p class="detail-note">${escapeHtml(item.note)}</p>` : ""}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}<button class="secondary" data-edit-item="place:${item.id}" type="button">Изменить</button><button class="ghost" data-archive-place="${item.id}" type="button">Архивировать</button></div>`;
+  const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(item.name.trim().toLocaleLowerCase("ru"));
+  $("#place-detail").innerHTML = `<span class="place-kind">${kindLabel(item.kind)}</span><h2>${escapeHtml(genericLaundry ? (item.address || "Сушка") : item.name)}</h2>${!genericLaundry || !item.address ? `<p class="detail-address">${escapeHtml(item.address || "Адрес не указан")}</p>` : ""}${item.note ? `<p class="detail-note">${escapeHtml(item.note)}</p>` : ""}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}<button class="secondary" data-edit-item="place:${item.id}" type="button">Изменить</button><button class="ghost" data-archive-place="${item.id}" type="button">Архивировать</button></div>`;
   $("#place-detail-dialog").showModal();
 }
 
@@ -234,13 +305,19 @@ function clearDerivedLocation() {
 $("#place-address").addEventListener("input", clearDerivedLocation);
 $("#place-maps-url").addEventListener("input", clearDerivedLocation);
 function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${apartments.map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}</option>`).join("")}`; }
-function updatePlaceKind() { $("#place-apartment-link-label").hidden = $("#place-kind").value !== "laundry"; }
+function updatePlaceKind() {
+  const laundry = $("#place-kind").value === "laundry";
+  $("#place-apartment-link-label").hidden = !laundry;
+  $("#place-name").required = !laundry;
+  $("#place-name-caption").textContent = laundry ? "Название (необязательно)" : "Название";
+  $("#place-name").placeholder = laundry ? "Можно оставить пустым" : "";
+}
 $("#place-kind").addEventListener("change", updatePlaceKind);
 function openPlaceForm(kind = "apartment", name = "") { resetPlaceForm(); $("#place-form-title").textContent = "Добавить место"; $("#place-kind").value = kind; $("#place-name").value = name; fillApartmentSelect(); updatePlaceKind(); $("#place-form-dialog").showModal(); }
 $("#add-place-button").addEventListener("click", () => openPlaceForm());
 function openEditForm(key) {
   const [type, idText] = key.split(":"); const id = Number(idText); const item = type === "apartment" ? apartments.find((entry) => entry.id === id) : savedPlaces.find((entry) => entry.id === id); if (!item) return;
-  resetPlaceForm(); $("#place-form-title").textContent = "Изменить место"; $("#place-edit-id").value = key; $("#place-kind").value = item.kind ?? "apartment"; $("#place-name").value = item.canonicalName ?? item.name; $("#place-address").value = item.address ?? ""; $("#place-maps-url").value = item.mapsUrl ?? ""; $("#place-note").value = item.noteBody ?? item.note ?? ""; $("#place-latitude").value = item.latitude ?? ""; $("#place-longitude").value = item.longitude ?? ""; $("#place-location-source").value = item.locationSource ?? ""; updatePlaceKind(); $("#place-form-dialog").showModal();
+  resetPlaceForm(); $("#place-form-title").textContent = "Изменить место"; $("#place-edit-id").value = key; $("#place-kind").value = item.kind ?? "apartment"; const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru")); $("#place-name").value = item.canonicalName ?? (genericLaundry ? "" : item.name); $("#place-address").value = item.address ?? ""; $("#place-maps-url").value = item.mapsUrl ?? ""; $("#place-note").value = item.noteBody ?? item.note ?? ""; $("#place-latitude").value = item.latitude ?? ""; $("#place-longitude").value = item.longitude ?? ""; $("#place-location-source").value = item.locationSource ?? ""; updatePlaceKind(); $("#place-form-dialog").showModal();
   $("#place-kind").disabled = true;
 }
 
