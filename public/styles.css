@@ -40,6 +40,8 @@ h3 { margin-bottom: 8px; font-size: 1rem; }
 .workflow-surface { max-width: 760px; margin: 0 auto; }
 .today-date { display: flex; margin-bottom: 18px; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--muted); }
 .today-date strong { color: var(--green); font-size: 1.05rem; text-transform: capitalize; }
+.today-date-control { display: flex; width: auto; margin: 0; align-items: center; gap: 8px; }
+.today-date-control input { width: 148px; min-height: 38px; padding: 6px 9px; color: var(--green); background: var(--soft); font-weight: 750; }
 .today-job-list { display: grid; gap: 14px; }
 .today-empty { padding: 28px 18px; border: 1px dashed rgba(23,63,53,.22); border-radius: 18px; color: var(--muted); text-align: center; }
 .today-empty strong { color: var(--green); }
@@ -148,6 +150,8 @@ pre { overflow-wrap: anywhere; margin: 0; padding: 17px; border-radius: 14px; wh
 .detail-actions { display: flex; gap: 9px; margin-top: 20px; flex-wrap: wrap; }
 .detail-address { color: var(--muted); line-height: 1.5; }
 .detail-note { margin-top: 18px; }
+.preferred-laundry-card { display: block; color: #1d5b47; text-decoration: none; }
+.preferred-laundry-card span { display: block; margin-top: 7px; font-size: .78rem; font-weight: 800; }
 .periods-list { display: grid; gap: 8px; margin-top: 18px; }
 #coordinate-picker { margin-top: 14px; }
 #picker-map { min-height: 260px; border-radius: 14px; background: #dfe8e1; }
@@ -160,6 +164,9 @@ pre { overflow-wrap: anywhere; margin: 0; padding: 17px; border-radius: 14px; wh
   .view-heading { min-height: 58px; margin-bottom: 15px; }
   .surface { border-radius: 19px; }
   .today-job-card { padding: 15px; }
+  .today-date { align-items: center; }
+  .today-date-control { align-items: flex-end; flex-direction: column; gap: 3px; }
+  .today-date-control input { width: 142px; }
   .duration-wheel { justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; }
   .duration-option { min-width: 76px; scroll-snap-align: center; }
   .job-expense-fields { grid-template-columns: 1fr; }
@@ -189,3 +196,4 @@ pre { overflow-wrap: anywhere; margin: 0; padding: 17px; border-radius: 14px; wh
   .heading-actions { justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
