@@ -25,6 +25,7 @@ const structuredJob = z.object({
 }).strict().superRefine((value, context) => {
   if ((value.apartmentId == null) === (value.newApartmentName == null)) context.addIssue({ code: "custom", message: "Choose one apartment", path: ["apartmentId"] });
   if (value.workType === "independent" && value.durationMinutes == null) context.addIssue({ code: "custom", message: "Cleaning duration is required", path: ["durationMinutes"] });
+  if (value.workType !== "independent" && (value.dryerCents > 0 || value.otherExpenseCents > 0)) context.addIssue({ code: "custom", message: "Expenses apply only to cleaning work", path: ["dryerCents"] });
 });
 const structuredDayBody = z.object({ format: z.literal("structured"), dateIso: date, jobs: z.array(structuredJob).min(1).max(50) }).strict();
 const previewBody = z.union([textDayBody, structuredDayBody]);
