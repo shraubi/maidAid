@@ -2,133 +2,107 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#173f35" />
-    <meta name="description" content="Проверка расписания, часов и расходов" />
+    <meta name="description" content="Рабочий день, адреса и учёт MaidAid" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
     <link rel="stylesheet" href="/styles.css" />
     <title>MaidAid</title>
   </head>
   <body>
-    <header class="hero">
-      <div class="brand">
-        <img src="/icons/icon.svg" alt="" width="48" height="48" />
-        <div>
-          <p class="eyebrow">Личный помощник</p>
-          <h1>MaidAid</h1>
-        </div>
-      </div>
-      <p class="hero-copy">Проверьте день, подтвердите расчёт и поделитесь готовым текстом.</p>
-      <p class="privacy">Подтверждённые итоги сохраняются по дате.</p>
+    <header class="app-header">
+      <a class="brand" href="/today" data-route="today" aria-label="MaidAid · Сегодня">
+        <img src="/icons/icon.svg" alt="" width="40" height="40" />
+        <span>MaidAid</span>
+      </a>
+      <nav class="desktop-nav" aria-label="Основная навигация">
+        <a href="/today" data-route="today">Сегодня</a>
+        <a href="/map" data-route="map">Карта</a>
+        <a href="/ledger" data-route="ledger">Учёт</a>
+      </nav>
     </header>
 
-    <main>
-      <section id="editor" class="panel" aria-labelledby="editor-title">
-        <div class="step-heading">
-          <span>1</span>
-          <div>
-            <p class="eyebrow">Исходные данные</p>
-            <h2 id="editor-title">Вставьте рабочий день</h2>
-          </div>
-        </div>
-
-        <label class="input-label" for="source-text">Вставьте сообщение целиком</label>
-        <textarea
-          id="source-text"
-          rows="11"
-          maxlength="32768"
-          placeholder="19/07 изменения&#10;1. 10:00-11:00 St Denis ознакомление&#10;2. 14:00-16:30 Ferronnerie практика&#10;3. 17:00-19:00 Opera самостоятельно"
-        ></textarea>
-        <div class="editor-footer">
-          <span id="character-count">0 / 32 768</span>
-          <button id="preview-button" class="primary" type="button">Проверить</button>
-        </div>
-        <p id="request-error" class="notice error" role="alert" hidden></p>
+    <main class="app-main">
+      <section id="view-today" class="app-view" aria-labelledby="today-title">
+        <header class="view-heading"><p class="eyebrow">Рабочий день</p><h1 id="today-title">Сегодня</h1></header>
+        <article id="today-editor" class="surface workflow-surface">
+          <label class="input-label" for="source-text">Вставьте сообщение целиком</label>
+          <textarea id="source-text" rows="11" maxlength="32768" placeholder="19/07&#10;10:00–12:30 Квартира А самостоятельная уборка"></textarea>
+          <div class="action-row"><span id="character-count" class="muted">0 / 32 768</span><button id="preview-button" class="primary" type="button">Проверить</button></div>
+          <p id="request-error" class="notice error" role="alert" hidden></p>
+        </article>
+        <article id="today-preview" class="surface workflow-surface" hidden>
+          <div class="section-heading"><div><p class="eyebrow">Проверка</p><h2>Всё ли верно?</h2></div><button id="edit-button" class="ghost" type="button">← Исправить</button></div>
+          <div id="issue-list" class="notice error" role="alert" hidden></div>
+          <div id="parsed-summary"></div>
+          <div class="action-row action-row-end"><button id="confirm-button" class="primary" type="button">Сохранить день</button></div>
+        </article>
+        <article id="today-result" class="surface workflow-surface" hidden>
+          <div class="section-heading"><div><p class="eyebrow">Готово</p><h2>День сохранён</h2></div><button id="result-edit" class="ghost" type="button">Изменить</button></div>
+          <pre id="share-text"></pre>
+          <div class="action-row"><button id="copy-button" class="secondary" type="button">Скопировать</button><button id="share-button" class="primary" type="button">Поделиться</button></div>
+          <p id="share-status" class="notice success" role="status" hidden></p>
+        </article>
       </section>
 
-      <section id="preview" class="panel" aria-labelledby="preview-title" hidden>
-        <div class="step-heading">
-          <span>2</span>
-          <div>
-            <p class="eyebrow">Проверка</p>
-            <h2 id="preview-title">Всё ли верно?</h2>
-          </div>
+      <section id="view-map" class="app-view" aria-labelledby="map-title" hidden>
+        <header class="view-heading map-heading">
+          <div><p class="eyebrow">Адреса и полезные точки</p><h1 id="map-title">Карта</h1></div>
+          <button id="add-place-button" class="round-action" type="button" aria-label="Добавить место"><span aria-hidden="true"></span></button>
+        </header>
+        <div class="view-switch" role="group" aria-label="Вид раздела">
+          <button type="button" data-map-mode="map">Карта</button><button type="button" data-map-mode="list">Список</button>
         </div>
-        <div id="issue-list" class="notice error" role="alert" hidden></div>
-        <div id="parsed-summary"></div>
-        <div class="actions">
-          <button id="edit-button" class="secondary" type="button">Исправить</button>
-          <button id="confirm-button" class="primary" type="button">Подтвердить</button>
+        <p id="map-error" class="notice error" role="alert" hidden></p>
+        <div id="map-mode-map" class="map-mode"><div id="places-map" aria-label="Карта квартир и сохранённых мест"></div><p id="map-empty" class="map-message" hidden></p></div>
+        <div id="map-mode-list" class="map-mode" hidden>
+          <div class="list-toolbar"><input id="place-search" type="search" placeholder="Поиск по названию или адресу" aria-label="Поиск мест" /><select id="place-filter" aria-label="Тип места"><option value="all">Все места</option><option value="apartment">Квартиры</option><option value="laundry">Сушки</option><option value="partner_restaurant">Партнёры</option></select></div>
+          <div id="place-list" class="place-list"></div>
         </div>
       </section>
 
-      <section id="result" class="panel result-panel" aria-labelledby="result-title" hidden>
-        <div class="step-heading">
-          <span>3</span>
-          <div>
-            <p class="eyebrow">Готово</p>
-            <h2 id="result-title">Текст для отправки</h2>
-          </div>
-        </div>
-        <pre id="share-text"></pre>
-        <div class="actions">
-          <button id="copy-button" class="secondary" type="button">Скопировать</button>
-          <button id="share-button" class="primary" type="button">Поделиться</button>
-        </div>
-        <p id="share-status" class="notice success" role="status" hidden></p>
-      </section>
-
-      <section id="ledger" class="panel" aria-labelledby="ledger-title">
-        <div class="ledger-heading">
-          <div class="step-heading">
-            <span>₽</span>
-            <div>
-              <p class="eyebrow">Учёт</p>
-              <h2 id="ledger-title">История и оплаты</h2>
-              <p id="ledger-period-label" class="period-label"></p>
-            </div>
-          </div>
-          <button id="periods-button" class="secondary compact-button" type="button">Предыдущие периоды</button>
-        </div>
-        <div id="ledger-totals" class="totals ledger-totals" aria-live="polite"></div>
-        <form id="payment-form" class="payment-form">
-          <label>Дата<input id="payment-date" type="date" required /></label>
-          <label>Сумма, €<input id="payment-amount" type="number" min="0.01" step="0.01" required /></label>
-          <label>Примечание<input id="payment-note" type="text" maxlength="500" placeholder="Например, аванс" /></label>
-          <button class="primary" type="submit">Добавить оплату</button>
-        </form>
+      <section id="view-ledger" class="app-view" aria-labelledby="ledger-title" hidden>
+        <header class="view-heading ledger-heading"><div><p class="eyebrow">Деньги и часы</p><h1 id="ledger-title">Учёт</h1><p id="ledger-period-label" class="muted"></p></div><div class="heading-actions"><button id="periods-button" class="secondary" type="button">Месяц</button><button id="add-payment-button" class="primary" type="button">+ Оплата</button></div></header>
+        <div id="ledger-totals" class="summary-grid" aria-live="polite"></div>
         <p id="ledger-error" class="notice error" role="alert" hidden></p>
         <div id="ledger-rows" class="ledger-rows"></div>
       </section>
     </main>
 
-    <dialog id="day-edit-dialog" class="edit-dialog">
-      <form id="day-edit-form">
-        <h2>Изменить рабочий день</h2>
-        <p id="day-edit-date" class="privacy"></p>
-        <label class="input-label" for="day-edit-text">Исходный текст</label>
-        <textarea id="day-edit-text" rows="11" maxlength="32768" required></textarea>
-        <p id="day-edit-error" class="notice error" role="alert" hidden></p>
-        <div class="actions">
-          <button id="day-edit-cancel" class="secondary" type="button">Отмена</button>
-          <button class="primary" type="submit">Проверить и сохранить</button>
-        </div>
+    <nav class="mobile-nav" aria-label="Основная навигация">
+      <a href="/today" data-route="today"><span aria-hidden="true">✓</span>Сегодня</a>
+      <a href="/map" data-route="map"><span aria-hidden="true">⌖</span>Карта</a>
+      <a href="/ledger" data-route="ledger"><span aria-hidden="true">€</span>Учёт</a>
+    </nav>
+
+    <dialog id="place-detail-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="place-detail-dialog" aria-label="Закрыть">×</button><div id="place-detail"></div></dialog>
+    <dialog id="place-form-dialog" class="app-dialog">
+      <button class="dialog-close" data-close-dialog="place-form-dialog" aria-label="Закрыть">×</button>
+      <form id="place-form">
+        <h2 id="place-form-title">Добавить место</h2><input id="place-edit-id" type="hidden" />
+        <label>Тип<select id="place-kind"><option value="apartment">Квартира</option><option value="laundry">Сушка</option><option value="partner_restaurant">Ресторан-партнёр</option></select></label>
+        <label>Название<input id="place-name" required maxlength="200" /></label>
+        <label>Адрес<input id="place-address" maxlength="1000" placeholder="Основной способ найти точку" /></label>
+        <label>Ссылка Maps<input id="place-maps-url" type="url" placeholder="Если адреса недостаточно" /></label>
+        <label>Заметка<textarea id="place-note" rows="5" maxlength="20000"></textarea></label>
+        <label id="place-apartment-link-label" hidden>Для квартиры<select id="place-apartment-link"><option value="">Не связывать</option></select></label>
+        <input id="place-latitude" type="hidden" /><input id="place-longitude" type="hidden" /><input id="place-location-source" type="hidden" /><input id="place-location-accuracy" type="hidden" />
+        <div id="coordinate-picker" hidden><p class="muted">Нажмите на нужную точку.</p><div id="picker-map"></div></div>
+        <p id="place-location-status" class="muted">Сначала попробуем определить точку по адресу.</p>
+        <div class="fallback-actions"><button id="pick-location-button" class="secondary" type="button">Поставить точку</button><button id="current-location-button" class="ghost" type="button">Моё текущее место</button></div>
+        <p id="place-form-error" class="notice error" role="alert" hidden></p>
+        <div class="action-row action-row-end"><button class="primary" type="submit">Сохранить</button></div>
       </form>
     </dialog>
+    <dialog id="laundry-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="laundry-dialog" aria-label="Закрыть">×</button><h2>Сушки рядом</h2><div id="laundry-results"></div></dialog>
+    <dialog id="payment-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="payment-dialog" aria-label="Закрыть">×</button><form id="payment-form"><h2>Добавить оплату</h2><label>Дата<input id="payment-date" type="date" required /></label><label>Сумма, €<input id="payment-amount" type="number" min="0.01" step="0.01" required /></label><label>Примечание<input id="payment-note" maxlength="500" /></label><div class="action-row action-row-end"><button class="primary" type="submit">Добавить</button></div></form></dialog>
+    <dialog id="periods-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="periods-dialog" aria-label="Закрыть">×</button><h2>Выберите месяц</h2><div id="periods-list" class="periods-list"></div></dialog>
+    <dialog id="day-edit-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="day-edit-dialog" aria-label="Закрыть">×</button><form id="day-edit-form"><h2>Изменить рабочий день</h2><p id="day-edit-date" class="muted"></p><textarea id="day-edit-text" rows="11" maxlength="32768" required></textarea><p id="day-edit-error" class="notice error" hidden></p><div class="action-row action-row-end"><button class="primary" type="submit">Проверить и сохранить</button></div></form></dialog>
 
-    <dialog id="periods-dialog" class="edit-dialog periods-dialog">
-      <h2>Предыдущие периоды</h2>
-      <p class="privacy">Выберите месяц, чтобы посмотреть его часы, деньги, расходы и записи.</p>
-      <div id="periods-list" class="periods-list"></div>
-      <div class="actions">
-        <button id="periods-close" class="secondary" type="button">Закрыть</button>
-      </div>
-    </dialog>
-
+    <script src="/vendor/leaflet/leaflet.js"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>
-
-
-

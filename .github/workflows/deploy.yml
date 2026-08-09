@@ -19,10 +19,25 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: shraubi/maidaid
   IMAGE_TAG: latest
+  TEST_DATABASE_URL: postgresql://maidaid@127.0.0.1:5432/maidaid_test
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: maidaid_test
+          POSTGRES_USER: maidaid
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U maidaid -d maidaid_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -87,40 +102,36 @@ jobs:
             docker compose exec -T maidaid node --input-type=module -e '
               const base = "http://127.0.0.1:3000";
               const date = "2099-12-30";
-              const text = "**30/12/2099**\nDominiquet 3h + 4.20€ сушка + 1.30€ расходы\nOpéra 2.5h + 0 + 0\nАванс: 20€";
+              const text = "**30/12/2099**\nКвартира А 3h + 4.20€ сушка + 1.30€ расходы\nКвартира Б 2.5h + 0 + 0\nАванс: 20€";
               const json = async (path, options) => {
                 const response = await fetch(`${base}${path}`, options);
                 if (!response.ok) throw new Error(`${path} returned ${response.status}: ${await response.text()}`);
                 return response.status === 204 ? null : response.json();
               };
-              const scriptAsset = async (path) => {
-                const response = await fetch(`${base}${path}`);
-                if (!response.ok || !response.headers.get("content-type")?.includes("javascript")) throw new Error(`Production ${path} response is invalid`);
-                return response.text();
-              };
-              await Promise.all([
-                scriptAsset("/app.js"),
-                scriptAsset("/apartment-tools.js"),
-                scriptAsset("/apartment.js"),
-              ]);
-              const serviceWorkerSource = await scriptAsset("/sw.js");
-              new Function(serviceWorkerSource);
-              const apartmentPageResponse = await fetch(`${base}/apartment.html`);
-              if (!apartmentPageResponse.ok || !apartmentPageResponse.headers.get("content-type")?.includes("text/html")) throw new Error("Production apartment.html response is invalid");
+              const appResponse = await fetch(`${base}/app.js`);
+              if (!appResponse.ok || !appResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production app.js response is invalid");
+              new Function(await appResponse.text());
+              const serviceWorkerResponse = await fetch(`${base}/sw.js`);
+              if (!serviceWorkerResponse.ok || !serviceWorkerResponse.headers.get("content-type")?.includes("javascript")) throw new Error("Production sw.js response is invalid");
+              new Function(await serviceWorkerResponse.text());
               const manifestResponse = await fetch(`${base}/manifest.webmanifest`);
               if (!manifestResponse.ok) throw new Error(`Production manifest returned ${manifestResponse.status}`);
               const manifest = JSON.parse(await manifestResponse.text());
               if (manifest.name !== "MaidAid" || manifest.start_url !== "/") throw new Error("Production manifest content is invalid");
+              const appConfig = await json("/api/app-config");
+              if (appConfig.productRelease !== 2) throw new Error(`Expected product release 2, got ${appConfig.productRelease}`);
+              const futurePlaces = await fetch(`${base}/api/places`);
+              if (!futurePlaces.ok) throw new Error(`Release 2 places API unavailable: ${futurePlaces.status}`);
               const ledgerPath = `/api/ledger?from=${date}&to=${date}`;
               try {
                 const before = await json(ledgerPath);
                 if (before.rows.length) throw new Error(`Smoke-test date ${date} is already occupied`);
                 const preview = await json("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
-                const [dominique, opera] = preview.parsed.jobs;
+                const [firstJob, secondJob] = preview.parsed.jobs;
                 if (!preview.canShare || preview.advanceCents !== 2000 || preview.totals.minutes !== 330 || preview.totals.incomeCents !== 5500 || preview.totals.expensesCents !== 550) throw new Error("Duration preview totals are incorrect");
-                if (dominique?.object !== "Dominique" || !dominique.apartmentId || opera?.object !== "Opera") throw new Error("Duration job objects were not parsed");
+                if (firstJob?.object !== "Квартира А" || secondJob?.object !== "Квартира Б") throw new Error("Duration job objects were not parsed");
                 await json("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
-                const saved = await json(ledgerPath);
+              const saved = await json(ledgerPath);
                 if (saved.rows.length !== 2 || saved.rows[0]?.dateIso !== date || saved.totals.earnedCents !== 5500 || saved.totals.receivedCents !== 2000) throw new Error("Saved ledger state is incorrect");
               } finally {
                 const cleanup = await fetch(`${base}/api/days/${date}`, { method: "DELETE" });
@@ -132,4 +143,3 @@ jobs:
             '
             docker image prune -f
             docker logout "$REGISTRY"
-

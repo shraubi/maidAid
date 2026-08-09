@@ -1,5 +1,5 @@
 import { Pool, type PoolClient } from "pg";
-import type { Apartment, DayTotals, LedgerTotals, ParsedDay, ReportSnapshot } from "../domain/types.js";
+import type { Apartment, ApartmentPlaceLink, DayTotals, LedgerTotals, LocationSource, ParsedDay, ReportSnapshot, SavedPlace, SavedPlaceKind } from "../domain/types.js";
 import { apartmentKey, publicApartmentRecords } from "../domain/apartments.js";
 
 export interface ApartmentImportInput {
@@ -9,7 +9,35 @@ export interface ApartmentImportInput {
   address: string;
   mapsUrl: string;
   noteBody: string;
+  latitude?: number | null;
+  longitude?: number | null;
   active: boolean;
+}
+
+export interface ApartmentWriteInput {
+  canonicalName: string;
+  aliases: string[];
+  address: string | null;
+  mapsUrl: string | null;
+  noteBody: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  locationSource: LocationSource | null;
+  locationAccuracyMeters: number | null;
+}
+
+export interface SavedPlaceWriteInput {
+  kind: SavedPlaceKind;
+  name: string;
+  address: string | null;
+  note: string | null;
+  mapsUrl: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  locationSource: LocationSource | null;
+  locationAccuracyMeters: number | null;
+  osmType?: SavedPlace["osmType"];
+  osmId?: string | null;
 }
 
 export interface ApartmentImportResult {
@@ -75,7 +103,18 @@ export interface LedgerStore {
   updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null>;
   deletePayment(id: number): Promise<boolean>;
   getActiveApartments(): Promise<Apartment[]>;
+  getApartment(id: number): Promise<Apartment | null>;
+  createApartment(input: ApartmentWriteInput): Promise<Apartment>;
+  updateApartment(id: number, input: Partial<ApartmentWriteInput>): Promise<Apartment | null>;
   importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult>;
+  getSavedPlaces(): Promise<SavedPlace[]>;
+  getSavedPlace(id: number): Promise<SavedPlace | null>;
+  createSavedPlace(input: SavedPlaceWriteInput): Promise<SavedPlace>;
+  updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null>;
+  archiveSavedPlace(id: number): Promise<boolean>;
+  findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null>;
+  getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null>;
+  setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null>;
 }
 
 const zeroTotals = (): LedgerTotals => ({
@@ -97,6 +136,9 @@ export class MemoryLedgerStore implements LedgerStore {
   private nextId = 1;
   private readonly apartments = new Map<number, Apartment>(publicApartmentRecords().map((item) => [item.id, item]));
   private nextApartmentId = this.apartments.size + 1;
+  private readonly savedPlaces = new Map<number, SavedPlace>();
+  private nextSavedPlaceId = 1;
+  private readonly apartmentPlaceLinks = new Map<number, ApartmentPlaceLink>();
 
   async initialize(): Promise<void> {}
   async health(): Promise<boolean> { return true; }
@@ -196,6 +238,41 @@ export class MemoryLedgerStore implements LedgerStore {
     return [...this.apartments.values()].filter(({ active }) => active).map((item) => ({ ...item, aliases: [...item.aliases] }));
   }
 
+  async getApartment(id: number): Promise<Apartment | null> {
+    const item = this.apartments.get(id);
+    return item?.active ? { ...item, aliases: [...item.aliases] } : null;
+  }
+
+  async createApartment(input: ApartmentWriteInput): Promise<Apartment> {
+    const canonicalKey = apartmentKey(input.canonicalName);
+    if ([...this.apartments.values()].some((item) => item.canonicalKey === canonicalKey)) throw new Error("apartment_exists");
+    const now = new Date().toISOString();
+    const apartment: Apartment = {
+      id: this.nextApartmentId++, sourceKey: `manual:${canonicalKey}:${Date.now()}`, canonicalKey,
+      canonicalName: input.canonicalName, aliases: [...new Set([input.canonicalName, ...input.aliases])],
+      address: input.address, mapsUrl: input.mapsUrl, noteBody: input.noteBody,
+      latitude: input.latitude, longitude: input.longitude, locationSource: input.locationSource,
+      locationAccuracyMeters: input.locationAccuracyMeters, active: true, createdAt: now, updatedAt: now,
+    };
+    this.apartments.set(apartment.id, apartment);
+    return { ...apartment, aliases: [...apartment.aliases] };
+  }
+
+  async updateApartment(id: number, input: Partial<ApartmentWriteInput>): Promise<Apartment | null> {
+    const current = this.apartments.get(id);
+    if (!current?.active) return null;
+    const canonicalName = input.canonicalName ?? current.canonicalName;
+    const canonicalKey = apartmentKey(canonicalName);
+    if ([...this.apartments.values()].some((item) => item.id !== id && item.canonicalKey === canonicalKey)) throw new Error("apartment_exists");
+    const next: Apartment = {
+      ...current, ...input, canonicalName, canonicalKey,
+      aliases: input.aliases ? [...new Set([canonicalName, ...input.aliases])] : current.aliases,
+      updatedAt: new Date().toISOString(),
+    };
+    this.apartments.set(id, next);
+    return { ...next, aliases: [...next.aliases] };
+  }
+
   async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
     const working = new Map([...this.apartments].map(([id, item]) => [id, { ...item, aliases: [...item.aliases] }]));
     const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
@@ -215,7 +292,11 @@ export class MemoryLedgerStore implements LedgerStore {
       const next: Apartment = {
         id: current?.id ?? this.nextApartmentId++, sourceKey: record.sourceKey, canonicalKey,
         canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl,
-        noteBody: record.noteBody, active: record.active, createdAt: current?.createdAt ?? now, updatedAt: now,
+        noteBody: record.noteBody, latitude: record.latitude ?? current?.latitude ?? null,
+        longitude: record.longitude ?? current?.longitude ?? null,
+        locationSource: record.latitude != null && record.longitude != null ? "import" : current?.locationSource ?? null,
+        locationAccuracyMeters: current?.locationAccuracyMeters ?? null,
+        active: record.active, createdAt: current?.createdAt ?? now, updatedAt: now,
       };
       if (!current) { working.set(next.id, next); result.created += 1; }
       else if (JSON.stringify({ ...current, id: 0, createdAt: "", updatedAt: "" }) === JSON.stringify({ ...next, id: 0, createdAt: "", updatedAt: "" })) result.skipped += 1;
@@ -223,6 +304,54 @@ export class MemoryLedgerStore implements LedgerStore {
     }
     if (!dryRun) { this.apartments.clear(); for (const [id, item] of working) this.apartments.set(id, item); }
     return result;
+  }
+
+  async getSavedPlaces(): Promise<SavedPlace[]> {
+    return [...this.savedPlaces.values()].filter(({ active }) => active).map((item) => ({ ...item }));
+  }
+
+  async getSavedPlace(id: number): Promise<SavedPlace | null> {
+    const item = this.savedPlaces.get(id); return item?.active ? { ...item } : null;
+  }
+
+  async createSavedPlace(input: SavedPlaceWriteInput): Promise<SavedPlace> {
+    if (input.osmType && input.osmId) {
+      const existing = await this.findSavedPlaceByOsm(input.osmType, input.osmId);
+      if (existing) return existing;
+    }
+    const now = new Date().toISOString(); const id = this.nextSavedPlaceId++;
+    const place: SavedPlace = { id, ...input, osmType: input.osmType ?? null, osmId: input.osmId ?? null, active: true, createdAt: now, updatedAt: now };
+    this.savedPlaces.set(id, place); return { ...place };
+  }
+
+  async updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null> {
+    const current = this.savedPlaces.get(id); if (!current?.active) return null;
+    const next: SavedPlace = { ...current, ...input, updatedAt: new Date().toISOString() };
+    this.savedPlaces.set(id, next); return { ...next };
+  }
+
+  async archiveSavedPlace(id: number): Promise<boolean> {
+    const current = this.savedPlaces.get(id); if (!current?.active) return false;
+    this.savedPlaces.set(id, { ...current, active: false, updatedAt: new Date().toISOString() });
+    for (const [apartmentId, link] of this.apartmentPlaceLinks) if (link.placeId === id) this.apartmentPlaceLinks.delete(apartmentId);
+    return true;
+  }
+
+  async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
+    const item = [...this.savedPlaces.values()].find((place) => place.active && place.osmType === osmType && place.osmId === osmId);
+    return item ? { ...item } : null;
+  }
+
+  async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {
+    const link = this.apartmentPlaceLinks.get(apartmentId); return link ? this.getSavedPlace(link.placeId) : null;
+  }
+
+  async setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null> {
+    const apartment = await this.getApartment(apartmentId); const place = await this.getSavedPlace(placeId);
+    if (!apartment || place?.kind !== "laundry") return null;
+    const now = new Date().toISOString(); const current = this.apartmentPlaceLinks.get(apartmentId);
+    const link: ApartmentPlaceLink = { apartmentId, placeId, preferred: true, createdAt: current?.createdAt ?? now, updatedAt: now };
+    this.apartmentPlaceLinks.set(apartmentId, link); return { ...link };
   }
 }
 
@@ -267,7 +396,25 @@ function mapApartment(row: Record<string, unknown>): Apartment {
     id: Number(row.id), sourceKey: String(row.source_key), canonicalKey: String(row.canonical_key),
     canonicalName: String(row.canonical_name), aliases: Array.isArray(row.aliases) ? row.aliases.map(String) : [],
     address: row.address == null ? null : String(row.address), mapsUrl: row.maps_url == null ? null : String(row.maps_url),
-    noteBody: row.note_body == null ? null : String(row.note_body), active: Boolean(row.active),
+    noteBody: row.note_body == null ? null : String(row.note_body),
+    latitude: row.latitude == null ? null : Number(row.latitude), longitude: row.longitude == null ? null : Number(row.longitude),
+    locationSource: row.location_source == null ? null : String(row.location_source) as LocationSource,
+    locationAccuracyMeters: row.location_accuracy_meters == null ? null : Number(row.location_accuracy_meters),
+    active: Boolean(row.active),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapSavedPlace(row: Record<string, unknown>): SavedPlace {
+  return {
+    id: Number(row.id), kind: String(row.kind) as SavedPlaceKind, name: String(row.name),
+    address: row.address == null ? null : String(row.address), note: row.note == null ? null : String(row.note),
+    mapsUrl: row.maps_url == null ? null : String(row.maps_url), latitude: row.latitude == null ? null : Number(row.latitude),
+    longitude: row.longitude == null ? null : Number(row.longitude),
+    locationSource: row.location_source == null ? null : String(row.location_source) as LocationSource,
+    locationAccuracyMeters: row.location_accuracy_meters == null ? null : Number(row.location_accuracy_meters),
+    osmType: row.osm_type == null ? null : String(row.osm_type) as SavedPlace["osmType"],
+    osmId: row.osm_id == null ? null : String(row.osm_id), active: Boolean(row.active),
     createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
   };
 }
@@ -308,6 +455,37 @@ export class PostgresLedgerStore implements LedgerStore {
       );
       CREATE INDEX IF NOT EXISTS apartments_active_idx ON apartments (active);
       ALTER TABLE work_days ADD COLUMN IF NOT EXISTS report_text text;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS latitude double precision;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS longitude double precision;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS location_source text;
+      ALTER TABLE apartments ADD COLUMN IF NOT EXISTS location_accuracy_meters double precision;
+      CREATE TABLE IF NOT EXISTS saved_places (
+        id bigserial PRIMARY KEY,
+        kind text NOT NULL CHECK (kind IN ('laundry', 'partner_restaurant')),
+        name text NOT NULL,
+        address text,
+        note text,
+        maps_url text,
+        latitude double precision,
+        longitude double precision,
+        location_source text,
+        location_accuracy_meters double precision,
+        osm_type text CHECK (osm_type IS NULL OR osm_type IN ('node', 'way', 'relation')),
+        osm_id text,
+        active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        CHECK ((latitude IS NULL AND longitude IS NULL) OR (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180))
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS saved_places_osm_unique ON saved_places (osm_type, osm_id) WHERE osm_type IS NOT NULL AND osm_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS saved_places_active_idx ON saved_places (active, kind);
+      CREATE TABLE IF NOT EXISTS apartment_place_links (
+        apartment_id bigint PRIMARY KEY REFERENCES apartments(id) ON DELETE CASCADE,
+        place_id bigint NOT NULL REFERENCES saved_places(id) ON DELETE CASCADE,
+        preferred boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
     `);
     for (const apartment of publicApartmentRecords()) {
       await this.pool.query(`
@@ -465,6 +643,31 @@ export class PostgresLedgerStore implements LedgerStore {
     return result.rows.map(mapApartment);
   }
 
+  async getApartment(id: number): Promise<Apartment | null> {
+    const result = await this.pool.query("SELECT * FROM apartments WHERE id=$1 AND active=true", [id]);
+    return result.rows[0] ? mapApartment(result.rows[0]) : null;
+  }
+
+  async createApartment(input: ApartmentWriteInput): Promise<Apartment> {
+    const canonicalKey = apartmentKey(input.canonicalName);
+    const result = await this.pool.query(`
+      INSERT INTO apartments (source_key,canonical_key,canonical_name,aliases,address,maps_url,note_body,latitude,longitude,location_source,location_accuracy_meters,active)
+      VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,true) RETURNING *
+    `, [`manual:${canonicalKey}:${Date.now()}`, canonicalKey, input.canonicalName, JSON.stringify([...new Set([input.canonicalName, ...input.aliases])]), input.address, input.mapsUrl, input.noteBody, input.latitude, input.longitude, input.locationSource, input.locationAccuracyMeters]);
+    return mapApartment(result.rows[0]);
+  }
+
+  async updateApartment(id: number, input: Partial<ApartmentWriteInput>): Promise<Apartment | null> {
+    const current = await this.getApartment(id); if (!current) return null;
+    const name = input.canonicalName ?? current.canonicalName;
+    const result = await this.pool.query(`
+      UPDATE apartments SET canonical_key=$2,canonical_name=$3,aliases=$4::jsonb,address=$5,maps_url=$6,note_body=$7,
+        latitude=$8,longitude=$9,location_source=$10,location_accuracy_meters=$11,updated_at=now()
+      WHERE id=$1 AND active=true RETURNING *
+    `, [id, apartmentKey(name), name, JSON.stringify(input.aliases ? [...new Set([name, ...input.aliases])] : current.aliases), input.address === undefined ? current.address : input.address, input.mapsUrl === undefined ? current.mapsUrl : input.mapsUrl, input.noteBody === undefined ? current.noteBody : input.noteBody, input.latitude === undefined ? current.latitude : input.latitude, input.longitude === undefined ? current.longitude : input.longitude, input.locationSource === undefined ? current.locationSource : input.locationSource, input.locationAccuracyMeters === undefined ? current.locationAccuracyMeters : input.locationAccuracyMeters]);
+    return result.rows[0] ? mapApartment(result.rows[0]) : null;
+  }
+
   async importApartments(records: ApartmentImportInput[], dryRun: boolean): Promise<ApartmentImportResult> {
     const client = await this.pool.connect();
     const result: ApartmentImportResult = { created: 0, updated: 0, skipped: 0, conflicts: [] };
@@ -484,13 +687,13 @@ export class PostgresLedgerStore implements LedgerStore {
         const aliasKeys = new Set(aliases.map(apartmentKey));
         const aliasOwner = existing.find((item) => item.id !== current?.id && [item.canonicalName, ...item.aliases].some((alias) => aliasKeys.has(apartmentKey(alias))));
         if (aliasOwner) { result.conflicts.push({ sourceKey: record.sourceKey, reason: "alias_belongs_to_another_apartment" }); continue; }
-        const comparable = { sourceKey: record.sourceKey, canonicalKey, canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl, noteBody: record.noteBody, active: record.active };
-        if (current && JSON.stringify({ sourceKey: current.sourceKey, canonicalKey: current.canonicalKey, canonicalName: current.canonicalName, aliases: current.aliases, address: current.address, mapsUrl: current.mapsUrl, noteBody: current.noteBody, active: current.active }) === JSON.stringify(comparable)) {
+        const comparable = { sourceKey: record.sourceKey, canonicalKey, canonicalName: record.canonicalName, aliases, address: record.address, mapsUrl: record.mapsUrl, noteBody: record.noteBody, latitude: record.latitude ?? current?.latitude ?? null, longitude: record.longitude ?? current?.longitude ?? null, active: record.active };
+        if (current && JSON.stringify({ sourceKey: current.sourceKey, canonicalKey: current.canonicalKey, canonicalName: current.canonicalName, aliases: current.aliases, address: current.address, mapsUrl: current.mapsUrl, noteBody: current.noteBody, latitude: current.latitude, longitude: current.longitude, active: current.active }) === JSON.stringify(comparable)) {
           result.skipped += 1; continue;
         }
         const saved = current
-          ? await client.query(`UPDATE apartments SET source_key=$2, canonical_key=$3, canonical_name=$4, aliases=$5::jsonb, address=$6, maps_url=$7, note_body=$8, active=$9, updated_at=now() WHERE id=$1 RETURNING *`, [current.id, record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active])
-          : await client.query(`INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, address, maps_url, note_body, active) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8) RETURNING *`, [record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.active]);
+          ? await client.query(`UPDATE apartments SET source_key=$2, canonical_key=$3, canonical_name=$4, aliases=$5::jsonb, address=$6, maps_url=$7, note_body=$8, latitude=$9, longitude=$10, location_source=CASE WHEN $9::double precision IS NULL THEN location_source ELSE 'import' END, active=$11, updated_at=now() WHERE id=$1 RETURNING *`, [current.id, record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.latitude ?? current.latitude, record.longitude ?? current.longitude, record.active])
+          : await client.query(`INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, address, maps_url, note_body, latitude, longitude, location_source, active) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,CASE WHEN $8::double precision IS NULL THEN NULL ELSE 'import' END,$10) RETURNING *`, [record.sourceKey, canonicalKey, record.canonicalName, JSON.stringify(aliases), record.address, record.mapsUrl, record.noteBody, record.latitude ?? null, record.longitude ?? null, record.active]);
         const mapped = mapApartment(saved.rows[0]);
         if (current) { existing.splice(existing.indexOf(current), 1, mapped); result.updated += 1; }
         else { existing.push(mapped); result.created += 1; }
@@ -500,5 +703,53 @@ export class PostgresLedgerStore implements LedgerStore {
     } catch (error) { await client.query("ROLLBACK"); throw error; }
     finally { client.release(); }
   }
-}
 
+
+  async getSavedPlaces(): Promise<SavedPlace[]> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE active=true ORDER BY name"); return result.rows.map(mapSavedPlace);
+  }
+
+  async getSavedPlace(id: number): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE id=$1 AND active=true", [id]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async createSavedPlace(input: SavedPlaceWriteInput): Promise<SavedPlace> {
+    const result = await this.pool.query(`
+      INSERT INTO saved_places (kind,name,address,note,maps_url,latitude,longitude,location_source,location_accuracy_meters,osm_type,osm_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      ON CONFLICT (osm_type,osm_id) WHERE osm_type IS NOT NULL AND osm_id IS NOT NULL DO UPDATE SET active=true,updated_at=now()
+      RETURNING *
+    `, [input.kind, input.name, input.address, input.note, input.mapsUrl, input.latitude, input.longitude, input.locationSource, input.locationAccuracyMeters, input.osmType ?? null, input.osmId ?? null]);
+    return mapSavedPlace(result.rows[0]);
+  }
+
+  async updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null> {
+    const current = await this.getSavedPlace(id); if (!current) return null;
+    const result = await this.pool.query(`UPDATE saved_places SET kind=$2,name=$3,address=$4,note=$5,maps_url=$6,latitude=$7,longitude=$8,location_source=$9,location_accuracy_meters=$10,updated_at=now() WHERE id=$1 AND active=true RETURNING *`, [id, input.kind ?? current.kind, input.name ?? current.name, input.address === undefined ? current.address : input.address, input.note === undefined ? current.note : input.note, input.mapsUrl === undefined ? current.mapsUrl : input.mapsUrl, input.latitude === undefined ? current.latitude : input.latitude, input.longitude === undefined ? current.longitude : input.longitude, input.locationSource === undefined ? current.locationSource : input.locationSource, input.locationAccuracyMeters === undefined ? current.locationAccuracyMeters : input.locationAccuracyMeters]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async archiveSavedPlace(id: number): Promise<boolean> {
+    const result = await this.pool.query("UPDATE saved_places SET active=false,updated_at=now() WHERE id=$1 AND active=true", [id]); return (result.rowCount ?? 0) > 0;
+  }
+
+  async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE osm_type=$1 AND osm_id=$2 AND active=true", [osmType, osmId]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {
+    const result = await this.pool.query(`SELECT place.* FROM apartment_place_links link JOIN saved_places place ON place.id=link.place_id WHERE link.apartment_id=$1 AND link.preferred=true AND place.active=true`, [apartmentId]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+  async setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null> {
+    const result = await this.pool.query(`
+      INSERT INTO apartment_place_links (apartment_id,place_id,preferred) SELECT $1,$2,true
+      WHERE EXISTS (SELECT 1 FROM apartments WHERE id=$1 AND active=true)
+        AND EXISTS (SELECT 1 FROM saved_places WHERE id=$2 AND kind='laundry' AND active=true)
+      ON CONFLICT (apartment_id) DO UPDATE SET place_id=EXCLUDED.place_id,preferred=true,updated_at=now()
+      RETURNING *
+    `, [apartmentId, placeId]);
+    const row = result.rows[0]; return row ? { apartmentId: Number(row.apartment_id), placeId: Number(row.place_id), preferred: Boolean(row.preferred), createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString() } : null;
+  }
+}
