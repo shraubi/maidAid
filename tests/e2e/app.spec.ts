@@ -39,6 +39,30 @@ test("Map and list are equal views and a place can be added", async ({ page }, t
   await expect(page.locator("#place-list strong", { hasText: name })).toBeVisible();
 });
 
+test("release two offers every place type and manual laundry linking", async ({ page, request }, testInfo) => {
+  test.skip(productRelease !== 2, "release-two assertion");
+  await page.goto("/map?view=list");
+
+  await page.getByRole("button", { name: "Добавить место" }).click();
+  await page.locator("#place-kind").selectOption("laundry");
+  await expect(page.getByLabel("Для квартиры")).toBeVisible();
+  await page.getByLabel("Для квартиры").selectOption({ index: 1 });
+  const laundryName = `Сушка ${testInfo.project.name}`;
+  await page.getByLabel("Название", { exact: true }).fill(laundryName);
+  await page.getByLabel("Ссылка Maps").fill("https://www.google.com/maps?q=48.857,2.353");
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.locator("#place-list strong", { hasText: laundryName })).toBeVisible();
+
+  await page.getByRole("button", { name: "Добавить место" }).click();
+  await page.locator("#place-kind").selectOption("partner_restaurant");
+  const partnerName = `Партнёр ${testInfo.project.name}`;
+  await page.getByLabel("Название", { exact: true }).fill(partnerName);
+  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
+  await expect(page.locator("#place-list strong", { hasText: partnerName })).toBeVisible();
+
+  expect((await request.get("/api/apartments/1/nearby-laundries")).status()).toBe(404);
+});
+
 test("Saved work appears in the dedicated ledger", async ({ page, request }) => {
   await request.post("/api/days", { data: { text: "05/08\nКвартира А 9-12 уборка" } });
   await page.goto("/ledger");

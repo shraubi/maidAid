@@ -101,7 +101,7 @@ function distanceMeters(aLat: number, aLon: number, bLat: number, bLon: number):
 
 export async function buildApp(config: Config = loadConfig(), providedStore?: LedgerStore, externalFetch: typeof fetch = fetch): Promise<FastifyInstance> {
   const app = Fastify({ logger: { level: config.LOG_LEVEL }, trustProxy: true });
-  const productRelease = config.PRODUCT_RELEASE ?? 1;
+  const productRelease = config.PRODUCT_RELEASE ?? 2;
   const settings: Settings = {
     hourlyRateCents: config.HOURLY_RATE_CENTS,
     orientationFlatCents: config.ORIENTATION_FLAT_CENTS,

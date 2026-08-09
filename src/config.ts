@@ -5,7 +5,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   HOST: z.string().default("0.0.0.0"),
   LOG_LEVEL: z.string().default("info"),
-  PRODUCT_RELEASE: z.coerce.number().int().min(1).max(3).default(1),
+  PRODUCT_RELEASE: z.coerce.number().int().min(1).max(3).default(2),
   HOURLY_RATE_CENTS: z.coerce.number().int().nonnegative().default(1000),
   ORIENTATION_FLAT_CENTS: z.coerce.number().int().nonnegative().default(1000),
   PRACTICE_FLAT_CENTS: z.coerce.number().int().nonnegative().default(1500),
