@@ -212,6 +212,12 @@ function resetPlaceForm() {
   $("#place-kind").disabled = false;
   $("#coordinate-picker").hidden = true; $("#place-form-error").hidden = true; $("#place-location-status").textContent = "Сначала попробуем определить точку по адресу.";
 }
+function clearDerivedLocation() {
+  $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
+  $("#place-location-status").textContent = "Местоположение будет определено по обновлённой ссылке или адресу.";
+}
+$("#place-address").addEventListener("input", clearDerivedLocation);
+$("#place-maps-url").addEventListener("input", clearDerivedLocation);
 function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${apartments.map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}</option>`).join("")}`; }
 function updatePlaceKind() { $("#place-apartment-link-label").hidden = $("#place-kind").value !== "laundry"; }
 $("#place-kind").addEventListener("change", updatePlaceKind);
