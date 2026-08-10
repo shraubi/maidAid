@@ -55,6 +55,30 @@ describe("public assets", () => {
     expect(app).toContain('class="duration-wheel"');
   });
 
+  it("uses real month bounds, hides empty periods and closes dialogs from the backdrop", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(app).toContain("const periodBounds");
+    expect(app).toContain("new Date(year, month, 0).getDate()");
+    expect(app).not.toContain("...periods.map(({ period }) => period)");
+    expect(app).toContain("event.target === dialog");
+  });
+
+  it("uses one save-and-share action and warns only when later entries exist", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    const html = readFileSync(resolve("public/index.html"), "utf8");
+    expect(html).not.toContain('id="save-day-button"');
+    expect(html).not.toContain('id="copy-button"');
+    expect(html).toContain("Сохранить и поделиться");
+    expect(html).toContain('id="backdated-warning"');
+    expect(app).toContain("data.hasLaterEntries");
+  });
+
+  it("allows Today cards and native controls to shrink on narrow iPhones", () => {
+    const styles = readFileSync(resolve("public/styles.css"), "utf8");
+    expect(styles).toContain(".today-job-card { width: 100%; min-width: 0;");
+    expect(styles).toContain("input,select,textarea { width: 100%; min-width: 0; max-width: 100%;");
+  });
+
   it("renders place kinds on their own line and makes laundry names optional", () => {
     const styles = readFileSync(resolve("public/styles.css"), "utf8");
     const app = readFileSync(resolve("public/app.js"), "utf8");
