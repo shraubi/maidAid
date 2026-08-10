@@ -45,11 +45,11 @@ Text-derived payments can only be changed by confirming their source day again. 
 
 ## Deployment
 
-`docker-compose.yml` runs PostgreSQL privately with a persistent volume and no host port. During the verification period, ngrok and Tailscale Funnel both expose the same MaidAid container and database. Set the application values plus `POSTGRES_PASSWORD`, `NGROK_AUTHTOKEN`, `NGROK_DOMAIN`, and optionally `MAIDAID_HOST_PORT` in the VM `.env`.
+`docker-compose.yml` runs PostgreSQL privately with a persistent volume and no host port. During the verification period, ngrok and Tailscale Funnel both expose the same MaidAid container and database. Set the application values plus `POSTGRES_PASSWORD`, `NGROK_AUTHTOKEN`, and optionally `MAIDAID_HOST_PORT` in the VM `.env`. Ngrok keeps its token-only behavior and assigns the tunnel URL automatically.
 
 Before the first multi-cleaner deployment, temporarily supply `INITIAL_CLEANER_NAME` and `INITIAL_CLEANER_PIN` so existing ledger rows can be assigned safely. They can come from the deployment shell and do not need to be written to `.env`. Startup refuses to migrate legacy rows without them, and they are not used after migration. `TEAM_ACCESS_CODE` remains a runtime secret because the app checks it whenever a colleague creates a profile.
 
-The Tailscale account must have MagicDNS, HTTPS, and Funnel enabled. The persistent `maidaid-tailscale` volume keeps the machine registration and the checked-in Funnel configuration exposes `https://maidaid.<tailnet-name>.ts.net`. Keep the existing ngrok URL active until production verification and explicit approval; ngrok removal belongs in the follow-up cleanup commit.
+The Tailscale account must have MagicDNS, HTTPS, and Funnel enabled. The persistent `maidaid-tailscale` volume keeps the machine registration and the checked-in Funnel configuration exposes `https://maidaid.<tailnet-name>.ts.net`. Keep the ngrok tunnel active until production verification and explicit approval; ngrok removal belongs in the follow-up cleanup commit.
 
 `TAILSCALE_AUTHKEY` is required only for the first Tailscale enrollment. After the `maidaid-tailscale` volume is populated and the Funnel survives a container restart, remove the key from `.env` and revoke it in the Tailscale admin console.
 

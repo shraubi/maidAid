@@ -55,7 +55,6 @@ services:
     restart: unless-stopped
     command:
       - http
-      - --url=${NGROK_DOMAIN}
       - http://maidaid:3000
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}

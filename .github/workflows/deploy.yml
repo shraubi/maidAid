@@ -94,7 +94,7 @@ jobs:
               umask 077
               printf '\nPOSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 24)" >> .env
             fi
-            for required in TEAM_ACCESS_CODE NGROK_AUTHTOKEN NGROK_DOMAIN; do
+            for required in TEAM_ACCESS_CODE NGROK_AUTHTOKEN; do
               if ! grep -q "^${required}=." .env; then echo "Missing required .env value: ${required}"; exit 1; fi
             done
             printf '%s' "$GHCR_TOKEN" | docker login "$REGISTRY" --username "$GHCR_USER" --password-stdin
