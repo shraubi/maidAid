@@ -8,7 +8,7 @@ import { z } from "zod";
 import { calculateDay } from "./domain/calculations.js";
 import { generateShareText } from "./domain/draft.js";
 import { parseDay } from "./domain/parser.js";
-import type { Expense, Job, LocationSource, ParsedDay, SavedPlace, Settings, WorkType } from "./domain/types.js";
+import type { Apartment, Expense, Job, LocationSource, ParsedDay, SavedPlace, Settings, WorkType } from "./domain/types.js";
 import { apartmentKey, apartmentLookup } from "./domain/apartments.js";
 import { loadConfig, type Config } from "./config.js";
 import { PostgresLedgerStore, type LedgerStore } from "./storage/ledger-store.js";
@@ -187,6 +187,50 @@ async function resolveLocation(input: Record<string, unknown>, externalFetch: ty
   return { latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null, ...(inferredAddress ? { inferredAddress } : {}) };
 }
 
+const supportedMapsHosts = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl"]);
+
+export function mapsUrlsFromApartmentNote(noteBody: string | null | undefined): string[] {
+  const matches = noteBody?.match(/https:\/\/[^\s<>"']+/gu) ?? [];
+  const urls: string[] = [];
+  for (const match of matches) {
+    const candidate = match.replace(/[),.;!?\]}]+$/u, "");
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== "https:" || !supportedMapsHosts.has(url.hostname.toLocaleLowerCase("en"))) continue;
+      url.hash = "";
+      const normalized = url.href;
+      if (!urls.includes(normalized)) urls.push(normalized);
+    } catch { /* Ignore prose that only resembles a URL. */ }
+  }
+  return urls;
+}
+
+export async function syncApartmentNoteDryers(apartment: Apartment, ledger: LedgerStore, externalFetch: typeof fetch): Promise<number> {
+  const mapsUrls = mapsUrlsFromApartmentNote(apartment.noteBody);
+  let created = 0;
+  for (const [index, mapsUrl] of mapsUrls.entries()) {
+    try {
+      let place = await ledger.findSavedPlaceByMapsUrl(mapsUrl);
+      if (!place) {
+        const { inferredAddress, ...location } = await resolveLocation({ mapsUrl }, externalFetch);
+        place = await ledger.createSavedPlace({
+          kind: "laundry", name: "Сушка", address: inferredAddress ?? null,
+          note: `Из заметки квартиры ${apartment.canonicalName}`, mapsUrl, ...location,
+        });
+        created += 1;
+      }
+      if (index === 0) await ledger.setPreferredLaundry(apartment.id, place.id);
+    } catch { /* Apartment saving and startup must not fail because a note link is unavailable. */ }
+  }
+  return created;
+}
+
+async function syncAllApartmentNoteDryers(ledger: LedgerStore, externalFetch: typeof fetch): Promise<number> {
+  let created = 0;
+  for (const apartment of await ledger.getActiveApartments()) created += await syncApartmentNoteDryers(apartment, ledger, externalFetch);
+  return created;
+}
+
 export async function repairLegacyMapCoordinates(ledger: LedgerStore, externalFetch: typeof fetch, delayMilliseconds = 1_100): Promise<number> {
   const apartments = (await ledger.getActiveApartments()).filter(hasLegacyBrokenCoordinates);
   const places = (await ledger.getSavedPlaces()).filter(hasLegacyBrokenCoordinates);
@@ -293,6 +337,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     void repairLegacyMapCoordinates(ledger, externalFetch)
       .then((repairedLocations) => { if (repairedLocations > 0) app.log.info({ repairedLocations }, "repaired legacy map coordinates"); })
       .catch((error) => app.log.error({ err: error }, "failed to repair legacy map coordinates"));
+    if (productRelease >= 2) void syncAllApartmentNoteDryers(ledger, externalFetch)
+      .then((createdNoteDryers) => { if (createdNoteDryers > 0) app.log.info({ createdNoteDryers }, "imported dryers from apartment notes"); })
+      .catch((error) => app.log.error({ err: error }, "failed to import dryers from apartment notes"));
   });
   const parse = async (text: string) => parseDay(text, new Date(), settings.dryerDefaultCents, apartmentLookup(await ledger.getActiveApartments()));
   app.addHook("onClose", async () => ledger.close());
@@ -393,6 +440,7 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
     try {
       const apartment = await ledger.createApartment({ canonicalName: input.data.canonicalName, aliases: input.data.aliases, address: input.data.address ?? inferredAddress ?? null, mapsUrl: input.data.mapsUrl ?? null, noteBody: input.data.noteBody ?? null, ...location });
+      if (productRelease >= 2) await syncApartmentNoteDryers(apartment, ledger, externalFetch);
       return reply.code(201).send({ apartment });
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
@@ -404,7 +452,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
     const { inferredAddress, ...location } = resolved;
     try {
-      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location }); return { apartment };
+      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location });
+      if (apartment && productRelease >= 2 && input.data.noteBody !== undefined) await syncApartmentNoteDryers(apartment, ledger, externalFetch);
+      return { apartment };
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
 
@@ -563,6 +613,7 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     if (duplicateConflicts.length) return reply.code(409).send({ created: 0, updated: 0, skipped: 0, conflicts: duplicateConflicts });
     const dryRun = (request.query as { dryRun?: string }).dryRun === "true";
     const result = await ledger.importApartments(input.data.apartments, dryRun);
+    if (!dryRun && productRelease >= 2) await syncAllApartmentNoteDryers(ledger, externalFetch);
     return { dryRun, accepted: result.created + result.updated + result.skipped, ...result };
   });
   for (const route of ["/today", "/map", "/ledger", "/map/apartments/:id", "/apartment.html"]) app.get(route, async (_request, reply) => reply.sendFile("index.html"));

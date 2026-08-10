@@ -124,6 +124,7 @@ export interface LedgerStore {
   updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null>;
   archiveSavedPlace(id: number): Promise<boolean>;
   findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null>;
+  findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null>;
   getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null>;
   setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null>;
 }
@@ -381,6 +382,11 @@ export class MemoryLedgerStore implements LedgerStore {
 
   async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
     const item = [...this.savedPlaces.values()].find((place) => place.active && place.osmType === osmType && place.osmId === osmId);
+    return item ? { ...item } : null;
+  }
+
+  async findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null> {
+    const item = [...this.savedPlaces.values()].find((place) => place.active && place.kind === "laundry" && place.mapsUrl === mapsUrl);
     return item ? { ...item } : null;
   }
 
@@ -867,6 +873,12 @@ export class PostgresLedgerStore implements LedgerStore {
 
   async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
     const result = await this.pool.query("SELECT * FROM saved_places WHERE osm_type=$1 AND osm_id=$2 AND active=true", [osmType, osmId]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+
+  async findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE kind='laundry' AND maps_url=$1 AND active=true ORDER BY id LIMIT 1", [mapsUrl]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
   }
 
   async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {

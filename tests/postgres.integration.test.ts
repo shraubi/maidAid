@@ -39,5 +39,12 @@ describe.skipIf(!databaseUrl)("PostgreSQL ledger integration", () => {
     expect((await store.getLedger(dateIso, dateIso, second.id)).totals.minutes).toBe(120);
     await store.deleteDay(dateIso, 1); await store.deleteDay(dateIso, second.id);
   });
-});
 
+  it("looks up an active laundry by its Maps URL", async () => {
+    const mapsUrl = `https://www.google.com/maps?q=48.857,2.353&test=${Date.now()}`;
+    const place = await store.createSavedPlace({ kind: "laundry", name: "Integration dryer", address: null, note: null, mapsUrl, latitude: 48.857, longitude: 2.353, locationSource: "maps_link", locationAccuracyMeters: null });
+    expect(await store.findSavedPlaceByMapsUrl(mapsUrl)).toMatchObject({ id: place.id, kind: "laundry", mapsUrl });
+    await store.archiveSavedPlace(place.id);
+    expect(await store.findSavedPlaceByMapsUrl(mapsUrl)).toBeNull();
+  });
+});

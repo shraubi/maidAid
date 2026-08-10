@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
-import { buildApp, coordinatesFromMapsUrl, repairLegacyMapCoordinates } from "../src/server.js";
+import { buildApp, coordinatesFromMapsUrl, mapsUrlsFromApartmentNote, repairLegacyMapCoordinates } from "../src/server.js";
 import type { Config } from "../src/config.js";
 import { MemoryLedgerStore } from "../src/storage/ledger-store.js";
 
@@ -29,6 +29,30 @@ describe("release two places", () => {
     expect(coordinatesFromMapsUrl("https://www.google.com/maps?q=31%20Rue%20Lauriston%2C%20Paris")).toBeNull();
     expect(coordinatesFromMapsUrl("https://www.google.com/maps?q=48.857%2C2.353")).toEqual({ latitude: 48.857, longitude: 2.353 });
     expect(coordinatesFromMapsUrl("https://www.google.com/maps/place/Test/data=!3d48.858!4d2.354")).toEqual({ latitude: 48.858, longitude: 2.354 });
+  });
+
+  it("extracts unique supported Maps links from apartment notes", () => {
+    expect(mapsUrlsFromApartmentNote(`Door code 1234\nhttps://www.google.com/maps?q=48.857,2.353).\nhttps://example.com/maps\nhttps://maps.app.goo.gl/dryer\nhttps://www.google.com/maps?q=48.857,2.353`)).toEqual([
+      "https://www.google.com/maps?q=48.857,2.353",
+      "https://maps.app.goo.gl/dryer",
+    ]);
+  });
+
+  it("imports every note Maps link idempotently and prefers the first", async () => {
+    app = await buildApp(config, new MemoryLedgerStore(), vi.fn(async () => new Response("{}", { status: 500 })) as unknown as typeof fetch);
+    const first = "https://www.google.com/maps?q=48.857,2.353";
+    const second = "https://www.google.com/maps?q=48.858,2.354";
+    const third = "https://www.google.com/maps?q=48.859,2.355";
+    const created = await app.inject({ method: "POST", url: "/api/apartments", payload: { canonicalName: "Note links", aliases: [], noteBody: `${first}\n${second}\n${first}` } });
+    expect(created.statusCode).toBe(201);
+    const apartment = created.json().apartment;
+    expect((await app.inject({ method: "GET", url: "/api/places" })).json().places).toHaveLength(2);
+    expect((await app.inject({ method: "GET", url: `/api/apartments/${apartment.id}` })).json().preferredLaundry).toMatchObject({ mapsUrl: first, latitude: 48.857, longitude: 2.353 });
+
+    await app.inject({ method: "PATCH", url: `/api/apartments/${apartment.id}`, payload: { noteBody: `${first}\n${second}\n${third}` } });
+    const places = (await app.inject({ method: "GET", url: "/api/places" })).json().places;
+    expect(places).toHaveLength(3);
+    expect(places.map((place: { mapsUrl: string }) => place.mapsUrl)).toEqual(expect.arrayContaining([first, second, third]));
   });
 
   it("repairs coordinates created by the legacy encoded-space parser", async () => {

@@ -6,7 +6,7 @@ const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) => ({ independent: "Самостоятельная уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[type] ?? "Тип не указан";
 const kindLabel = (kind) => ({ apartment: "Квартира", laundry: "Сушка", partner_restaurant: "Партнёр" })[kind] ?? "Место";
-const mapsHref = (item) => item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null);
+const mapsHref = (item) => item ? item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null) : null;
 
 async function api(url, options) {
   const response = await fetch(url, options);
@@ -32,6 +32,10 @@ let nextTodayJobId = 1;
 let latestDayPayload = null;
 let daySaved = false;
 let selectedTodayDateIso = null;
+let todayState = "editor";
+let todayInitialized = false;
+let savedTodayDay = null;
+let savedTodayApartments = new Map();
 let mapMode = (() => { try { return new URLSearchParams(location.search).get("view") || localStorage.getItem("maidaid:map-view") || "map"; } catch { return "map"; } })();
 const today = new Date();
 const calendarPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -48,7 +52,9 @@ function showAuth(mode = "login") {
 }
 
 function showAuthenticated(cleaner) {
+  const cleanerChanged = activeCleaner?.id !== cleaner.id;
   activeCleaner = cleaner; $("#cleaner-name").textContent = cleaner.name;
+  if (cleanerChanged) { todayInitialized = false; savedTodayDay = null; savedTodayApartments = new Map(); todayJobs = []; latestPreview = null; latestDayPayload = null; daySaved = false; setTodayState("editor"); }
   $("#auth-view").hidden = true; $(".app-header").hidden = false; $(".app-main").hidden = false; $(".mobile-nav").hidden = false;
 }
 
@@ -87,7 +93,11 @@ async function showRoute(route, push = false) {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
   if (push) history.pushState({}, "", route === "today" ? "/today" : `/${route}`);
-  if (route === "today") { await loadApartments(); renderTodayJobs(); }
+  if (route === "today") {
+    await loadApartments();
+    if (!todayInitialized || todayState === "saved") await loadSavedToday(true);
+    else if (todayState === "editor") renderTodayJobs();
+  }
   if (route === "map") await loadMapItems();
   if (route === "ledger") await loadLedger();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -105,8 +115,10 @@ window.addEventListener("popstate", async () => {
 });
 
 function setTodayState(state) {
+  todayState = state;
   $("#today-editor").hidden = state !== "editor";
   $("#today-preview").hidden = state !== "preview";
+  $("#today-saved").hidden = state !== "saved";
 }
 
 const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -123,6 +135,74 @@ $("#today-date-input").addEventListener("change", (event) => {
   event.target.value = selectedTodayDateIso;
   latestPreview = null; latestDayPayload = null; daySaved = false;
   updateTodayDateLabel();
+});
+
+function savedJobExpenses(day, job, jobIndex) {
+  return (day.parsedDetails.expenses ?? []).filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
+}
+
+async function hydrateSavedToday(day) {
+  const ids = [...new Set((day.parsedDetails.jobs ?? []).map((job) => job.apartmentId).filter(Boolean))];
+  const details = await Promise.all(ids.map(async (id) => {
+    try { return [id, await api(`/api/apartments/${id}`)]; }
+    catch { return [id, null]; }
+  }));
+  savedTodayApartments = new Map(details);
+}
+
+function renderSavedToday(statusText = "") {
+  if (!savedTodayDay) return;
+  const jobs = savedTodayDay.parsedDetails.jobs ?? [];
+  $("#saved-today-summary").innerHTML = jobs.map((job, index) => {
+    const detail = job.apartmentId ? savedTodayApartments.get(job.apartmentId) : null;
+    const apartment = detail?.apartment ?? job;
+    const apartmentRoute = mapsHref(apartment);
+    const dryerRoute = mapsHref(detail?.preferredLaundry);
+    const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
+    const expenses = savedJobExpenses(savedTodayDay, job, index);
+    return `<article class="saved-today-card">${job.apartmentId ? `<button class="saved-apartment-title" data-open-today-apartment="${job.apartmentId}" type="button">${escapeHtml(job.object)}</button>` : `<strong>${escapeHtml(job.object)}</strong>`}${apartment.address ? `<span class="saved-apartment-address">${escapeHtml(apartment.address)}</span>` : ""}<small>${escapeHtml(typeLabel(job.workType))} · ${escapeHtml(timing)}${expenses.length ? ` · ${escapeHtml(expenses.map((expense) => `${expense.category} ${formatMoney(expense.amountCents)}`).join(", "))}` : ""}</small><div class="saved-today-actions">${apartmentRoute ? `<a class="secondary action-link" href="${escapeHtml(apartmentRoute)}" target="_blank" rel="noopener noreferrer">Квартира</a>` : ""}${dryerRoute ? `<a class="primary action-link" href="${escapeHtml(dryerRoute)}" target="_blank" rel="noopener noreferrer">Сушка</a>` : ""}</div></article>`;
+  }).join("");
+  $("#saved-today-report").textContent = savedTodayDay.reportText || "Отчёт не сохранён";
+  $("#saved-today-status").textContent = statusText;
+  $("#saved-today-status").hidden = !statusText;
+  setTodayState("saved");
+}
+
+async function loadSavedToday(force = false, statusText = "") {
+  if (todayInitialized && !force) return;
+  const dateIso = localDateIso();
+  try {
+    const data = await api(`/api/ledger?from=${dateIso}&to=${dateIso}`);
+    savedTodayDay = data.rows.find((row) => row.rowType === "work" && row.dateIso === dateIso) ?? null;
+    if (savedTodayDay) { await hydrateSavedToday(savedTodayDay); renderSavedToday(statusText); }
+    else if (todayState === "saved" || !todayInitialized) setTodayState("editor");
+  } catch {
+    if (!todayInitialized) setTodayState("editor");
+  }
+  todayInitialized = true;
+}
+
+function centsInput(cents) { return cents ? String(cents / 100) : ""; }
+
+function editSavedToday() {
+  if (!savedTodayDay) return;
+  selectedTodayDateIso = savedTodayDay.dateIso;
+  $("#today-date-input").value = selectedTodayDateIso;
+  todayJobs = (savedTodayDay.parsedDetails.jobs ?? []).map((job, index) => {
+    const expenses = savedJobExpenses(savedTodayDay, job, index);
+    const dryerCents = expenses.filter((expense) => normalizeSearch(expense.category).includes("сушк")).reduce((sum, expense) => sum + expense.amountCents, 0);
+    const otherExpenseCents = expenses.filter((expense) => !normalizeSearch(expense.category).includes("сушк")).reduce((sum, expense) => sum + expense.amountCents, 0);
+    const workType = ["independent", "orientation", "practice", "checkin"].includes(job.workType) ? job.workType : "independent";
+    return { id: nextTodayJobId++, apartmentId: job.apartmentId, newApartmentName: job.apartmentId ? "" : job.object, query: job.object, workType, durationMinutes: Math.max(30, Math.min(300, Math.round((job.durationMinutes ?? 180) / 30) * 30)), dryer: centsInput(dryerCents), otherExpense: centsInput(otherExpenseCents) };
+  });
+  latestPreview = null; latestDayPayload = null; daySaved = false;
+  updateTodayDateLabel(); renderTodayJobs(); setTodayState("editor");
+}
+
+$("#edit-saved-today").addEventListener("click", editSavedToday);
+$("#saved-today-summary").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-today-apartment]");
+  if (button) void openApartmentDetail(Number(button.dataset.openTodayApartment), false);
 });
 
 function addTodayJob() {
@@ -226,8 +306,17 @@ $("#preview-button").addEventListener("click", async () => {
   finally { button.disabled = false; button.textContent = "Сформировать отчёт"; }
 });
 $("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
-async function saveTodayFromReport() { if (daySaved) return; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; }
-$("#share-button").addEventListener("click", async () => { const status = $("#share-status"); try { await saveTodayFromReport(); if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); status.className = "notice success"; status.textContent = "День сохранён, отчёт отправлен."; status.hidden = false; return; } await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = daySaved ? "notice success" : "notice error"; status.textContent = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; } status.hidden = false; });
+async function saveTodayFromReport() { if (daySaved) return null; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; return saved; }
+$("#share-button").addEventListener("click", async () => {
+  const status = $("#share-status"); let statusText = "";
+  try {
+    await saveTodayFromReport();
+    if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); statusText = "День сохранён, отчёт отправлен."; }
+    else { await navigator.clipboard.writeText(latestPreview.shareText); statusText = "День сохранён, отчёт скопирован."; }
+  } catch { statusText = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; }
+  if (daySaved && latestDayPayload?.dateIso === localDateIso()) { await loadSavedToday(true, statusText); return; }
+  status.className = daySaved ? "notice success" : "notice error"; status.textContent = statusText; status.hidden = false;
+});
 
 function normalizeMapItems() {
   mapItems = [
