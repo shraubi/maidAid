@@ -180,6 +180,313 @@ $("#today-job-list").addEventListener("input", (event) => {
 $("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; if (job.workType !== "independent") { job.dryer = ""; job.otherExpense = ""; } renderTodayJobs(); } } });
 $("#today-job-list").addEventListener("click", (event) => {
   const remove = event.target.closest("[data-remove-job]"); if (remove) { todayJobs = todayJobs.filter((job) => job.id !== Number(remove.dataset.removeJob)); renderTodayJobs(); return; }
-  const choice = event.target.closest("[data-choose-apartment]"); if (choice) { const job = todayJobs.find((item) => item.id === Number(choice.dataset.jobId)); const apartment = apartments.find((item) => item.id === Number(choice.dataset.chooseApartment)); if (job && aóM8¶‰ËkºwµçMÁ±…”µ™½É´ˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰ÍÕ‰µ¥Ğˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì(€•Ù•¹Ğ¹ÁÉ•Ù•¹Ñ•™…Õ±Ğ ¤ì½¹ÍĞ•ÉÉ½È€ô€ ˆÁ±…”µ™½É´µ•ÉÉ½Èˆ¤ì•ÉÉ½È¹¡¥‘‘•¸€ôÑÉÕ”ì(€½¹ÍĞ­¥¹€ô€ ˆÁ±…”µ­¥¹ˆ¤¹Ù…±Õ”ì½¹ÍĞ•‘¥Ñ-•ä€ô€ ˆÁ±…”µ•‘¥Ğµ¥ˆ¤¹Ù…±Õ”ì½¹ÍĞ±…Ñ¥ÑÕ‘”€ô€ ˆÁ±…”µ±…Ñ¥ÑÕ‘”ˆ¤¹Ù…±Õ”€ôôô€ˆˆ€üÕ¹‘•™¥¹•€è9Õµ‰•È  ˆÁ±…”µ±…Ñ¥ÑÕ‘”ˆ¤¹Ù…±Õ”¤ì½¹ÍĞ±½¹¥ÑÕ‘”€ô€ ˆÁ±…”µ±½¹¥ÑÕ‘”ˆ¤¹Ù…±Õ”€ôôô€ˆˆ€üÕ¹‘•™¥¹•€è9Õµ‰•È  ˆÁ±…”µ±½¹¥ÑÕ‘”ˆ¤¹Ù…±Õ”¤ì(€½¹ÍĞ½µµ½¸€ôì…‘‘É•ÍÌè€ ˆÁ±…”µ…‘‘É•ÍÌˆ¤¹Ù…±Õ”ñğ¹Õ±°°µ…ÁÍUÉ°è€ ˆÁ±…”µµ…ÁÌµÕÉ°ˆ¤¹Ù…±Õ”ñğ¹Õ±°°±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”°±½…Ñ¥½¹M½ÕÉ”è€ ˆÁ±…”µ±½…Ñ¥½¸µÍ½ÕÉ”ˆ¤¹Ù…±Õ”ñğÕ¹‘•™¥¹•°±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌè€ ˆÁ±…”µ±½…Ñ¥½¸µ…ÕÉ…äˆ¤¹Ù…±Õ”€ôôô€ˆˆ€üÕ¹‘•™¥¹•€è9Õµ‰•È  ˆÁ±…”µ±½…Ñ¥½¸µ…ÕÉ…äˆ¤¹Ù…±Õ”¤ôì(€ÑÉäì(€€€¥˜€¡­¥¹€ôôô€‰…Á…ÉÑµ•¹Ğˆ¤ì(€€€€€½¹ÍĞÁ…å±½…€ôì…¹½¹¥…±9…µ”è€ ˆÁ±…”µ¹…µ”ˆ¤¹Ù…±Õ”°¹½Ñ•	½‘äè€ ˆÁ±…”µ¹½Ñ”ˆ¤¹Ù…±Õ”ñğ¹Õ±°°€¸¸¹½µµ½¸ôì¥˜€ …•‘¥Ñ-•ä¤Á…å±½…¹…±¥…Í•Ì€ômtì(€€€€€½¹ÍĞ•¹‘Á½¥¹Ğ€ô•‘¥Ñ-•ä€ü€½…Á¤½…Á…ÉÑµ•¹ÑÌ¼‘í•‘¥Ñ-•ä¹ÍÁ±¥Ğ ˆèˆ¥lÅuõ€€è€ˆ½…Á¤½…Á…ÉÑµ•¹ÑÌˆì…İ…¥Ğ…Á¤¡•¹‘Á½¥¹Ğ°ìµ•Ñ¡½è•‘¥Ñ-•ä€ü€‰AQ ˆ€è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡Á…å±½…¤ô¤ì(€€€ô•±Í”ì(€€€€€½¹ÍĞ…Á…ÉÑµ•¹Ñ%€ô€ ˆÁ±…”µ…Á…ÉÑµ•¹Ğµ±¥¹¬ˆ¤¹Ù…±Õ”€ü9Õµ‰•È  ˆÁ±…”µ…Á…ÉÑµ•¹Ğµ±¥¹¬ˆ¤¹Ù…±Õ”¤€èÕ¹‘•™¥¹•ì(€€€€€½¹ÍĞÁ…å±½…€ôì­¥¹°¹…µ”è€ ˆÁ±…”µ¹…µ”ˆ¤¹Ù…±Õ”°¹½Ñ”è€ ˆÁ±…”µ¹½Ñ”ˆ¤¹Ù…±Õ”ñğ¹Õ±°°…Á…ÉÑµ•¹Ñ%°€¸¸¹½µµ½¸ôì(€€€€€½¹ÍĞ•¹‘Á½¥¹Ğ€ô•‘¥Ñ-•ä€ü€½…Á¤½Á±…•Ì¼‘í•‘¥Ñ-•ä¹ÍÁ±¥Ğ ˆèˆ¥lÅuõ€€è€ˆ½…Á¤½Á±…•Ìˆì¥˜€¡•‘¥Ñ-•ä¤‘•±•Ñ”Á…å±½…¹…Á…ÉÑµ•¹Ñ%ì½¹ÍĞÍ…Ù•€ô…İ…¥Ğ…Á¤¡•¹‘Á½¥¹Ğ°ìµ•Ñ¡½è•‘¥Ñ-•ä€ü€‰AQ ˆ€è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡Á…å±½…¤ô¤ì(€€€€€¥˜€¡•‘¥Ñ-•ä€˜˜­¥¹€ôôô€‰±…Õ¹‘Éäˆ€˜˜…Á…ÉÑµ•¹Ñ%¤…İ…¥Ğ…Á¤¡€½…Á¤½…Á…ÉÑµ•¹ÑÌ¼‘í…Á…ÉÑµ•¹Ñ%‘ô½±…Õ¹‘Éäµ±¥¹­Í€°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìÁ±…•%èÍ…Ù•¹Á±…”¹¥ô¤ô¤ì(€€€ô(€€€€ ˆÁ±…”µ™½É´µ‘¥…±½œˆ¤¹±½Í” ¤ìµ…Á%Ñ•µÌ€ômtì…İ…¥Ğ±½…‘5…Á%Ñ•µÌ¡ÑÉÕ”¤ì(€ô…Ñ €¡…Õ¡Ğ¤ì•ÉÉ½È¹Ñ•áÑ½¹Ñ•¹Ğ€ô…Õ¡Ğ¹µ•ÍÍ…”€ôôô€‰…Á…ÉÑµ•¹Ñ}•á¥ÍÑÌˆ€ü€‹BkBËBÃFFBãFBÀƒFƒFBÃBëBãBğƒB÷BÃBßBËBÃB÷BãB×BğƒFBÛBÔƒFFF'B×FFBËFB×F¸ˆ€è€‹BwBÔƒFBÓBÃBïBûFF0ƒFBûFFBÃB÷BãFF0ƒBóB×FFBø¸ˆì•ÉÉ½È¹¡¥‘‘•¸€ô™…±Í”ìô)ô¤ì()…Íå¹Œ™Õ¹Ñ¥½¸½Á•¹1…Õ¹‘ÉåA¥­•È¡…Á…ÉÑµ•¹Ñ%¤ì(€½¹ÍĞÉ•ÍÕ±ÑÌ€ô€ ˆ±…Õ¹‘ÉäµÉ•ÍÕ±ÑÌˆ¤ì(€½¹ÍĞ±…Õ¹‘É¥•Ì€ôÍ…Ù•‘A±…•Ì¹™¥±Ñ•È ¡¥Ñ•´¤€ôø¥Ñ•´¹­¥¹€ôôô€‰±…Õ¹‘Éäˆ¤ì(€½¹ÍĞ…É‘Ì€ô±…Õ¹‘É¥•Ì¹µ…À ¡¥Ñ•´¤€ôøì(€€€½¹ÍĞ•¹•É¥Œ€ôl‹FFF#BëBÀˆ°€‹BÿFBÃFB×FB÷BÃF<‰t¹¥¹±Õ‘•Ì¡MÑÉ¥¹œ¡¥Ñ•´¹¹…µ”¤¹ÑÉ¥´ ¤¹Ñ½1½…±•1½İ•É…Í” ‰ÉÔˆ¤¤ì(€€€½¹ÍĞÑ¥Ñ±”€ô•¹•É¥Œ€ü€¡¥Ñ•´¹…‘‘É•ÍÌñğ€‹B‡FF#BëBÀƒBÇB×BÜƒBÃBÓFB×FBÀˆ¤€è¥Ñ•´¹¹…µ”ì(€€€½¹ÍĞÍÕ‰Ñ¥Ñ±”€ô•¹•É¥Œ€ü€ˆˆ€è¥Ñ•´¹…‘‘É•ÍÌì(€€€É•ÑÕÉ¸€ñ…ÉÑ¥±”±…ÍÌô‰±…Õ¹‘Éäµ…ÉˆøñÍÑÉ½¹œø‘í•Í…Á•!Ñµ°¡Ñ¥Ñ±”¥ôğ½ÍÑÉ½¹œø‘íÍÕ‰Ñ¥Ñ±”€ü€ñÀ±…ÍÌô‰µÕÑ•ˆø‘í•Í…Á•!Ñµ°¡ÍÕ‰Ñ¥Ñ±”¥ôğ½Àù€€è€ˆ‰ôñ‰ÕÑÑ½¸±…ÍÌô‰ÁÉ¥µ…Éäˆ‘…Ñ„µ±¥¹¬µ±…Õ¹‘Éäôˆ‘í¥Ñ•´¹¥‘ôˆÑåÁ”ô‰‰ÕÑÑ½¸ˆûB‡BËF?BßBÃFF0ƒFƒBëBËBÃFFBãFBûBäğ½‰ÕÑÑ½¸øğ½…ÉÑ¥±”ù€ì(€ô¤¹©½¥¸ ˆˆ¤ì(€É•ÍÕ±ÑÌ¹‘…Ñ…Í•Ğ¹…Á…ÉÑµ•¹Ñ%€ô…Á…ÉÑµ•¹Ñ%ì(€É•ÍÕ±ÑÌ¹¥¹¹•É!Q50€ô€ñÀ±…ÍÌô‰µÕÑ•ˆûBKF/BÇB×FBãFBÔƒFBûFFBÃB÷FGB÷B÷FF8ƒFFF#BëF¸ğ½Àøñ‘¥Ø±…ÍÌô‰±…Õ¹‘Éäµ±¥ÍĞˆø‘í…É‘Ìñğ€ˆñÀûB‡B÷BÃFBÃBïBÀƒBÓBûBÇBÃBËF3FBÔƒFFF#BëFƒFB×FB×BÜƒBëB÷BûBÿBëF€¬ƒB÷BÀƒBëBÃFFBÔ¸ğ½Àø‰ôğ½‘¥Øø‘íÁÉ½‘ÕÑI•±•…Í”€øô€Ì€ü€ñ‘¥Ø±…ÍÌô‰‘•Ñ…¥°µ…Ñ¥½¹Ìˆøñ‰ÕÑÑ½¸±…ÍÌô‰Í•½¹‘…Éäˆ‘…Ñ„µ™¥¹µ¹•…É‰äôˆ‘í…Á…ÉÑµ•¹Ñ%‘ôˆÑåÁ”ô‰‰ÕÑÑ½¸ˆûBwBÃBçFBàƒB÷BûBËF/BÔƒFF?BÓBûBğğ½‰ÕÑÑ½¸øğ½‘¥Øù€€è€ˆ‰õ€ì(€€ ˆ±…Õ¹‘Éäµ‘¥…±½œˆ¤¹Í¡½İ5½‘…° ¤ì)ô()…Íå¹Œ™Õ¹Ñ¥½¸™¥¹‘9•…É‰å1…Õ¹‘Éä¡…Á…ÉÑµ•¹Ñ%¤ì(€½¹ÍĞÉ•ÍÕ±ÑÌ€ô€ ˆ±…Õ¹‘ÉäµÉ•ÍÕ±ÑÌˆ¤ìÉ•ÍÕ±ÑÌ¹¥¹¹•É!Q50€ô€ˆñÀ±…ÍÌõp‰µÕÑ•‘pˆûBcF'FƒBÇBïBãBÛBÃBçF#BãBÔƒBËBÃFBãBÃB÷FF/Š˜ğ½Àøˆì€ ˆ±…Õ¹‘Éäµ‘¥…±½œˆ¤¹Í¡½İ5½‘…° ¤ì(€ÑÉäì(€€€½¹ÍĞ‘…Ñ„€ô…İ…¥Ğ…Á¤¡€½…Á¤½…Á…ÉÑµ•¹ÑÌ¼‘í…Á…ÉÑµ•¹Ñ%‘ô½¹•…É‰äµ±…Õ¹‘É¥•Í€¤ì(€€€É•ÍÕ±ÑÌ¹¥¹¹•É!Q50€ô€‘í‘…Ñ„¹ÁÉ•™•ÉÉ•‘1…Õ¹‘Éä€ü€ñ‘¥Ø±…ÍÌô‰¹½Ñ¥”ÍÕ•ÍÌˆøñÍÑÉ½¹œûB‡B×BçFBÃFƒBËF/BÇFBÃB÷BÀèğ½ÍÑÉ½¹œø€‘í•Í…Á•!Ñµ°¡‘…Ñ„¹ÁÉ•™•ÉÉ•‘1…Õ¹‘Éä¹¹…µ”¥ôğ½‘¥Øù€€è€ˆ‰ôñ‘¥Ø±…ÍÌô‰±…Õ¹‘Éäµ±¥ÍĞˆø‘í‘…Ñ„¹…¹‘¥‘…Ñ•Ì¹±•¹Ñ €ü‘…Ñ„¹…¹‘¥‘…Ñ•Ì¹µ…À ¡¥Ñ•´°¥¹‘•à¤€ôø€ñ…ÉÑ¥±”±…ÍÌô‰±…Õ¹‘Éäµ…ÉˆøñÍÑÉ½¹œø‘í•Í…Á•!Ñµ°¡¥Ñ•´¹¹…µ”¥ôğ½ÍÑÉ½¹œøñÀ±…ÍÌô‰µÕÑ•ˆø‘í5…Ñ ¹É½Õ¹¡¥Ñ•´¹‘¥ÍÑ…¹•5•Ñ•ÉÌ¥ôƒBğƒ
-Ü€‘í¥Ñ•´¹‘Éå•É½¹™¥Éµ•€ü€‹FFF#BãBïBëBÀƒBûFBóB×FB×B÷BÀƒBÈ=M4ˆ€è€‹B÷BÃBïBãFBãBÔƒFFF#BãBïBëBàƒFFBûBãFƒBÿFBûBËB×FBãFF0‰ôğ½Àøñ‘¥Ø±…ÍÌô‰‘•Ñ…¥°µ…Ñ¥½¹Ìˆøñ„±…ÍÌô‰Í•½¹‘…Éä…Ñ¥½¸µ±¥¹¬ˆ¡É•˜ôˆ‘í•Í…Á•!Ñµ°¡¥Ñ•´¹µ…ÁÍUÉ°¥ôˆÑ…É•Ğô‰}‰±…¹¬ˆÉ•°ô‰¹½½Á•¹•È¹½É•™•ÉÉ•ÈˆûB{FBëFF/FF0ƒBëBÃFFF,ğ½„øñ‰ÕÑÑ½¸±…ÍÌô‰ÁÉ¥µ…Éäˆ‘…Ñ„µÍ•±•Ğµ±…Õ¹‘Éäôˆ‘í¥¹‘•áôˆÑåÁ”ô‰‰ÕÑÑ½¸ˆûBKF/BÇFBÃFF0ğ½‰ÕÑÑ½¸øğ½‘¥Øøğ½…ÉÑ¥±”ù€¤¹©½¥¸ ˆˆ¤€è€ˆñÀûBƒF?BÓBûBğƒB÷BãFB×BÏBøƒB÷BÔƒB÷BÃBçBÓB×B÷Bø¸ğ½Àø‰ôğ½‘¥Øù€ì(€€€É•ÍÕ±ÑÌ¹‘…Ñ…Í•Ğ¹…Á…ÉÑµ•¹Ñ%€ô…Á…ÉÑµ•¹Ñ%ìÉ•ÍÕ±ÑÌ¹}…¹‘¥‘…Ñ•Ì€ô‘…Ñ„¹…¹‘¥‘…Ñ•Ìì(€ô…Ñ €¡•ÉÉ½È¤ìÉ•ÍÕ±ÑÌ¹¥¹¹•É!Q50€ô€ñÀ±…ÍÌô‰¹½Ñ¥”•ÉÉ½Èˆø‘í•ÉÉ½È¹µ•ÍÍ…”€ôôô€‰…Á…ÉÑµ•¹Ñ}±½…Ñ¥½¹}É•ÅÕ¥É•ˆ€ü€‹B‡B÷BÃFBÃBïBÀƒFBëBÃBÛBãFBÔƒBÃBÓFB×FƒBãBïBàƒBëBûBûFBÓBãB÷BÃFF,ƒBëBËBÃFFBãFF,¸ˆ€è€‹BBûBãFBèƒFFF#B×BèƒBËFB×BóB×B÷B÷BøƒB÷B×BÓBûFFFBÿB×Bô¸‰ôğ½Àù€ìô)ô( ˆ±…Õ¹‘ÉäµÉ•ÍÕ±ÑÌˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì(€½¹ÍĞ¹•…É‰ä€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ™¥¹µ¹•…É‰åtˆ¤ì¥˜€¡¹•…É‰ä¤ì…İ…¥Ğ™¥¹‘9•…É‰å1…Õ¹‘Éä¡9Õµ‰•È¡¹•…É‰ä¹‘…Ñ…Í•Ğ¹™¥¹‘9•…É‰ä¤¤ìÉ•ÑÕÉ¸ìô(€½¹ÍĞ±¥¹­•€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ±¥¹¬µ±…Õ¹‘Éåtˆ¤ì(€½¹ÍĞ…Á…ÉÑµ•¹Ñ%€ô9Õµ‰•È  ˆ±…Õ¹‘ÉäµÉ•ÍÕ±ÑÌˆ¤¹‘…Ñ…Í•Ğ¹…Á…ÉÑµ•¹Ñ%¤ì(€¥˜€¡±¥¹­•¤ì…İ…¥Ğ…Á¤¡€½…Á¤½…Á…ÉÑµ•¹ÑÌ¼‘í…Á…ÉÑµ•¹Ñ%‘ô½±…Õ¹‘Éäµ±¥¹­Í€°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìÁ±…•%è9Õµ‰•È¡±¥¹­•¹‘…Ñ…Í•Ğ¹±¥¹­1…Õ¹‘Éä¤ô¤ô¤ì€ ˆ±…Õ¹‘Éäµ‘¥…±½œˆ¤¹±½Í” ¤ìµ…Á%Ñ•µÌ€ômtì…İ…¥Ğ±½…‘5…Á%Ñ•µÌ¡ÑÉÕ”¤ì…İ…¥Ğ½Á•¹Á…ÉÑµ•¹Ñ•Ñ…¥°¡…Á…ÉÑµ•¹Ñ%°™…±Í”¤ìÉ•ÑÕÉ¸ìô(€½¹ÍĞ‰ÕÑÑ½¸€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µÍ•±•Ğµ±…Õ¹‘Éåtˆ¤ì¥˜€ …‰ÕÑÑ½¸¤É•ÑÕÉ¸ì(€½¹ÍĞ…¹‘¥‘…Ñ”€ô€ ˆ±…Õ¹‘ÉäµÉ•ÍÕ±ÑÌˆ¤¹}…¹‘¥‘…Ñ•Ìü¹m9Õµ‰•È¡‰ÕÑÑ½¸¹‘…Ñ…Í•Ğ¹Í•±•Ñ1…Õ¹‘Éä¥tì¥˜€ ……¹‘¥‘…Ñ”¤É•ÑÕÉ¸ì(€…İ…¥Ğ…Á¤¡€½…Á¤½…Á…ÉÑµ•¹ÑÌ¼‘í…Á…ÉÑµ•¹Ñ%‘ô½±…Õ¹‘Éäµ±¥¹­Í€°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ì…¹‘¥‘…Ñ”èì½ÍµQåÁ”è…¹‘¥‘…Ñ”¹½ÍµQåÁ”°½Íµ%è…¹‘¥‘…Ñ”¹½Íµ%°¹…µ”è…¹‘¥‘…Ñ”¹¹…µ”°…‘‘É•ÍÌè…¹‘¥‘…Ñ”¹…‘‘É•ÍÌ°±…Ñ¥ÑÕ‘”è…¹‘¥‘…Ñ”¹±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”è…¹‘¥‘…Ñ”¹±½¹¥ÑÕ‘”ôô¤ô¤ì(€€ ˆ±…Õ¹‘Éäµ‘¥…±½œˆ¤¹±½Í” ¤ìµ…Á%Ñ•µÌ€ômtì…İ…¥Ğ±½…‘5…Á%Ñ•µÌ¡ÑÉÕ”¤ì…İ…¥Ğ½Á•¹Á…ÉÑµ•¹Ñ•Ñ…¥°¡…Á…ÉÑµ•¹Ñ%°™…±Í”¤ì)ô¤ì()½¹ÍĞ™½Éµ…ÑA•É¥½€ô€¡Á•É¥½¤€ôøì½¹ÍĞmå•…È°µ½¹Ñ¡t€ôÁ•É¥½¹ÍÁ±¥Ğ ˆ´ˆ¤¹µ…À¡9Õµ‰•È¤ì½¹ÍĞ±…‰•°€ô¹•Ü%¹Ñ°¹…Ñ•Q¥µ•½Éµ…Ğ ‰ÉÔµITˆ°ìµ½¹Ñ è€‰±½¹œˆ°å•…Èè€‰¹Õµ•É¥Œˆô¤¹™½Éµ…Ğ¡¹•Ü…Ñ”¡å•…È°µ½¹Ñ €´€Ä°€Ä¤¤ìÉ•ÑÕÉ¸±…‰•±lÁt¹Ñ½UÁÁ•É…Í” ¤€¬±…‰•°¹Í±¥” Ä¤ìôì)½¹ÍĞÁ•É¥½‘	½Õ¹‘Ì€ô€¡Á•É¥½¤€ôøì½¹ÍĞmå•…È°µ½¹Ñ¡t€ôÁ•É¥½¹ÍÁ±¥Ğ ˆ´ˆ¤¹µ…À¡9Õµ‰•È¤ì½¹ÍĞ±…ÍÑ…ä€ô¹•Ü…Ñ”¡å•…È°µ½¹Ñ °€À¤¹•Ñ…Ñ” ¤ìÉ•ÑÕÉ¸ì™É½´è€‘íÁ•É¥½‘ô´ÀÅ€°Ñ¼è€‘íÁ•É¥½‘ô´‘íMÑÉ¥¹œ¡±…ÍÑ…ä¤¹Á…‘MÑ…ÉĞ È°€ˆÀˆ¥õ€ôìôì)™Õ¹Ñ¥½¸É•¹‘•É1•‘•È¡‘…Ñ„¤ì(€½¹ÍĞÑ½Ñ…±Ì€ô‘…Ñ„¹Ñ½Ñ…±Ìì±•‘•É…åÌ€ô¹•Ü5…À¡‘…Ñ„¹É½İÌ¹™¥±Ñ•È ¡É½Ü¤€ôøÉ½Ü¹É½İQåÁ”€ôôô€‰İ½É¬ˆ¤¹µ…À ¡É½Ü¤€ôømÉ½Ü¹‘…Ñ•%Í¼°É½İt¤¤ì(€€ ˆ±•‘•ÈµÑ½Ñ…±Ìˆ¤¹¥¹¹•É!Q50€ôml‹BŸBÃFF,ˆ°™½Éµ…Ñ!½ÕÉÌ¡Ñ½Ñ…±Ì¹µ¥¹ÕÑ•Ì¥t°l‹BBûBïFFB×B÷Bøˆ°™½Éµ…Ñ5½¹•ä¡Ñ½Ñ…±Ì¹É••¥Ù•‘•¹ÑÌ¥t°l‹B{FFBÃFBûBèˆ°™½Éµ…Ñ5½¹•ä¡Ñ½Ñ…±Ì¹½ÕÑÍÑ…¹‘¥¹•¹ÑÌ¥t°l‹BƒBÃFFBûBÓF,ˆ°™½Éµ…Ñ5½¹•ä¡Ñ½Ñ…±Ì¹•áÁ•¹Í•Í•¹ÑÌ¥ut¹µ…À ¡m±…‰•°°Ù…±Õ•t¤€ôø€ñ‘¥Ø±…ÍÌô‰ÍÕµµ…Éäµ¥Ñ•´ˆøñÍÁ…¸ø‘í±…‰•±ôğ½ÍÁ…¸øñÍÑÉ½¹œø‘íÙ…±Õ•ôğ½ÍÑÉ½¹œøğ½‘¥Øù€¤¹©½¥¸ ˆˆ¤ì(€€ ˆ±•‘•ÈµÉ½İÌˆ¤¹¥¹¹•É!Q50€ô‘…Ñ„¹É½İÌ¹±•¹Ñ €ü‘…Ñ„¹É½İÌ¹µ…À ¡É½Ü¤€ôøì(€€€¥˜€¡É½Ü¹É½İQåÁ”€ôôô€‰İ½É¬ˆ¤ì(€€€€€½¹ÍĞ‘•Ñ…¥±Ì€ô€¡É½Ü¹Á…ÉÍ•‘•Ñ…¥±Ìü¹©½‰Ì€üümt¤¹µ…À ¡©½ˆ¤€ôø€ñ‘¥Ø±…ÍÌô‰±•‘•Èµ‘•Ñ…¥°µ¥Ñ•´ˆøñÍÑÉ½¹œø‘í•Í…Á•!Ñµ°¡©½ˆ¹½‰©•Ğ¥ôğ½ÍÑÉ½¹œøñÍµ…±°ø‘íÑåÁ•1…‰•°¡©½ˆ¹İ½É­QåÁ”¥ôğ½Íµ…±°øğ½‘¥Øù€¤¹©½¥¸ ˆˆ¤ì(€€€€€É•ÑÕÉ¸€ñ…ÉÑ¥±”±…ÍÌô‰±•‘•ÈµÉ½ÜˆøñÑ¥µ”ø‘í•Í…Á•!Ñµ°¡É½Ü¹‘…Ñ•%Í¼¥ôğ½Ñ¥µ”øñ‘¥ØøñÍÑÉ½¹œø‘í™½Éµ…Ñ!½ÕÉÌ¡É½Ü¹µ¥¹ÕÑ•Ì¥ôƒFBÃBÇBûFF,ğ½ÍÑÉ½¹œøñ‰ÈøñÍµ…±°ø‘í™½Éµ…Ñ5½¹•ä¡É½Ü¹¥¹½µ••¹ÑÌ¥ôƒBßBÃFBÃBÇBûFBÃB÷Bøƒ
-Ü€‘í™½Éµ…Ñ5½¹•ä¡É½Ü¹•áÁ•¹Í•Í•¹ÑÌ¥ôƒFBÃFFBûBÓF,ğ½Íµ…±°øğ½‘¥Øøñ‘¥Ø±…ÍÌô‰±•‘•ÈµÉ½Üµ…Ñ¥½¹Ìˆøñ‰ÕÑÑ½¸±…ÍÌô‰Í•½¹‘…Éäˆ‘…Ñ„µ•‘¥Ğµ‘…äôˆ‘íÉ½Ü¹‘…Ñ•%Í½ôˆûBcBßBóB×B÷BãFF0ğ½‰ÕÑÑ½¸øñ‰ÕÑÑ½¸±…ÍÌô‰¡½ÍĞˆ‘…Ñ„µ‘•±•Ñ”µ‘…äôˆ‘íÉ½Ü¹‘…Ñ•%Í½ôˆûBBÓBÃBïBãFF0ğ½‰ÕÑÑ½¸øğ½‘¥Øøñ‘¥Ø±…ÍÌô‰±•‘•Èµ‘…äµÑ…‰Ìˆøñ‘•Ñ…¥±Ì±…ÍÌô‰±•‘•Èµ‘…äµ‘•Ñ…¥±ÌˆøñÍÕµµ…ÉäûBƒBÃFBÿBãFBÃB÷BãBÔğ½ÍÕµµ…ÉäøñÁÉ”ø‘í•Í…Á•!Ñµ°¡É½Ü¹Í½ÕÉ•Q•áĞ¥ôğ½ÁÉ”øğ½‘•Ñ…¥±Ìøñ‘•Ñ…¥±Ì±…ÍÌô‰±•‘•Èµ‘…äµ‘•Ñ…¥±ÌˆøñÍÕµµ…ÉäûB{FFFGFğ½ÍÕµµ…ÉäøñÁÉ”ø‘í•Í…Á•!Ñµ°¡É½Ü¹É•Á½ÉÑQ•áĞñğ€‹B{FFFGFƒB÷BÔƒFBûFFBÃB÷FGBôˆ¥ôğ½ÁÉ”øğ½‘•Ñ…¥±Ìøñ‘•Ñ…¥±Ì±…ÍÌô‰±•‘•Èµ‘…äµ‘•Ñ…¥±ÌˆøñÍÕµµ…ÉäûBBûBÓFBûBÇB÷B×BÔğ½ÍÕµµ…Éäøñ‘¥Ø±…ÍÌô‰±•‘•Èµ‘•Ñ…¥°µ±¥ÍĞˆø‘í‘•Ñ…¥±Ìñğ€‹BƒBÃBÇBûFF,ƒB÷BÔƒB÷BÃBçBÓB×B÷F,‰ôğ½‘¥Øøğ½‘•Ñ…¥±Ìøğ½‘¥Øøğ½…ÉÑ¥±”ù€ì(€€€ô(€€€½¹ÍĞµ…¹Õ…°€ôÉ½Ü¹Í½ÕÉ”€ôôô€‰µ…¹Õ…°ˆìÉ•ÑÕÉ¸€ñ…ÉÑ¥±”±…ÍÌô‰±•‘•ÈµÉ½ÜˆøñÑ¥µ”ø‘íÉ½Ü¹‘…Ñ•%Í½ôğ½Ñ¥µ”øñ‘¥ØøñÍÑÉ½¹œø‘í™½Éµ…Ñ5½¹•ä¡É½Ü¹…µ½Õ¹Ñ•¹ÑÌ¥ôƒBÿBûBïFFB×B÷Bøğ½ÍÑÉ½¹œøñ‰ÈøñÍµ…±°ø‘í•Í…Á•!Ñµ°¡É½Ü¹¹½Ñ”ñğ€¡µ…¹Õ…°€ü€‹BƒFFB÷BÃF<ƒBûBÿBïBÃFBÀˆ€è€‹BCBËBÃB÷FƒBãBÜƒBûFFFGFBÀˆ¤¥ôğ½Íµ…±°øğ½‘¥Øø‘íµ…¹Õ…°€ü€ñ‘¥Ø±…ÍÌô‰±•‘•ÈµÉ½Üµ…Ñ¥½¹Ìˆøñ‰ÕÑÑ½¸±…ÍÌô‰Í•½¹‘…Éäˆ‘…Ñ„µ•‘¥ĞµÁ…åµ•¹Ğôˆ‘íÉ½Ü¹¥‘ôˆ‘…Ñ„µ‘…Ñ”ôˆ‘íÉ½Ü¹‘…Ñ•%Í½ôˆ‘…Ñ„µ…µ½Õ¹Ğôˆ‘íÉ½Ü¹…µ½Õ¹Ñ•¹ÑÍôˆ‘…Ñ„µ¹½Ñ”ôˆ‘í•Í…Á•!Ñµ°¡É½Ü¹¹½Ñ”ñğ€ˆˆ¥ôˆûBcBßBóB×B÷BãFF0ğ½‰ÕÑÑ½¸øñ‰ÕÑÑ½¸±…ÍÌô‰¡½ÍĞˆ‘…Ñ„µ‘•±•Ñ”µÁ…åµ•¹Ğôˆ‘íÉ½Ü¹¥‘ôˆûBBÓBÃBïBãFF0ğ½‰ÕÑÑ½¸øğ½‘¥Øù€€è€ˆñÍÁ…¸±…ÍÌõp‰µÕÑ•‘pˆûBcBÜƒFB×BëFFBÀğ½ÍÁ…¸ø‰ôğ½…ÉÑ¥±”ù€ì(€ô¤¹©½¥¸ ˆˆ¤€è€ˆñÀ±…ÍÌõp‰µÕÑ•‘pˆûB_BÃBÿBãFB×BäƒBÿBûBëBÀƒB÷B×F¸ğ½Àøˆì)ô)…Íå¹Œ™Õ¹Ñ¥½¸±½…‘1•‘•È ¤ìÑÉäì€ ˆ±•‘•Èµ•ÉÉ½Èˆ¤¹¡¥‘‘•¸€ôÑÉÕ”ì€ ˆ±•‘•ÈµÁ•É¥½µ±…‰•°ˆ¤¹Ñ•áÑ½¹Ñ•¹Ğ€ô™½Éµ…ÑA•É¥½¡Í•±•Ñ•‘A•É¥½¤ì½¹ÍĞì™É½´°Ñ¼ô€ôÁ•É¥½‘	½Õ¹‘Ì¡Í•±•Ñ•‘A•É¥½¤ìÉ•¹‘•É1•‘•È¡…İ…¥Ğ…Á¤¡€½…Á¤½±•‘•Èı™É½´ô‘í™É½µô™Ñ¼ô‘íÑ½õ€¤¤ìô…Ñ ìÉ•¹‘•É1•‘•È¡ìÑ½Ñ…±Ìèìµ¥¹ÕÑ•Ìè€À°•…É¹•‘•¹ÑÌè€À°É••¥Ù•‘•¹ÑÌè€À°½ÕÑÍÑ…¹‘¥¹•¹ÑÌè€À°•áÁ•¹Í•Í•¹ÑÌè€À°¡•­¥¹•¹ÑÌè€Àô°É½İÌèmtô¤ì€ ˆ±•‘•Èµ•ÉÉ½Èˆ¤¹Ñ•áÑ½¹Ñ•¹Ğ€ô€‹BwBÔƒFBÓBÃBïBûFF0ƒBßBÃBÏFFBßBãFF0ƒBãFFBûFBãF8¸ˆì€ ˆ±•‘•Èµ•ÉÉ½Èˆ¤¹¡¥‘‘•¸€ô™…±Í”ìôô( ˆ…‘µÁ…åµ•¹Ğµ‰ÕÑÑ½¸ˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°€ ¤€ôø€ ˆÁ…åµ•¹Ğµ‘¥…±½œˆ¤¹Í¡½İ5½‘…° ¤¤ì( ˆÁ…åµ•¹Ğµ™½É´ˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰ÍÕ‰µ¥Ğˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì•Ù•¹Ğ¹ÁÉ•Ù•¹Ñ•™…Õ±Ğ ¤ì…İ…¥Ğ…Á¤ ˆ½…Á¤½Á…åµ•¹ÑÌˆ°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ì‘…Ñ•%Í¼è€ ˆÁ…åµ•¹Ğµ‘…Ñ”ˆ¤¹Ù…±Õ”°…µ½Õ¹Ñ•¹ÑÌè5…Ñ ¹É½Õ¹¡9Õµ‰•È  ˆÁ…åµ•¹Ğµ…µ½Õ¹Ğˆ¤¹Ù…±Õ”¤€¨€ÄÀÀ¤°¹½Ñ”è€ ˆÁ…åµ•¹Ğµ¹½Ñ”ˆ¤¹Ù…±Õ”ñğÕ¹‘•™¥¹•ô¤ô¤ì€ ˆÁ…åµ•¹Ğµ‘¥…±½œˆ¤¹±½Í” ¤ì€ ˆÁ…åµ•¹Ğµ…µ½Õ¹Ğˆ¤¹Ù…±Õ”€ô€ˆˆì€ ˆÁ…åµ•¹Ğµ¹½Ñ”ˆ¤¹Ù…±Õ”€ô€ˆˆì…İ…¥Ğ±½…‘1•‘•È ¤ìô¤ì( ˆÁ•É¥½‘Ìµ‰ÕÑÑ½¸ˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°…Íå¹Œ€ ¤€ôøì½¹ÍĞìÁ•É¥½‘Ìô€ô…İ…¥Ğ…Á¤ ˆ½…Á¤½Á•É¥½‘Ìˆ¤ì½¹ÍĞ…Ù…¥±…‰±”€ôÁ•É¥½‘Ì¹µ…À ¡ìÁ•É¥½ô¤€ôøÁ•É¥½¤ì€ ˆÁ•É¥½‘Ìµ±¥ÍĞˆ¤¹¥¹¹•É!Q50€ô…Ù…¥±…‰±”¹µ…À ¡Á•É¥½¤€ôø€ñ‰ÕÑÑ½¸±…ÍÌôˆ‘íÁ•É¥½€ôôôÍ•±•Ñ•‘A•É¥½€ü€‰ÁÉ¥µ…Éäˆ€è€‰Í•½¹‘…Éä‰ôˆ‘…Ñ„µÁ•É¥½ôˆ‘íÁ•É¥½‘ôˆø‘í™½Éµ…ÑA•É¥½¡Á•É¥½¥ôğ½‰ÕÑÑ½¸ù€¤¹©½¥¸ ˆˆ¤ì€ ˆÁ•É¥½‘Ìµ‘¥…±½œˆ¤¹Í¡½İ5½‘…° ¤ìô¤ì( ˆÁ•É¥½‘Ìµ±¥ÍĞˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì½¹ÍĞ‰ÕÑÑ½¸€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µÁ•É¥½‘tˆ¤ì¥˜€ …‰ÕÑÑ½¸¤É•ÑÕÉ¸ìÍ•±•Ñ•‘A•É¥½€ô‰ÕÑÑ½¸¹‘…Ñ…Í•Ğ¹Á•É¥½ì€ ˆÁ•É¥½‘Ìµ‘¥…±½œˆ¤¹±½Í” ¤ì…İ…¥Ğ±½…‘1•‘•È ¤ìô¤ì( ˆ±•‘•ÈµÉ½İÌˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì(€½¹ÍĞ•‘¥Ñ…ä€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ•‘¥Ğµ‘…åtˆ¤ì½¹ÍĞ‘•±•Ñ•…ä€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ‘•±•Ñ”µ‘…åtˆ¤ì½¹ÍĞ•‘¥ÑA…åµ•¹Ğ€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ•‘¥ĞµÁ…åµ•¹Ñtˆ¤ì½¹ÍĞ‘•±•Ñ•A…åµ•¹Ğ€ô•Ù•¹Ğ¹Ñ…É•Ğ¹±½Í•ÍĞ ‰m‘…Ñ„µ‘•±•Ñ”µÁ…åµ•¹Ñtˆ¤ì(€¥˜€¡•‘¥Ñ…ä¤ì½¹ÍĞ‘…ä€ô±•‘•É…åÌ¹•Ğ¡•‘¥Ñ…ä¹‘…Ñ…Í•Ğ¹•‘¥Ñ…ä¤ì¥˜€¡‘…ä¤ì•‘¥Ñ¥¹…Ñ•%Í¼€ô‘…ä¹‘…Ñ•%Í¼ì€ ˆ‘…äµ•‘¥Ğµ‘…Ñ”ˆ¤¹Ñ•áÑ½¹Ñ•¹Ğ€ô‘…ä¹‘…Ñ•%Í¼ì€ ˆ‘…äµ•‘¥ĞµÑ•áĞˆ¤¹Ù…±Õ”€ô‘…ä¹Í½ÕÉ•Q•áĞì€ ˆ‘…äµ•‘¥Ğµ‘¥…±½œˆ¤¹Í¡½İ5½‘…° ¤ìôô(€¥˜€¡‘•±•Ñ•…ä€˜˜½¹™¥É´¡ƒBBÓBÃBïBãFF0ƒFBÃBÇBûFBãBäƒBÓB×B÷F0€‘í‘•±•Ñ•…ä¹‘…Ñ…Í•Ğ¹‘•±•Ñ•…åôı€¤¤ì…İ…¥Ğ…Á¤¡€½…Á¤½‘…åÌ¼‘í‘•±•Ñ•…ä¹‘…Ñ…Í•Ğ¹‘•±•Ñ•…åõ€°ìµ•Ñ¡½è€‰1Qˆô¤ì…İ…¥Ğ±½…‘1•‘•È ¤ìô(€¥˜€¡‘•±•Ñ•A…åµ•¹Ğ€˜˜½¹™¥É´ ‹BBÓBÃBïBãFF0ƒF7FFƒBûBÿBïBÃFFüˆ¤¤ì…İ…¥Ğ…Á¤¡€½…Á¤½Á…åµ•¹ÑÌ¼‘í‘•±•Ñ•A…åµ•¹Ğ¹‘…Ñ…Í•Ğ¹‘•±•Ñ•A…åµ•¹Ñõ€°ìµ•Ñ¡½è€‰1Qˆô¤ì…İ…¥Ğ±½…‘1•‘•È ¤ìô(€¥˜€¡•‘¥ÑA…åµ•¹Ğ¤ì½¹ÍĞ‘…Ñ•%Í¼€ôÁÉ½µÁĞ ‹BSBÃFBÀƒBûBÿBïBÃFF,èˆ°•‘¥ÑA…åµ•¹Ğ¹‘…Ñ…Í•Ğ¹‘…Ñ”¤ì¥˜€¡‘…Ñ•%Í¼€ôô¹Õ±°¤É•ÑÕÉ¸ì½¹ÍĞ…µ½Õ¹Ğ€ôÁÉ½µÁĞ ‹B‡FBóBóBÀƒBÈƒB×BËFBøèˆ°MÑÉ¥¹œ¡9Õµ‰•È¡•‘¥ÑA…åµ•¹Ğ¹‘…Ñ…Í•Ğ¹…µ½Õ¹Ğ¤€¼€ÄÀÀ¤¤ì¥˜€¡…µ½Õ¹Ğ€ôô¹Õ±°¤É•ÑÕÉ¸ì½¹ÍĞ¹½Ñ”€ôÁÉ½µÁĞ ‹BFBãBóB×FBÃB÷BãBÔèˆ°•‘¥ÑA…åµ•¹Ğ¹‘…Ñ…Í•Ğ¹¹½Ñ”¤ì¥˜€¡¹½Ñ”€ôô¹Õ±°¤É•ÑÕÉ¸ì…İ…¥Ğ…Á¤¡€½…Á¤½Á…åµ•¹ÑÌ¼‘í•‘¥ÑA…åµ•¹Ğ¹‘…Ñ…Í•Ğ¹•‘¥ÑA…åµ•¹Ñõ€°ìµ•Ñ¡½è€‰AQ ˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ì‘…Ñ•%Í¼°…µ½Õ¹Ñ•¹ÑÌè5…Ñ ¹É½Õ¹¡9Õµ‰•È¡…µ½Õ¹Ğ¹É•Á±…” ˆ°ˆ°€ˆ¸ˆ¤¤€¨€ÄÀÀ¤°¹½Ñ”ô¤ô¤ì…İ…¥Ğ±½…‘1•‘•È ¤ìô)ô¤ì( ˆ‘…äµ•‘¥Ğµ™½É´ˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰ÍÕ‰µ¥Ğˆ°…Íå¹Œ€¡•Ù•¹Ğ¤€ôøì•Ù•¹Ğ¹ÁÉ•Ù•¹Ñ•™…Õ±Ğ ¤ì½¹ÍĞÑ•áĞ€ô€ ˆ‘…äµ•‘¥ĞµÑ•áĞˆ¤¹Ù…±Õ”ì½¹ÍĞÁÉ•Ù¥•Ü€ô…İ…¥Ğ…Á¤ ˆ½…Á¤½ÁÉ•Ù¥•Üˆ°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìÑ•áĞô¤ô¤ì¥˜€ …ÁÉ•Ù¥•Ü¹…¹M¡…É”ñğÁÉ•Ù¥•Ü¹Á…ÉÍ•¹‘…Ñ•%Í¼€„ôô•‘¥Ñ¥¹…Ñ•%Í¼¤ì€ ˆ‘…äµ•‘¥Ğµ•ÉÉ½Èˆ¤¹Ñ•áÑ½¹Ñ•¹Ğ€ô€‹BFBûBËB×FF3FBÔƒFB×BëFFƒBàƒFBûFFBÃB÷BãFBÔƒBÿFB×BÛB÷F;F8ƒBÓBÃFF¸ˆì€ ˆ‘…äµ•‘¥Ğµ•ÉÉ½Èˆ¤¹¡¥‘‘•¸€ô™…±Í”ìÉ•ÑÕÉ¸ìô…İ…¥Ğ…Á¤ ˆ½…Á¤½‘…åÌˆ°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ĞµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½©Í½¸ˆô°‰½‘äè)M=8¹ÍÑÉ¥¹¥™ä¡ìÑ•áĞô¤ô¤ì€ ˆ‘…äµ•‘¥Ğµ‘¥…±½œˆ¤¹±½Í” ¤ì…İ…¥Ğ±½…‘1•‘•È ¤ìô¤ì(( m‘…Ñ„µ±½Í”µ‘¥…±½tœ¤¹™½É…  ¡‰ÕÑÑ½¸¤€ôø‰ÕÑÑ½¸¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°€ ¤€ôø‘½Õµ•¹Ğ¹•Ñ±•µ•¹Ñ	å%¡‰ÕÑÑ½¸¹‘…Ñ…Í•Ğ¹±½Í•¥…±½œ¤¹±½Í” ¤¤¤ì( ‘¥…±½œ¹…ÁÀµ‘¥…±½œœ¤¹™½É…  ¡‘¥…±½œ¤€ôø‘¥…±½œ¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±¥¬ˆ°€¡•Ù•¹Ğ¤€ôøì¥˜€¡•Ù•¹Ğ¹Ñ…É•Ğ€ôôô‘¥…±½œ¤‘¥…±½œ¹±½Í” ¤ìô¤¤ì( ˆÁ±…”µ‘•Ñ…¥°µ‘¥…±½œˆ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ‰±½Í”ˆ°€ ¤€ôøì(€¥˜€¡±½…Ñ¥½¸¹Á…Ñ¡¹…µ”¹ÍÑ…ÉÑÍ]¥Ñ  ˆ½µ…À½…Á…ÉÑµ•¹ÑÌ¼ˆ¤¤¡¥ÍÑ½Éä¹É•Á±…•MÑ…Ñ”¡íô°€ˆˆ°€½µ…ÀıÙ¥•Üô‘íµ…Á5½‘•õ€¤ì)ô¤ì( ˆÁ…åµ•¹Ğµ‘…Ñ”ˆ¤¹Ù…±Õ”€ô¹•Ü…Ñ” ¤¹Ñ½%M=MÑÉ¥¹œ ¤¹Í±¥” À°€ÄÀ¤ì()…Íå¹Œ™Õ¹Ñ¥½¸É•µ½Ù•1•…å=™™±¥¹” ¤ì(€ÑÉäì¥˜€ ‰Í•ÉÙ¥•]½É­•Èˆ¥¸¹…Ù¥…Ñ½È¤™½È€¡½¹ÍĞÉ•¥ÍÑÉ…Ñ¥½¸½˜…İ…¥Ğ¹…Ù¥…Ñ½È¹Í•ÉÙ¥•]½É­•È¹•ÑI•¥ÍÑÉ…Ñ¥½¹Ì ¤¤…İ…¥ĞÉ•¥ÍÑÉ…Ñ¥½¸¹Õ¹É•¥ÍÑ•È ¤ìô…Ñ íô(€ÑÉäì¥˜€ ‰…¡•Ìˆ¥¸±½‰…±Q¡¥Ì¤™½È€¡½¹ÍĞ­•ä½˜…İ…¥Ğ…¡•Ì¹­•åÌ ¤¤¥˜€¡­•ä¹ÍÑ…ÉÑÍ]¥Ñ  ‰µ…¥‘…¥µÍ¡•±°´ˆ¤¤…İ…¥Ğ…¡•Ì¹‘•±•Ñ”¡­•ä¤ìô…Ñ íô)ô()…Íå¹Œ™Õ¹Ñ¥½¸¥¹¥Ñ¥…±¥é•ÁÀ ¤ì(€…İ…¥ĞÉ•µ½Ù•1•…å=™™±¥¹” ¤ì(€ÑÉäìÁÉ½‘ÕÑI•±•…Í”€ô9Õµ‰•È ¡…İ…¥Ğ…Á¤ ˆ½…Á¤½…ÁÀµ½¹™¥œˆ¤¤¹ÁÉ½‘ÕÑI•±•…Í”¤ñğ€Äìô…Ñ ìÁÉ½‘ÕÑI•±•…Í”€ô€Äìô(€€ ˆ…‘µÁ±…”µ‰ÕÑÑ½¸ˆ¤¹¡¥‘‘•¸€ôÁÉ½‘ÕÑI•±•…Í”€ğ€Èì(€€ ˆÁ±…”µ™¥±Ñ•Èˆ¤¹¡¥‘‘•¸€ôÁÉ½‘ÕÑI•±•…Í”€ğ€Èì(€ÑÉäì½¹ÍĞì±•…¹•Èô€ô…İ…¥Ğ…Á¤ ˆ½…Á¤½…ÕÑ ½µ”ˆ¤ìÍ¡½İÕÑ¡•¹Ñ¥…Ñ•¡±•…¹•È¤ìô…Ñ ìÍ¡½İÕÑ  ¤ìÉ•ÑÕÉ¸ìô(€…İ…¥ĞÍ¡½İI½ÕÑ”¡É½ÕÑ•É½µA…Ñ  ¤¤ì(€½¹ÍĞ‘¥É•ÑÁ…ÉÑµ•¹Ğ€ô±½…Ñ¥½¸¹Á…Ñ¡¹…µ”¹µ…Ñ  ½yp½µ…Áp½…Á…ÉÑµ•¹ÑÍp¼¡q¬¤¼¤ì(€¥˜€¡‘¥É•ÑÁ…ÉÑµ•¹Ğ¤…İ…¥Ğ½Á•¹Á…ÉÑµ•¹Ñ•Ñ…¥°¡9Õµ‰•È¡‘¥É•ÑÁ…ÉÑµ•¹ÑlÅt¤°™…±Í”¤ì)ô()Ù½¥¥¹¥Ñ¥…±¥é•ÁÀ ¤ì
+  const choice = event.target.closest("[data-choose-apartment]"); if (choice) { const job = todayJobs.find((item) => item.id === Number(choice.dataset.jobId)); const apartment = apartments.find((item) => item.id === Number(choice.dataset.chooseApartment)); if (job && apartment) { job.apartmentId = apartment.id; job.newApartmentName = ""; job.query = apartment.canonicalName; renderTodayJobs(); } return; }
+  const create = event.target.closest("[data-create-apartment]"); if (create) { const job = todayJobs.find((item) => item.id === Number(create.dataset.createApartment)); if (job && job.query.trim()) { job.apartmentId = null; job.newApartmentName = job.query.trim(); renderTodayJobs(); } return; }
+  const duration = event.target.closest("[data-duration]"); if (duration) { const card = duration.closest("[data-today-job]"); const job = todayJobs.find((item) => item.id === Number(card.dataset.todayJob)); if (job) { job.durationMinutes = Number(duration.dataset.duration); renderTodayJobs(); } }
+});
+$("#today-job-list").addEventListener("keydown", (event) => {
+  const search = event.target.closest("[data-apartment-search]");
+  if (search && ["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); const options = [...$(`[data-apartment-results="${search.dataset.apartmentSearch}"]`).querySelectorAll("button")]; (event.key === "ArrowDown" ? options[0] : options.at(-1))?.focus(); return; }
+  const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel || !["ArrowLeft", "ArrowRight"].includes(event.key)) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.key === "ArrowRight" ? 30 : -30))); renderTodayJobs(); $(`[data-duration-wheel="${job.id}"]`)?.focus(); }
+});
+$("#today-job-list").addEventListener("wheel", (event) => { const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.deltaY > 0 || event.deltaX > 0 ? 30 : -30))); renderTodayJobs(); } }, { passive: false });
+
+function moneyCents(value, label) { if (!String(value).trim()) return 0; const amount = Number(String(value).replace(",", ".")); if (!Number.isFinite(amount) || amount < 0) throw new Error(`${label}: ÑƒĞºĞ°Ğ¶Ğ¸Ñ‚Ğµ ĞºĞ¾Ñ€Ñ€ĞµĞºÑ‚Ğ½ÑƒÑ ÑÑƒĞ¼Ğ¼Ñƒ`); return Math.round(amount * 100); }
+function buildTodayPayload() {
+  if (!todayJobs.length) throw new Error("Ğ”Ğ¾Ğ±Ğ°Ğ²ÑŒÑ‚Ğµ Ñ…Ğ¾Ñ‚Ñ Ğ±Ñ‹ Ğ¾Ğ´Ğ½Ñƒ ĞºĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ñƒ");
+  return { format: "structured", dateIso: selectedTodayDateIso, jobs: todayJobs.map((job, index) => {
+    if (!job.apartmentId && !job.newApartmentName) throw new Error(`ĞšĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ğ° ${index + 1}: Ğ²Ñ‹Ğ±ĞµÑ€Ğ¸Ñ‚Ğµ Ğ²Ğ°Ñ€Ğ¸Ğ°Ğ½Ñ‚ Ğ¸Ğ· Ğ¿Ğ¾Ğ¸ÑĞºĞ° Ğ¸Ğ»Ğ¸ ÑĞ¾Ğ·Ğ´Ğ°Ğ¹Ñ‚Ğµ Ğ½Ğ¾Ğ²ÑƒÑ`);
+    return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes, dryerCents: moneyCents(job.dryer, "Ğ¡ÑƒÑˆĞºĞ°"), otherExpenseCents: moneyCents(job.otherExpense, "Ğ”Ñ€ÑƒĞ³Ğ¸Ğµ Ñ€Ğ°ÑÑ…Ğ¾Ğ´Ñ‹") } : { dryerCents: 0, otherExpenseCents: 0 }) };
+  }) };
+}
+
+function renderPreview(data) {
+  const problems = [...data.issues.map((issue) => issue.message), ...data.unparsedLines.map((line) => `ĞĞµ Ñ€Ğ°ÑĞ¿Ğ¾Ğ·Ğ½Ğ°Ğ½Ğ¾: ${line}`)];
+  $("#issue-list").hidden = !problems.length;
+  $("#issue-list").innerHTML = problems.length ? `<strong>ĞÑƒĞ¶Ğ½Ğ¾ Ğ¸ÑĞ¿Ñ€Ğ°Ğ²Ğ¸Ñ‚ÑŒ</strong><ul>${problems.map((problem) => `<li>${escapeHtml(problem)}</li>`).join("")}</ul>` : "";
+  const jobs = data.parsed.jobs.map((job, jobIndex) => {
+    const expenses = data.parsed.expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
+    const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}â€“${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
+    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` Â· ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Ğ Ğ°ÑÑ…Ğ¾Ğ´Ñ‹: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}</article>`;
+  }).join("");
+  const unmatched = data.parsed.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !data.parsed.jobs.some((job) => job.object === expense.object)));
+  const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` Â· ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
+  $("#parsed-summary").innerHTML = `<p class="muted">${escapeHtml(data.parsed.displayDate ?? "Ğ”Ğ°Ñ‚Ğ° Ğ½Ğµ Ğ¾Ğ¿Ñ€ĞµĞ´ĞµĞ»ĞµĞ½Ğ°")}</p><div class="job-list">${jobs || "<p>Ğ Ğ°Ğ±Ğ¾Ñ‚Ñ‹ Ğ½Ğµ Ğ½Ğ°Ğ¹Ğ´ĞµĞ½Ñ‹.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Ğ’Ñ€ĞµĞ¼Ñ</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Ğ—Ğ°Ñ€Ğ°Ğ±Ğ¾Ñ‚Ğ¾Ğº</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Ğ Ğ°ÑÑ…Ğ¾Ğ´Ñ‹</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>`;
+  $("#share-text").textContent = data.shareText;
+  $("#backdated-warning").textContent = data.hasLaterEntries ? `ĞŸĞ¾ÑĞ»Ğµ ${data.parsed.displayDate} ÑƒĞ¶Ğµ ĞµÑÑ‚ÑŒ Ğ·Ğ°Ğ¿Ğ¸ÑĞ¸. Ğ˜Ñ… Ğ½Ğ°ĞºĞ¾Ğ¿Ğ¸Ñ‚ĞµĞ»ÑŒĞ½Ñ‹Ğµ Ğ¸Ñ‚Ğ¾Ğ³Ğ¸ Ğ±ÑƒĞ´ÑƒÑ‚ Ğ¿ĞµÑ€ĞµÑÑ‡Ğ¸Ñ‚Ğ°Ğ½Ñ‹ Ğ¿Ğ¾ÑĞ»Ğµ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¸Ñ.` : "";
+  $("#backdated-warning").hidden = !data.hasLaterEntries;
+  $("#share-status").hidden = true;
+  setTodayState("preview");
+}
+
+$("#preview-button").addEventListener("click", async () => {
+  const button = $("#preview-button"); const error = $("#request-error"); error.hidden = true; button.disabled = true; button.textContent = "Ğ¡Ğ¾Ğ±Ğ¸Ñ€Ğ°Ñâ€¦";
+  try { latestDayPayload = buildTodayPayload(); latestPreview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); if (!latestPreview.canShare) throw new Error("ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ Ğ·Ğ°Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ½Ñ‹Ğµ Ñ€Ğ°Ğ±Ğ¾Ñ‚Ñ‹"); daySaved = false; renderPreview(latestPreview); }
+  catch (caught) { error.textContent = caught.message || "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ ÑÑ„Ğ¾Ñ€Ğ¼Ğ¸Ñ€Ğ¾Ğ²Ğ°Ñ‚ÑŒ Ğ¾Ñ‚Ñ‡Ñ‘Ñ‚."; error.hidden = false; }
+  finally { button.disabled = false; button.textContent = "Ğ¡Ñ„Ğ¾Ñ€Ğ¼Ğ¸Ñ€Ğ¾Ğ²Ğ°Ñ‚ÑŒ Ğ¾Ñ‚Ñ‡Ñ‘Ñ‚"; }
+});
+$("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
+async function saveTodayFromReport() { if (daySaved) return; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; }
+$("#share-button").addEventListener("click", async () => { const status = $("#share-status"); try { await saveTodayFromReport(); if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); status.className = "notice success"; status.textContent = "Ğ”ĞµĞ½ÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ñ‘Ğ½, Ğ¾Ñ‚Ñ‡Ñ‘Ñ‚ Ğ¾Ñ‚Ğ¿Ñ€Ğ°Ğ²Ğ»ĞµĞ½."; status.hidden = false; return; } await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "Ğ”ĞµĞ½ÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ñ‘Ğ½, Ğ¾Ñ‚Ñ‡Ñ‘Ñ‚ ÑĞºĞ¾Ğ¿Ğ¸Ñ€Ğ¾Ğ²Ğ°Ğ½."; } catch { status.className = daySaved ? "notice success" : "notice error"; status.textContent = daySaved ? "Ğ”ĞµĞ½ÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ñ‘Ğ½. ĞÑ‚Ğ¿Ñ€Ğ°Ğ²ĞºĞ° Ğ¾Ñ‚Ğ¼ĞµĞ½ĞµĞ½Ğ° Ğ¸Ğ»Ğ¸ Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿Ğ½Ğ°." : "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ğ¸Ñ‚ÑŒ Ğ´ĞµĞ½ÑŒ."; } status.hidden = false; });
+
+function normalizeMapItems() {
+  mapItems = [
+    ...apartments.map((item) => ({ ...item, itemType: "apartment", kind: "apartment", name: item.canonicalName, note: item.noteBody })),
+    ...savedPlaces.map((item) => ({ ...item, itemType: "place" })),
+  ];
+}
+
+async function loadApartments(force = false) {
+  if (apartments.length && !force) return;
+  apartments = (await api("/api/apartments")).apartments;
+}
+
+async function loadMapItems(force = false) {
+  if (mapItems.length && !force) { applyMapMode(); return; }
+  try {
+    await loadApartments(force);
+    const placeData = productRelease >= 2 ? await api("/api/places") : { places: [] };
+    savedPlaces = placeData.places; normalizeMapItems(); renderPlaceList(); renderPlacesMap(); fillApartmentSelect(); applyMapMode();
+  } catch { $("#map-error").textContent = "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ·Ğ°Ğ³Ñ€ÑƒĞ·Ğ¸Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ°."; $("#map-error").hidden = false; }
+}
+
+function applyMapMode() {
+  if (!new Set(["map", "list"]).has(mapMode)) mapMode = "map";
+  $("#map-mode-map").hidden = mapMode !== "map"; $("#map-mode-list").hidden = mapMode !== "list";
+  $$('[data-map-mode]').forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.mapMode === mapMode)));
+  try { localStorage.setItem("maidaid:map-view", mapMode); } catch {}
+  const url = new URL(location.href); url.searchParams.set("view", mapMode); history.replaceState({}, "", `${url.pathname}${url.search}`);
+  if (mapMode === "map" && placesMap) setTimeout(() => placesMap.invalidateSize(), 0);
+}
+$$('[data-map-mode]').forEach((button) => button.addEventListener("click", () => { mapMode = button.dataset.mapMode; applyMapMode(); }));
+
+function renderPlaceList() {
+  const query = $("#place-search").value.trim().toLocaleLowerCase("ru"); const filter = $("#place-filter").value;
+  const visible = mapItems.filter((item) => (filter === "all" || item.kind === filter) && (!query || [item.name, item.address, ...(item.aliases ?? [])].filter(Boolean).some((value) => String(value).toLocaleLowerCase("ru").includes(query)))).sort((a, b) => Number(!(a.itemType === "apartment" && a.latitude == null)) - Number(!(b.itemType === "apartment" && b.latitude == null)) || String(a.name).localeCompare(String(b.name), "ru"));
+  $("#place-list").innerHTML = visible.length ? visible.map((item) => {
+    const needsLocation = item.itemType === "apartment" && item.latitude == null;
+    const genericLaundry = item.kind === "laundry" && ["ÑÑƒÑˆĞºĞ°", "Ğ¿Ñ€Ğ°Ñ‡ĞµÑ‡Ğ½Ğ°Ñ"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
+    const title = genericLaundry ? (item.address || "ĞĞ´Ñ€ĞµÑ Ğ½Ğµ ÑƒĞºĞ°Ğ·Ğ°Ğ½") : item.name;
+    const description = genericLaundry ? (item.latitude == null ? "ĞÑƒĞ¶Ğ½Ğ¾ ÑƒĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾Ğ¿Ğ¾Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ" : "") : (item.address || (item.latitude == null ? "ĞÑƒĞ¶Ğ½Ğ¾ ÑƒĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾Ğ¿Ğ¾Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ" : "ĞšĞ¾Ğ¾Ñ€Ğ´Ğ¸Ğ½Ğ°Ñ‚Ñ‹ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ñ‹"));
+    const action = needsLocation
+      ? `<button class="secondary" data-locate-apartment="${item.id}" type="button">Ğ£ĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾</button>`
+      : `<button class="secondary" data-open-item="${item.itemType}:${item.id}" type="button">ĞÑ‚ĞºÑ€Ñ‹Ñ‚ÑŒ</button>`;
+    return `<article class="place-card"><div class="place-card-main"><span class="place-kind">${kindLabel(item.kind)}</span><strong>${escapeHtml(title)}</strong>${description ? `<p class="${item.latitude == null ? "missing-location" : ""}">${escapeHtml(description)}</p>` : ""}</div>${action}</article>`;
+  }).join("") : "<p class=\"muted\">ĞĞ¸Ñ‡ĞµĞ³Ğ¾ Ğ½Ğµ Ğ½Ğ°Ğ¹Ğ´ĞµĞ½Ğ¾.</p>";
+}
+$("#place-search").addEventListener("input", renderPlaceList); $("#place-filter").addEventListener("change", renderPlaceList);
+$("#place-list").addEventListener("click", (event) => {
+  const locate = event.target.closest("[data-locate-apartment]");
+  if (locate) { openEditForm(`apartment:${locate.dataset.locateApartment}`); return; }
+  const button = event.target.closest("[data-open-item]"); if (button) openItemDetail(button.dataset.openItem);
+});
+
+function renderPlacesMap() {
+  const host = $("#places-map");
+  if (!globalThis.L) { $("#map-empty").textContent = "ĞšĞ°Ñ€Ñ‚Ğ° Ğ½Ğµ Ğ·Ğ°Ğ³Ñ€ÑƒĞ·Ğ¸Ğ»Ğ°ÑÑŒ. Ğ¡Ğ¿Ğ¸ÑĞ¾Ğº Ğ¼ĞµÑÑ‚ Ğ¿Ğ¾-Ğ¿Ñ€ĞµĞ¶Ğ½ĞµĞ¼Ñƒ Ğ´Ğ¾ÑÑ‚ÑƒĞ¿ĞµĞ½."; $("#map-empty").hidden = false; return; }
+  if (!placesMap) {
+    placesMap = L.map(host, { zoomControl: true }).setView([48.8566, 2.3522], 12);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(placesMap);
+  }
+  if (markerLayer) markerLayer.remove(); markerLayer = L.layerGroup().addTo(placesMap);
+  const markerAppearance = {
+    apartment: { colorClass: "apartment" },
+    laundry: { colorClass: "laundry" },
+    partner_restaurant: { colorClass: "partner_restaurant" },
+  };
+  const located = mapItems.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && Math.abs(item.latitude) <= 90 && Math.abs(item.longitude) <= 180);
+  located.forEach((item) => {
+    const appearance = markerAppearance[item.kind] ?? markerAppearance.apartment;
+    const icon = L.divIcon({
+      className: "map-marker-icon",
+      html: `<span class="map-marker map-marker--${appearance.colorClass}"></span>`,
+      iconSize: [38, 44], iconAnchor: [19, 42], tooltipAnchor: [0, -34],
+    });
+    const marker = L.marker([item.latitude, item.longitude], { icon, title: item.name, alt: `${kindLabel(item.kind)}: ${item.name}`, riseOnHover: true }).addTo(markerLayer);
+    const tooltip = document.createElement("span");
+    const tooltipTitle = document.createElement("strong"); tooltipTitle.textContent = item.name; tooltip.append(tooltipTitle);
+    if (item.address) { const tooltipAddress = document.createElement("small"); tooltipAddress.textContent = item.address; tooltip.append(tooltipAddress); }
+    marker.bindTooltip(tooltip, { direction: "top", opacity: 1, className: "place-tooltip" });
+    marker.on("click", () => openItemDetail(`${item.itemType}:${item.id}`));
+  });
+  if (located.length === 1) placesMap.setView([located[0].latitude, located[0].longitude], 15);
+  else if (located.length) { const bounds = L.latLngBounds(located.map((item) => [item.latitude, item.longitude])); placesMap.fitBounds(bounds, { padding: [54, 54], maxZoom: 15 }); }
+  $("#map-empty").hidden = located.length > 0; $("#map-empty").textContent = located.length ? "" : "ĞŸĞ¾ĞºĞ° Ğ½Ğ¸ Ñƒ Ğ¾Ğ´Ğ½Ğ¾Ğ¹ ĞºĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ñ‹ Ğ½ĞµÑ‚ ĞºĞ¾Ğ¾Ñ€Ğ´Ğ¸Ğ½Ğ°Ñ‚. ĞÑ‚ĞºÑ€Ğ¾Ğ¹Ñ‚Ğµ ÑĞ¿Ğ¸ÑĞ¾Ğº Ğ¸ ÑƒĞºĞ°Ğ¶Ğ¸Ñ‚Ğµ Ğ¼ĞµÑÑ‚Ğ¾Ğ¿Ğ¾Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ.";
+}
+
+async function openItemDetail(key, push = true) {
+  const [type, idText] = key.split(":"); const id = Number(idText);
+  if (type === "apartment") return openApartmentDetail(id, push);
+  const item = savedPlaces.find((place) => place.id === id); if (!item) return;
+  const mapLink = mapsHref(item);
+  const genericLaundry = item.kind === "laundry" && ["ÑÑƒÑˆĞºĞ°", "Ğ¿Ñ€Ğ°Ñ‡ĞµÑ‡Ğ½Ğ°Ñ"].includes(item.name.trim().toLocaleLowerCase("ru"));
+  $("#place-detail").innerHTML = `<span class="place-kind">${kindLabel(item.kind)}</span><h2>${escapeHtml(genericLaundry ? (item.address || "Ğ¡ÑƒÑˆĞºĞ°") : item.name)}</h2>${!genericLaundry || !item.address ? `<p class="detail-address">${escapeHtml(item.address || "ĞĞ´Ñ€ĞµÑ Ğ½Ğµ ÑƒĞºĞ°Ğ·Ğ°Ğ½")}</p>` : ""}${item.note ? `<p class="detail-note">${escapeHtml(item.note)}</p>` : ""}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">ĞœĞ°Ñ€ÑˆÑ€ÑƒÑ‚</a>` : ""}<button class="secondary" data-edit-item="place:${item.id}" type="button">Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ</button><button class="ghost" data-archive-place="${item.id}" type="button">ĞÑ€Ñ…Ğ¸Ğ²Ğ¸Ñ€Ğ¾Ğ²Ğ°Ñ‚ÑŒ</button></div>`;
+  $("#place-detail-dialog").showModal();
+}
+
+async function openApartmentDetail(id, push = true) {
+  try {
+    const { apartment, preferredLaundry } = await api(`/api/apartments/${id}`);
+    const mapLink = mapsHref(apartment);
+    const editLabel = apartment.latitude == null ? "Ğ£ĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾" : "Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ";
+    const releaseActions = `${productRelease >= 2 ? `<button class="secondary" data-choose-laundry="${apartment.id}" type="button">${preferredLaundry ? "Ğ¡Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ ÑÑƒÑˆĞºÑƒ" : "Ğ’Ñ‹Ğ±Ñ€Ğ°Ñ‚ÑŒ ÑÑƒÑˆĞºÑƒ"}</button>` : ""}<button class="ghost" data-edit-item="apartment:${apartment.id}" type="button">${editLabel}</button>`;
+    const laundryTitle = preferredLaundry && ["ÑÑƒÑˆĞºĞ°", "Ğ¿Ñ€Ğ°Ñ‡ĞµÑ‡Ğ½Ğ°Ñ"].includes(String(preferredLaundry.name).trim().toLocaleLowerCase("ru")) ? (preferredLaundry.address || preferredLaundry.name) : preferredLaundry?.name;
+    const laundryMapLink = preferredLaundry ? mapsHref(preferredLaundry) : null;
+    const laundryCard = preferredLaundry ? `${laundryMapLink ? `<a class="notice success preferred-laundry-card" href="${escapeHtml(laundryMapLink)}" target="_blank" rel="noopener noreferrer">` : `<div class="notice success preferred-laundry-card">`}<strong>Ğ’Ñ‹Ğ±Ñ€Ğ°Ğ½Ğ½Ğ°Ñ ÑÑƒÑˆĞºĞ°</strong><br>${escapeHtml(laundryTitle)}${laundryMapLink ? `<span>ĞÑ‚ĞºÑ€Ñ‹Ñ‚ÑŒ Ğ½Ğ° ĞºĞ°Ñ€Ñ‚Ğµ â†’</span></a>` : "</div>"}` : "";
+    $("#place-detail").innerHTML = `<span class="place-kind">ĞšĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ğ°</span><h2>${escapeHtml(apartment.canonicalName)}</h2><p class="detail-address ${apartment.latitude == null ? "missing-location" : ""}">${escapeHtml(apartment.address || (apartment.latitude == null ? "ĞÑƒĞ¶Ğ½Ğ¾ ÑƒĞºĞ°Ğ·Ğ°Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾Ğ¿Ğ¾Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ" : "ĞšĞ¾Ğ¾Ñ€Ğ´Ğ¸Ğ½Ğ°Ñ‚Ñ‹ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ñ‹"))}</p>${apartment.noteBody ? `<pre class="detail-note">${escapeHtml(apartment.noteBody)}</pre>` : ""}${laundryCard}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">ĞœĞ°Ñ€ÑˆÑ€ÑƒÑ‚</a>` : ""}${releaseActions}</div>`;
+    $("#place-detail-dialog").showModal();
+    if (push && location.pathname !== `/map/apartments/${id}`) history.pushState({}, "", `/map/apartments/${id}?view=${mapMode}`);
+  } catch { $("#map-error").textContent = "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¾Ñ‚ĞºÑ€Ñ‹Ñ‚ÑŒ ĞºĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ñƒ."; $("#map-error").hidden = false; }
+}
+
+$("#place-detail").addEventListener("click", async (event) => {
+  const edit = event.target.closest("[data-edit-item]"); const archive = event.target.closest("[data-archive-place]"); const laundry = event.target.closest("[data-choose-laundry]");
+  if (edit) { $("#place-detail-dialog").close(); openEditForm(edit.dataset.editItem); }
+  if (archive && confirm("Ğ£Ğ±Ñ€Ğ°Ñ‚ÑŒ ÑÑ‚Ğ¾ Ğ¼ĞµÑÑ‚Ğ¾ Ğ² Ğ°Ñ€Ñ…Ğ¸Ğ²?")) { await api(`/api/places/${archive.dataset.archivePlace}`, { method: "DELETE" }); $("#place-detail-dialog").close(); mapItems = []; await loadMapItems(true); }
+  if (laundry) { $("#place-detail-dialog").close(); await openLaundryPicker(Number(laundry.dataset.chooseLaundry)); }
+});
+
+function resetPlaceForm() {
+  $("#place-form").reset(); $("#place-edit-id").value = ""; $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
+  $("#place-kind").disabled = false;
+  $("#coordinate-picker").hidden = true; $("#place-form-error").hidden = true; $("#place-location-status").textContent = "Ğ¡Ğ½Ğ°Ñ‡Ğ°Ğ»Ğ° Ğ¿Ğ¾Ğ¿Ñ€Ğ¾Ğ±ÑƒĞµĞ¼ Ğ¾Ğ¿Ñ€ĞµĞ´ĞµĞ»Ğ¸Ñ‚ÑŒ Ñ‚Ğ¾Ñ‡ĞºÑƒ Ğ¿Ğ¾ Ğ°Ğ´Ñ€ĞµÑÑƒ.";
+}
+function clearDerivedLocation() {
+  $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
+  $("#place-location-status").textContent = "ĞœĞµÑÑ‚Ğ¾Ğ¿Ğ¾Ğ»Ğ¾Ğ¶ĞµĞ½Ğ¸Ğµ Ğ±ÑƒĞ´ĞµÑ‚ Ğ¾Ğ¿Ñ€ĞµĞ´ĞµĞ»ĞµĞ½Ğ¾ Ğ¿Ğ¾ Ğ¾Ğ±Ğ½Ğ¾Ğ²Ğ»Ñ‘Ğ½Ğ½Ğ¾Ğ¹ ÑÑÑ‹Ğ»ĞºĞµ Ğ¸Ğ»Ğ¸ Ğ°Ğ´Ñ€ĞµÑÑƒ.";
+}
+$("#place-address").addEventListener("input", clearDerivedLocation);
+$("#place-maps-url").addEventListener("input", clearDerivedLocation);
+function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">ĞĞµ ÑĞ²ÑĞ·Ñ‹Ğ²Ğ°Ñ‚ÑŒ</option>${[...apartments].sort((a, b) => Number(a.latitude != null) - Number(b.latitude != null) || a.canonicalName.localeCompare(b.canonicalName, "ru")).map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}${item.latitude == null ? " Â· Ğ½Ğµ Ğ·Ğ°Ğ¿Ğ¾Ğ»Ğ½ĞµĞ½Ğ°" : ""}</option>`).join("")}`; }
+function updatePlaceKind() {
+  const laundry = $("#place-kind").value === "laundry";
+  $("#place-apartment-link-label").hidden = !laundry;
+  $("#place-name").required = !laundry;
+  $("#place-name-caption").textContent = laundry ? "ĞĞ°Ğ·Ğ²Ğ°Ğ½Ğ¸Ğµ (Ğ½ĞµĞ¾Ğ±ÑĞ·Ğ°Ñ‚ĞµĞ»ÑŒĞ½Ğ¾)" : "ĞĞ°Ğ·Ğ²Ğ°Ğ½Ğ¸Ğµ";
+  $("#place-name").placeholder = laundry ? "ĞœĞ¾Ğ¶Ğ½Ğ¾ Ğ¾ÑÑ‚Ğ°Ğ²Ğ¸Ñ‚ÑŒ Ğ¿ÑƒÑÑ‚Ñ‹Ğ¼" : "";
+}
+$("#place-kind").addEventListener("change", updatePlaceKind);
+function openPlaceForm(kind = "apartment", name = "") { resetPlaceForm(); $("#place-form-title").textContent = "Ğ”Ğ¾Ğ±Ğ°Ğ²Ğ¸Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾"; $("#place-kind").value = kind; $("#place-name").value = name; fillApartmentSelect(); updatePlaceKind(); $("#place-form-dialog").showModal(); }
+$("#add-place-button").addEventListener("click", () => openPlaceForm());
+function openEditForm(key) {
+  const [type, idText] = key.split(":"); const id = Number(idText); const item = type === "apartment" ? apartments.find((entry) => entry.id === id) : savedPlaces.find((entry) => entry.id === id); if (!item) return;
+  resetPlaceForm(); $("#place-form-title").textContent = "Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾"; $("#place-edit-id").value = key; $("#place-kind").value = item.kind ?? "apartment"; const genericLaundry = item.kind === "laundry" && ["ÑÑƒÑˆĞºĞ°", "Ğ¿Ñ€Ğ°Ñ‡ĞµÑ‡Ğ½Ğ°Ñ"].includes(String(item.name).trim().toLocaleLowerCase("ru")); $("#place-name").value = item.canonicalName ?? (genericLaundry ? "" : item.name); $("#place-address").value = item.address ?? ""; $("#place-maps-url").value = item.mapsUrl ?? ""; $("#place-note").value = item.noteBody ?? item.note ?? ""; $("#place-latitude").value = item.latitude ?? ""; $("#place-longitude").value = item.longitude ?? ""; $("#place-location-source").value = item.locationSource ?? ""; updatePlaceKind(); $("#place-form-dialog").showModal();
+  $("#place-kind").disabled = true;
+}
+
+$("#pick-location-button").addEventListener("click", () => {
+  $("#coordinate-picker").hidden = false;
+  if (!globalThis.L) { $("#place-location-status").textContent = "ĞšĞ°Ñ€Ñ‚Ğ° Ğ²Ñ‹Ğ±Ğ¾Ñ€Ğ° Ñ‚Ğ¾Ñ‡ĞºĞ¸ Ğ½Ğµ Ğ·Ğ°Ğ³Ñ€ÑƒĞ·Ğ¸Ğ»Ğ°ÑÑŒ."; return; }
+  setTimeout(() => {
+    if (!pickerMap) { pickerMap = L.map("picker-map").setView([48.8566, 2.3522], 12); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(pickerMap); pickerMap.on("click", ({ latlng }) => { $("#place-latitude").value = latlng.lat; $("#place-longitude").value = latlng.lng; $("#place-location-source").value = "pin"; $("#place-location-status").textContent = "Ğ¢Ğ¾Ñ‡ĞºĞ° Ğ²Ñ‹Ğ±Ñ€Ğ°Ğ½Ğ° Ğ²Ñ€ÑƒÑ‡Ğ½ÑƒÑ."; }); }
+    pickerMap.invalidateSize(); const lat = Number($("#place-latitude").value); const lon = Number($("#place-longitude").value); if (Number.isFinite(lat) && Number.isFinite(lon)) pickerMap.setView([lat, lon], 16);
+  }, 0);
+});
+$("#current-location-button").addEventListener("click", () => {
+  if (!navigator.geolocation) { $("#place-location-status").textContent = "Ğ“ĞµĞ¾Ğ»Ğ¾ĞºĞ°Ñ†Ğ¸Ñ Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿Ğ½Ğ°."; return; }
+  $("#place-location-status").textContent = "ĞĞ¿Ñ€ĞµĞ´ĞµĞ»ÑÑ Ñ‚ĞµĞºÑƒÑ‰ĞµĞµ Ğ¼ĞµÑÑ‚Ğ¾â€¦";
+  navigator.geolocation.getCurrentPosition(({ coords }) => { $("#place-latitude").value = coords.latitude; $("#place-longitude").value = coords.longitude; $("#place-location-source").value = "geolocation"; $("#place-location-accuracy").value = coords.accuracy; $("#place-location-status").textContent = `Ğ¢ĞµĞºÑƒÑ‰ĞµĞµ Ğ¼ĞµÑÑ‚Ğ¾ ÑĞ¾Ñ…Ñ€Ğ°Ğ½ĞµĞ½Ğ¾, Ñ‚Ğ¾Ñ‡Ğ½Ğ¾ÑÑ‚ÑŒ Ğ¾ĞºĞ¾Ğ»Ğ¾ ${Math.round(coords.accuracy)} Ğ¼.`; }, () => { $("#place-location-status").textContent = "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ¿Ğ¾Ğ»ÑƒÑ‡Ğ¸Ñ‚ÑŒ Ğ³ĞµĞ¾Ğ»Ğ¾ĞºĞ°Ñ†Ğ¸Ñ. ĞœĞµÑÑ‚Ğ¾ Ğ¼Ğ¾Ğ¶Ğ½Ğ¾ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ğ¸Ñ‚ÑŒ Ğ±ĞµĞ· Ñ‚Ğ¾Ñ‡ĞºĞ¸."; }, { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 });
+});
+
+$("#place-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); const error = $("#place-form-error"); error.hidden = true;
+  const kind = $("#place-kind").value; const editKey = $("#place-edit-id").value; const latitude = $("#place-latitude").value === "" ? undefined : Number($("#place-latitude").value); const longitude = $("#place-longitude").value === "" ? undefined : Number($("#place-longitude").value);
+  const common = { address: $("#place-address").value || null, mapsUrl: $("#place-maps-url").value || null, latitude, longitude, locationSource: $("#place-location-source").value || undefined, locationAccuracyMeters: $("#place-location-accuracy").value === "" ? undefined : Number($("#place-location-accuracy").value) };
+  try {
+    if (kind === "apartment") {
+      const payload = { canonicalName: $("#place-name").value, noteBody: $("#place-note").value || null, ...common }; if (!editKey) payload.aliases = [];
+      const endpoint = editKey ? `/api/apartments/${editKey.split(":")[1]}` : "/api/apartments"; await api(endpoint, { method: editKey ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    } else {
+      const apartmentId = $("#place-apartment-link").value ? Number($("#place-apartment-link").value) : undefined;
+      const payload = { kind, name: $("#place-name").value, note: $("#place-note").value || null, apartmentId, ...common };
+      const endpoint = editKey ? `/api/places/${editKey.split(":")[1]}` : "/api/places"; if (editKey) delete payload.apartmentId; const saved = await api(endpoint, { method: editKey ? "PATCH" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      if (editKey && kind === "laundry" && apartmentId) await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ placeId: saved.place.id }) });
+    }
+    $("#place-form-dialog").close(); mapItems = []; await loadMapItems(true);
+  } catch (caught) { error.textContent = caught.message === "apartment_exists" ? "ĞšĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ğ° Ñ Ñ‚Ğ°ĞºĞ¸Ğ¼ Ğ½Ğ°Ğ·Ğ²Ğ°Ğ½Ğ¸ĞµĞ¼ ÑƒĞ¶Ğµ ÑÑƒÑ‰ĞµÑÑ‚Ğ²ÑƒĞµÑ‚." : "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ğ¸Ñ‚ÑŒ Ğ¼ĞµÑÑ‚Ğ¾."; error.hidden = false; }
+});
+
+async function openLaundryPicker(apartmentId) {
+  const results = $("#laundry-results");
+  const laundries = savedPlaces.filter((item) => item.kind === "laundry");
+  const cards = laundries.map((item) => {
+    const generic = ["ÑÑƒÑˆĞºĞ°", "Ğ¿Ñ€Ğ°Ñ‡ĞµÑ‡Ğ½Ğ°Ñ"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
+    const title = generic ? (item.address || "Ğ¡ÑƒÑˆĞºĞ° Ğ±ĞµĞ· Ğ°Ğ´Ñ€ĞµÑĞ°") : item.name;
+    const subtitle = generic ? "" : item.address;
+    return `<article class="laundry-card"><strong>${escapeHtml(title)}</strong>${subtitle ? `<p class="muted">${escapeHtml(subtitle)}</p>` : ""}<button class="primary" data-link-laundry="${item.id}" type="button">Ğ¡Ğ²ÑĞ·Ğ°Ñ‚ÑŒ Ñ ĞºĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ğ¾Ğ¹</button></article>`;
+  }).join("");
+  results.dataset.apartmentId = apartmentId;
+  results.innerHTML = `<p class="muted">Ğ’Ñ‹Ğ±ĞµÑ€Ğ¸Ñ‚Ğµ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ñ‘Ğ½Ğ½ÑƒÑ ÑÑƒÑˆĞºÑƒ.</p><div class="laundry-list">${cards || "<p>Ğ¡Ğ½Ğ°Ñ‡Ğ°Ğ»Ğ° Ğ´Ğ¾Ğ±Ğ°Ğ²ÑŒÑ‚Ğµ ÑÑƒÑˆĞºÑƒ Ñ‡ĞµÑ€ĞµĞ· ĞºĞ½Ğ¾Ğ¿ĞºÑƒ + Ğ½Ğ° ĞºĞ°Ñ€Ñ‚Ğµ.</p>"}</div>${productRelease >= 3 ? `<div class="detail-actions"><button class="secondary" data-find-nearby="${apartmentId}" type="button">ĞĞ°Ğ¹Ñ‚Ğ¸ Ğ½Ğ¾Ğ²Ñ‹Ğµ Ñ€ÑĞ´Ğ¾Ğ¼</button></div>` : ""}`;
+  $("#laundry-dialog").showModal();
+}
+
+async function findNearbyLaundry(apartmentId) {
+  const results = $("#laundry-results"); results.innerHTML = "<p class=\"muted\">Ğ˜Ñ‰Ñƒ Ğ±Ğ»Ğ¸Ğ¶Ğ°Ğ¹ÑˆĞ¸Ğµ Ğ²Ğ°Ñ€Ğ¸Ğ°Ğ½Ñ‚Ñ‹â€¦</p>"; $("#laundry-dialog").showModal();
+  try {
+    const data = await api(`/api/apartments/${apartmentId}/nearby-laundries`);
+    results.innerHTML = `${data.preferredLaundry ? `<div class="notice success"><strong>Ğ¡ĞµĞ¹Ñ‡Ğ°Ñ Ğ²Ñ‹Ğ±Ñ€Ğ°Ğ½Ğ°:</strong> ${escapeHtml(data.preferredLaundry.name)}</div>` : ""}<div class="laundry-list">${data.candidates.length ? data.candidates.map((item, index) => `<article class="laundry-card"><strong>${escapeHtml(item.name)}</strong><p class="muted">${Math.round(item.distanceMeters)} Ğ¼ Â· ${item.dryerConfirmed ? "ÑÑƒÑˆĞ¸Ğ»ĞºĞ° Ğ¾Ñ‚Ğ¼ĞµÑ‡ĞµĞ½Ğ° Ğ² OSM" : "Ğ½Ğ°Ğ»Ğ¸Ñ‡Ğ¸Ğµ ÑÑƒÑˆĞ¸Ğ»ĞºĞ¸ ÑÑ‚Ğ¾Ğ¸Ñ‚ Ğ¿Ñ€Ğ¾Ğ²ĞµÑ€Ğ¸Ñ‚ÑŒ"}</p><div class="detail-actions"><a class="secondary action-link" href="${escapeHtml(item.mapsUrl)}" target="_blank" rel="noopener noreferrer">ĞÑ‚ĞºÑ€Ñ‹Ñ‚ÑŒ ĞºĞ°Ñ€Ñ‚Ñ‹</a><button class="primary" data-select-laundry="${index}" type="button">Ğ’Ñ‹Ğ±Ñ€Ğ°Ñ‚ÑŒ</button></div></article>`).join("") : "<p>Ğ ÑĞ´Ğ¾Ğ¼ Ğ½Ğ¸Ñ‡ĞµĞ³Ğ¾ Ğ½Ğµ Ğ½Ğ°Ğ¹Ğ´ĞµĞ½Ğ¾.</p>"}</div>`;
+    results.dataset.apartmentId = apartmentId; results._candidates = data.candidates;
+  } catch (error) { results.innerHTML = `<p class="notice error">${error.message === "apartment_location_required" ? "Ğ¡Ğ½Ğ°Ñ‡Ğ°Ğ»Ğ° ÑƒĞºĞ°Ğ¶Ğ¸Ñ‚Ğµ Ğ°Ğ´Ñ€ĞµÑ Ğ¸Ğ»Ğ¸ ĞºĞ¾Ğ¾Ñ€Ğ´Ğ¸Ğ½Ğ°Ñ‚Ñ‹ ĞºĞ²Ğ°Ñ€Ñ‚Ğ¸Ñ€Ñ‹." : "ĞŸĞ¾Ğ¸ÑĞº ÑÑƒÑˆĞµĞº Ğ²Ñ€ĞµĞ¼ĞµĞ½Ğ½Ğ¾ Ğ½ĞµĞ´Ğ¾ÑÑ‚ÑƒĞ¿ĞµĞ½."}</p>`; }
+}
+$("#laundry-results").addEventListener("click", async (event) => {
+  const nearby = event.target.closest("[data-find-nearby]"); if (nearby) { await findNearbyLaundry(Number(nearby.dataset.findNearby)); return; }
+  const linked = event.target.closest("[data-link-laundry]");
+  const apartmentId = Number($("#laundry-results").dataset.apartmentId);
+  if (linked) { await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ placeId: Number(linked.dataset.linkLaundry) }) }); $("#laundry-dialog").close(); mapItems = []; await loadMapItems(true); await openApartmentDetail(apartmentId, false); return; }
+  const button = event.target.closest("[data-select-laundry]"); if (!button) return;
+  const candidate = $("#laundry-results")._candidates?.[Number(button.dataset.selectLaundry)]; if (!candidate) return;
+  await api(`/api/apartments/${apartmentId}/laundry-links`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ candidate: { osmType: candidate.osmType, osmId: candidate.osmId, name: candidate.name, address: candidate.address, latitude: candidate.latitude, longitude: candidate.longitude } }) });
+  $("#laundry-dialog").close(); mapItems = []; await loadMapItems(true); await openApartmentDetail(apartmentId, false);
+});
+
+const formatPeriod = (period) => { const [year, month] = period.split("-").map(Number); const label = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date(year, month - 1, 1)); return label[0].toUpperCase() + label.slice(1); };
+const periodBounds = (period) => { const [year, month] = period.split("-").map(Number); const lastDay = new Date(year, month, 0).getDate(); return { from: `${period}-01`, to: `${period}-${String(lastDay).padStart(2, "0")}` }; };
+function renderLedger(data) {
+  const totals = data.totals; ledgerDays = new Map(data.rows.filter((row) => row.rowType === "work").map((row) => [row.dateIso, row]));
+  $("#ledger-totals").innerHTML = [["Ğ§Ğ°ÑÑ‹", formatHours(totals.minutes)], ["ĞŸĞ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¾", formatMoney(totals.receivedCents)], ["ĞÑÑ‚Ğ°Ñ‚Ğ¾Ğº", formatMoney(totals.outstandingCents)], ["Ğ Ğ°ÑÑ…Ğ¾Ğ´Ñ‹", formatMoney(totals.expensesCents)]].map(([label, value]) => `<div class="summary-item"><span>${label}</span><strong>${value}</strong></div>`).join("");
+  $("#ledger-rows").innerHTML = data.rows.length ? data.rows.map((row) => {
+    if (row.rowType === "work") {
+      const details = (row.parsedDetails?.jobs ?? []).map((job) => `<div class="ledger-detail-item"><strong>${escapeHtml(job.object)}</strong><small>${typeLabel(job.workType)}</small></div>`).join("");
+      return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatHours(row.minutes)} Ñ€Ğ°Ğ±Ğ¾Ñ‚Ñ‹</strong><br><small>${formatMoney(row.incomeCents)} Ğ·Ğ°Ñ€Ğ°Ğ±Ğ¾Ñ‚Ğ°Ğ½Ğ¾ Â· ${formatMoney(row.expensesCents)} Ñ€Ğ°ÑÑ…Ğ¾Ğ´Ñ‹</small></div><div class="ledger-row-actions"><button class="secondary" data-edit-day="${row.dateIso}">Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ</button><button class="ghost" data-delete-day="${row.dateIso}">Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ</button></div><div class="ledger-day-tabs"><details class="ledger-day-details"><summary>Ğ Ğ°ÑĞ¿Ğ¸ÑĞ°Ğ½Ğ¸Ğµ</summary><pre>${escapeHtml(row.sourceText)}</pre></details><details class="ledger-day-details"><summary>ĞÑ‚Ñ‡Ñ‘Ñ‚</summary><pre>${escapeHtml(row.reportText || "ĞÑ‚Ñ‡Ñ‘Ñ‚ Ğ½Ğµ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ñ‘Ğ½")}</pre></details><details class="ledger-day-details"><summary>ĞŸĞ¾Ğ´Ñ€Ğ¾Ğ±Ğ½ĞµĞµ</summary><div class="ledger-detail-list">${details || "Ğ Ğ°Ğ±Ğ¾Ñ‚Ñ‹ Ğ½Ğµ Ğ½Ğ°Ğ¹Ğ´ĞµĞ½Ñ‹"}</div></details></div></article>`;
+    }
+    const manual = row.source === "manual"; return `<article class="ledger-row"><time>${row.dateIso}</time><div><strong>${formatMoney(row.amountCents)} Ğ¿Ğ¾Ğ»ÑƒÑ‡ĞµĞ½Ğ¾</strong><br><small>${escapeHtml(row.note || (manual ? "Ğ ÑƒÑ‡Ğ½Ğ°Ñ Ğ¾Ğ¿Ğ»Ğ°Ñ‚Ğ°" : "ĞĞ²Ğ°Ğ½Ñ Ğ¸Ğ· Ğ¾Ñ‚Ñ‡Ñ‘Ñ‚Ğ°"))}</small></div>${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Ğ˜Ğ·Ğ¼ĞµĞ½Ğ¸Ñ‚ÑŒ</button><button class="ghost" data-delete-payment="${row.id}">Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ</button></div>` : "<span class=\"muted\">Ğ˜Ğ· Ñ‚ĞµĞºÑÑ‚Ğ°</span>"}</article>`;
+  }).join("") : "<p class=\"muted\">Ğ—Ğ°Ğ¿Ğ¸ÑĞµĞ¹ Ğ¿Ğ¾ĞºĞ° Ğ½ĞµÑ‚.</p>";
+}
+async function loadLedger() { try { $("#ledger-error").hidden = true; $("#ledger-period-label").textContent = formatPeriod(selectedPeriod); const { from, to } = periodBounds(selectedPeriod); renderLedger(await api(`/api/ledger?from=${from}&to=${to}`)); } catch { renderLedger({ totals: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 }, rows: [] }); $("#ledger-error").textContent = "ĞĞµ ÑƒĞ´Ğ°Ğ»Ğ¾ÑÑŒ Ğ·Ğ°Ğ³Ñ€ÑƒĞ·Ğ¸Ñ‚ÑŒ Ğ¸ÑÑ‚Ğ¾Ñ€Ğ¸Ñ."; $("#ledger-error").hidden = false; } }
+$("#add-payment-button").addEventListener("click", () => $("#payment-dialog").showModal());
+$("#payment-form").addEventListener("submit", async (event) => { event.preventDefault(); await api("/api/payments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ dateIso: $("#payment-date").value, amountCents: Math.round(Number($("#payment-amount").value) * 100), note: $("#payment-note").value || undefined }) }); $("#payment-dialog").close(); $("#payment-amount").value = ""; $("#payment-note").value = ""; await loadLedger(); });
+$("#periods-button").addEventListener("click", async () => { const { periods } = await api("/api/periods"); const available = periods.map(({ period }) => period); $("#periods-list").innerHTML = available.map((period) => `<button class="${period === selectedPeriod ? "primary" : "secondary"}" data-period="${period}">${formatPeriod(period)}</button>`).join(""); $("#periods-dialog").showModal(); });
+$("#periods-list").addEventListener("click", async (event) => { const button = event.target.closest("[data-period]"); if (!button) return; selectedPeriod = button.dataset.period; $("#periods-dialog").close(); await loadLedger(); });
+$("#ledger-rows").addEventListener("click", async (event) => {
+  const editDay = event.target.closest("[data-edit-day]"); const deleteDay = event.target.closest("[data-delete-day]"); const editPayment = event.target.closest("[data-edit-payment]"); const deletePayment = event.target.closest("[data-delete-payment]");
+  if (editDay) { const day = ledgerDays.get(editDay.dataset.editDay); if (day) { editingDateIso = day.dateIso; $("#day-edit-date").textContent = day.dateIso; $("#day-edit-text").value = day.sourceText; $("#day-edit-dialog").showModal(); } }
+  if (deleteDay && confirm(`Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ Ñ€Ğ°Ğ±Ğ¾Ñ‡Ğ¸Ğ¹ Ğ´ĞµĞ½ÑŒ ${deleteDay.dataset.deleteDay}?`)) { await api(`/api/days/${deleteDay.dataset.deleteDay}`, { method: "DELETE" }); await loadLedger(); }
+  if (deletePayment && confirm("Ğ£Ğ´Ğ°Ğ»Ğ¸Ñ‚ÑŒ ÑÑ‚Ñƒ Ğ¾Ğ¿Ğ»Ğ°Ñ‚Ñƒ?")) { await api(`/api/payments/${deletePayment.dataset.deletePayment}`, { method: "DELETE" }); await loadLedger(); }
+  if (editPayment) { const dateIso = prompt("Ğ”Ğ°Ñ‚Ğ° Ğ¾Ğ¿Ğ»Ğ°Ñ‚Ñ‹:", editPayment.dataset.date); if (dateIso == null) return; const amount = prompt("Ğ¡ÑƒĞ¼Ğ¼Ğ° Ğ² ĞµĞ²Ñ€Ğ¾:", String(Number(editPayment.dataset.amount) / 100)); if (amount == null) return; const note = prompt("ĞŸÑ€Ğ¸Ğ¼ĞµÑ‡Ğ°Ğ½Ğ¸Ğµ:", editPayment.dataset.note); if (note == null) return; await api(`/api/payments/${editPayment.dataset.editPayment}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ dateIso, amountCents: Math.round(Number(amount.replace(",", ".")) * 100), note }) }); await loadLedger(); }
+});
+$("#day-edit-form").addEventListener("submit", async (event) => { event.preventDefault(); const text = $("#day-edit-text").value; const preview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }); if (!preview.canShare || preview.parsed.dateIso !== editingDateIso) { $("#day-edit-error").textContent = "ĞŸÑ€Ğ¾Ğ²ĞµÑ€ÑŒÑ‚Ğµ Ñ‚ĞµĞºÑÑ‚ Ğ¸ ÑĞ¾Ñ…Ñ€Ğ°Ğ½Ğ¸Ñ‚Ğµ Ğ¿Ñ€ĞµĞ¶Ğ½ÑÑ Ğ´Ğ°Ñ‚Ñƒ."; $("#day-edit-error").hidden = false; return; } await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }); $("#day-edit-dialog").close(); await loadLedger(); });
+
+$$('[data-close-dialog]').forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.closeDialog).close()));
+$$('dialog.app-dialog').forEach((dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); }));
+$("#place-detail-dialog").addEventListener("close", () => {
+  if (location.pathname.startsWith("/map/apartments/")) history.replaceState({}, "", `/map?view=${mapMode}`);
+});
+$("#payment-date").value = new Date().toISOString().slice(0, 10);
+
+async function removeLegacyOffline() {
+  try { if ("serviceWorker" in navigator) for (const registration of await navigator.serviceWorker.getRegistrations()) await registration.unregister(); } catch {}
+  try { if ("caches" in globalThis) for (const key of await caches.keys()) if (key.startsWith("maidaid-shell-")) await caches.delete(key); } catch {}
+}
+
+async function initializeApp() {
+  await removeLegacyOffline();
+  try { productRelease = Number((await api("/api/app-config")).productRelease) || 1; } catch { productRelease = 1; }
+  $("#add-place-button").hidden = productRelease < 2;
+  $("#place-filter").hidden = productRelease < 2;
+  try { const { cleaner } = await api("/api/auth/me"); showAuthenticated(cleaner); } catch { showAuth(); return; }
+  await showRoute(routeFromPath());
+  const directApartment = location.pathname.match(/^\/map\/apartments\/(\d+)$/);
+  if (directApartment) await openApartmentDetail(Number(directApartment[1]), false);
+}
+
+void initializeApp();

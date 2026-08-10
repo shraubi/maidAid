@@ -220,4 +220,355 @@ function structuredSourceLine(name: string, workType: WorkType, durationMinutes:
 
 async function buildStructuredDay(input: StructuredDayInput, ledger: LedgerStore, createMissing: boolean): Promise<{ parsed: ParsedDay; sourceText: string }> {
   const activeApartments = await ledger.getActiveApartments();
-  const byId = new Map(aã]º¶‰žËkºwµç@üì…‘‘É•ÍÌè¥¹™•ÉÉ•‘‘‘É•ÍÌô€èíô¤°€¸¸¹±½…Ñ¥½¸ô¤ìÉ•ÑÕÉ¸ì…Á…ÉÑµ•¹Ðôì(€€€ô…Ñ ìÉ•ÑÕÉ¸É•Á±ä¹½‘” ÐÀä¤¹Í•¹¡ì•ÉÉ½Èè€‰…Á…ÉÑµ•¹Ñ}•á¥ÍÑÌˆô¤ìô(€ô¤ì((€…ÁÀ¹•Ð ˆ½…Á¤½Á±…•Ìˆ°…Íå¹Œ€¡}É•ÅÕ•ÍÐ°É•Á±ä¤€ôøÁÉ½‘ÕÑI•±•…Í”€øô€È€üìÁ±…•Ìè…Ý…¥Ð±•‘•È¹•ÑM…Ù•‘A±…•Ì ¤ô€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤¤ì(€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½Á±…•Ìˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€¡ÁÉ½‘ÕÑI•±•…Í”€ð€È¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐ¥¹ÁÕÐ€ôÁ±…•É•…Ñ”¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì¥˜€ …¥¹ÁÕÐ¹ÍÕ•ÍÌñð€¡¥¹ÁÕÐ¹ÍÕ•ÍÌ€˜˜¥¹ÁÕÐ¹‘…Ñ„¹­¥¹€ôôô€‰Á…ÉÑ¹•É}É•ÍÑ…ÕÉ…¹Ðˆ€˜˜€…¥¹ÁÕÐ¹‘…Ñ„¹¹…µ”¤¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐì¥¹™•ÉÉ•‘‘‘É•ÍÌ°€¸¸¹±½…Ñ¥½¸ô€ô…Ý…¥ÐÉ•Í½±Ù•1½…Ñ¥½¸¡¥¹ÁÕÐ¹‘…Ñ„°•áÑ•É¹…±•Ñ ¤ì(€€€½¹ÍÐÁ±…”€ô…Ý…¥Ð±•‘•È¹É•…Ñ•M…Ù•‘A±…”¡ì­¥¹è¥¹ÁÕÐ¹‘…Ñ„¹­¥¹°¹…µ”è¥¹ÁÕÐ¹‘…Ñ„¹¹…µ”ñð€‹B‡FF#BëBÀˆ°…‘‘É•ÍÌè¥¹ÁÕÐ¹‘…Ñ„¹…‘‘É•ÍÌ€üü¥¹™•ÉÉ•‘‘‘É•ÍÌ€üü¹Õ±°°¹½Ñ”è¥¹ÁÕÐ¹‘…Ñ„¹¹½Ñ”€üü¹Õ±°°µ…ÁÍUÉ°è¥¹ÁÕÐ¹‘…Ñ„¹µ…ÁÍUÉ°€üü¹Õ±°°€¸¸¹±½…Ñ¥½¸ô¤ì(€€€¥˜€¡¥¹ÁÕÐ¹‘…Ñ„¹­¥¹€ôôô€‰±…Õ¹‘Éäˆ€˜˜¥¹ÁÕÐ¹‘…Ñ„¹…Á…ÉÑµ•¹Ñ%¤…Ý…¥Ð±•‘•È¹Í•ÑAÉ•™•ÉÉ•‘1…Õ¹‘Éä¡¥¹ÁÕÐ¹‘…Ñ„¹…Á…ÉÑµ•¹Ñ%°Á±…”¹¥¤ì(€€€É•ÑÕÉ¸É•Á±ä¹½‘” ÈÀÄ¤¹Í•¹¡ìÁ±…”ô¤ì(€ô¤ì(€…ÁÀ¹Á…Ñ  ˆ½…Á¤½Á±…•Ì¼é¥ˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€¡ÁÉ½‘ÕÑI•±•…Í”€ð€È¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐÁ…É…µÌ€ô¥‘A…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì½¹ÍÐ¥¹ÁÕÐ€ôÁ±…•A…Ñ ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌñð€…¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐÕÉÉ•¹Ð€ô…Ý…¥Ð±•‘•È¹•ÑM…Ù•‘A±…”¡Á…É…µÌ¹‘…Ñ„¹¥¤ì¥˜€ …ÕÉÉ•¹Ð¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰Á±…•}¹½Ñ}™½Õ¹ˆô¤ì(€€€¥˜€ ¡¥¹ÁÕÐ¹‘…Ñ„¹­¥¹€üüÕÉÉ•¹Ð¹­¥¹¤€ôôô€‰Á…ÉÑ¹•É}É•ÍÑ…ÕÉ…¹Ðˆ€˜˜¥¹ÁÕÐ¹‘…Ñ„¹¹…µ”€„ôôÕ¹‘•™¥¹•€˜˜€…¥¹ÁÕÐ¹‘…Ñ„¹¹…µ”¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐ±½…Ñ¥½¹¡…¹•€ô¥¹ÁÕÐ¹‘…Ñ„¹…‘‘É•ÍÌ€„ôôÕ¹‘•™¥¹•ñð¥¹ÁÕÐ¹‘…Ñ„¹µ…ÁÍUÉ°€„ôôÕ¹‘•™¥¹•ñð¥¹ÁÕÐ¹‘…Ñ„¹±…Ñ¥ÑÕ‘”€„ôôÕ¹‘•™¥¹•ñð¥¹ÁÕÐ¹‘…Ñ„¹±½¹¥ÑÕ‘”€„ôôÕ¹‘•™¥¹•ì(€€€½¹ÍÐÉ•Í½±Ù•€ô±½…Ñ¥½¹¡…¹•€ü…Ý…¥ÐÉ•Í½±Ù•1½…Ñ¥½¸¡¥¹ÁÕÐ¹‘…Ñ„°•áÑ•É¹…±•Ñ ¤€èì±…Ñ¥ÑÕ‘”èÕÉÉ•¹Ð¹±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”èÕÉÉ•¹Ð¹±½¹¥ÑÕ‘”°±½…Ñ¥½¹M½ÕÉ”èÕÉÉ•¹Ð¹±½…Ñ¥½¹M½ÕÉ”°±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌèÕÉÉ•¹Ð¹±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌ°¥¹™•ÉÉ•‘‘‘É•ÍÌèÕ¹‘•™¥¹•ôì(€€€½¹ÍÐì¥¹™•ÉÉ•‘‘‘É•ÍÌ°€¸¸¹±½…Ñ¥½¸ô€ôÉ•Í½±Ù•ì(€€€½¹ÍÐÙ…±Õ•Ì€ôì€¸¸¹¥¹ÁÕÐ¹‘…Ñ„°€¸¸¸¡¥¹ÁÕÐ¹‘…Ñ„¹…‘‘É•ÍÌ€ôôôÕ¹‘•™¥¹•€˜˜¥¹™•ÉÉ•‘‘‘É•ÍÌ€üì…‘‘É•ÍÌè¥¹™•ÉÉ•‘‘‘É•ÍÌô€èíô¤°€¸¸¸¡¥¹ÁÕÐ¹‘…Ñ„¹­¥¹€ôôô€‰±…Õ¹‘Éäˆ€˜˜€…¥¹ÁÕÐ¹‘…Ñ„¹¹…µ”€üì¹…µ”è€‹B‡FF#BëBÀˆô€èíô¤°€¸¸¹±½…Ñ¥½¸ôì(€€€½¹ÍÐÁ±…”€ô…Ý…¥Ð±•‘•È¹ÕÁ‘…Ñ•M…Ù•‘A±…”¡Á…É…µÌ¹‘…Ñ„¹¥°Ù…±Õ•Ì¤ìÉ•ÑÕÉ¸ìÁ±…”ôì(€ô¤ì(€…ÁÀ¹‘•±•Ñ” ˆ½…Á¤½Á±…•Ì¼é¥ˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€¡ÁÉ½‘ÕÑI•±•…Í”€ð€È¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐÁ…É…µÌ€ô¥‘A…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€É•ÑÕÉ¸…Ý…¥Ð±•‘•È¹…É¡¥Ù•M…Ù•‘A±…”¡Á…É…µÌ¹‘…Ñ„¹¥¤€üÉ•Á±ä¹½‘” ÈÀÐ¤¹Í•¹ ¤€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰Á±…•}¹½Ñ}™½Õ¹ˆô¤ì(€ô¤ì((€…ÁÀ¹•Ð ˆ½…Á¤½…Á…ÉÑµ•¹ÑÌ¼é¥½¹•…É‰äµ±…Õ¹‘É¥•Ìˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€¡ÁÉ½‘ÕÑI•±•…Í”€ð€Ì¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐÁ…É…µÌ€ô¥‘A…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐ…Á…ÉÑµ•¹Ð€ô…Ý…¥Ð±•‘•È¹•ÑÁ…ÉÑµ•¹Ð¡Á…É…µÌ¹‘…Ñ„¹¥¤ì¥˜€ ……Á…ÉÑµ•¹Ð¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰…Á…ÉÑµ•¹Ñ}¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐÁÉ•™•ÉÉ•‘1…Õ¹‘Éä€ô…Ý…¥Ð±•‘•È¹•ÑAÉ•™•ÉÉ•‘1…Õ¹‘Éä¡…Á…ÉÑµ•¹Ð¹¥¤ì(€€€¥˜€¡…Á…ÉÑµ•¹Ð¹±…Ñ¥ÑÕ‘”€ôô¹Õ±°ñð…Á…ÉÑµ•¹Ð¹±½¹¥ÑÕ‘”€ôô¹Õ±°¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÈÈ¤¹Í•¹¡ì•ÉÉ½Èè€‰…Á…ÉÑµ•¹Ñ}±½…Ñ¥½¹}É•ÅÕ¥É•ˆ°ÁÉ•™•ÉÉ•‘1…Õ¹‘Éäô¤ì(€€€½¹ÍÐÅÕ•Éä€ôm½ÕÐé©Í½¹umÑ¥µ•½ÕÐèÄÁtì¡¹ÝÉmp‰Í¡½Ápˆõp‰±…Õ¹‘Éåp‰t¡…É½Õ¹èÔÀÀÀ°‘í…Á…ÉÑµ•¹Ð¹±…Ñ¥ÑÕ‘•ô°‘í…Á…ÉÑµ•¹Ð¹±½¹¥ÑÕ‘•ô¤í¹ÝÉmp‰…µ•¹¥Ñåpˆõp‰‘Éå•Ép‰t¡…É½Õ¹èÔÀÀÀ°‘í…Á…ÉÑµ•¹Ð¹±…Ñ¥ÑÕ‘•ô°‘í…Á…ÉÑµ•¹Ð¹±½¹¥ÑÕ‘•ô¤ì¤í½ÕÐ•¹Ñ•ÈÑ…Ìí€ì(€€€ÑÉäì(€€€€€½¹ÍÐÉ•ÍÁ½¹Í”€ô…Ý…¥Ð•áÑ•É¹…±•Ñ  ‰¡ÑÑÁÌè¼½½Ù•ÉÁ…ÍÌµ…Á¤¹‘”½…Á¤½¥¹Ñ•ÉÁÉ•Ñ•Èˆ°ìµ•Ñ¡½è€‰A=MPˆ°¡•…‘•ÉÌèì€‰½¹Ñ•¹ÐµÑåÁ”ˆè€‰…ÁÁ±¥…Ñ¥½¸½àµÝÝÜµ™½É´µÕÉ±•¹½‘•ˆ°€‰ÕÍ•Èµ…•¹Ðˆè€‰5…¥‘¥¼À¸Äˆô°‰½‘äè¹•ÜUI1M•…É¡A…É…µÌ¡ì‘…Ñ„èÅÕ•Éäô¤°Í¥¹…°è‰½ÉÑM¥¹…°¹Ñ¥µ•½ÕÐ ÄÉ|ÀÀÀ¤ô¤ì(€€€€€¥˜€ …É•ÍÁ½¹Í”¹½¬¤Ñ¡É½Ü¹•ÜÉÉ½È ‰½Ù•ÉÁ…ÍÍ}Õ¹…Ù…¥±…‰±”ˆ¤ì(€€€€€½¹ÍÐ‰½‘ä€ô…Ý…¥ÐÉ•ÍÁ½¹Í”¹©Í½¸ ¤…Ìì•±•µ•¹ÑÌüèÉÉ…äñìÑåÁ”è€‰¹½‘”ˆð€‰Ý…äˆð€‰É•±…Ñ¥½¸ˆì¥è¹Õµ‰•Èì±…Ðüè¹Õµ‰•Èì±½¸üè¹Õµ‰•Èì•¹Ñ•Èüèì±…Ðüè¹Õµ‰•Èì±½¸üè¹Õµ‰•ÈôìÑ…ÌüèI•½ÉñÍÑÉ¥¹œ°ÍÑÉ¥¹œøôøôì(€€€€€½¹ÍÐ…¹‘¥‘…Ñ•Ì€ô€¡‰½‘ä¹•±•µ•¹ÑÌ€üümt¤¹™±…Ñ5…À ¡•±•µ•¹Ð¤€ôøì(€€€€€€€½¹ÍÐ±…Ñ¥ÑÕ‘”€ô•±•µ•¹Ð¹±…Ð€üü•±•µ•¹Ð¹•¹Ñ•Èü¹±…Ðì½¹ÍÐ±½¹¥ÑÕ‘”€ô•±•µ•¹Ð¹±½¸€üü•±•µ•¹Ð¹•¹Ñ•Èü¹±½¸ì(€€€€€€€¥˜€¡±…Ñ¥ÑÕ‘”€ôô¹Õ±°ñð±½¹¥ÑÕ‘”€ôô¹Õ±°¤É•ÑÕÉ¸mtì(€€€€€€€½¹ÍÐÑ…Ì€ô•±•µ•¹Ð¹Ñ…Ì€üüíôì½¹ÍÐÍÑÉ••Ð€ômÑ…Íl‰…‘‘Èé¡½ÕÍ•¹Õµ‰•È‰t°Ñ…Íl‰…‘‘ÈéÍÑÉ••Ð‰ut¹™¥±Ñ•È¡	½½±•…¸¤¹©½¥¸ ˆ€ˆ¤ì(€€€€€€€É•ÑÕÉ¸mì½ÍµQåÁ”è•±•µ•¹Ð¹ÑåÁ”°½Íµ%èMÑÉ¥¹œ¡•±•µ•¹Ð¹¥¤°¹…µ”èÑ…Ì¹¹…µ”€üü€‹BFBÃFB×FB÷BÃF<ˆ°…‘‘É•ÍÌèÍÑÉ••Ðñð¹Õ±°°±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”°‘¥ÍÑ…¹•5•Ñ•ÉÌè‘¥ÍÑ…¹•5•Ñ•ÉÌ¡…Á…ÉÑµ•¹Ð¹±…Ñ¥ÑÕ‘”„°…Á…ÉÑµ•¹Ð¹±½¹¥ÑÕ‘”„°±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”¤°‘Éå•É½¹™¥Éµ•èÑ…Ì¹…µ•¹¥Ñä€ôôô€‰‘Éå•ÈˆñðÑ…Ì¹‘Éå•È€ôôô€‰å•Ìˆ°µ…ÁÍUÉ°è¡ÑÑÁÌè¼½ÝÝÜ¹½½±”¹½´½µ…ÁÌ½Í•…É ¼ý…Á¤ôÄ™ÅÕ•Éäô‘í±…Ñ¥ÑÕ‘•ô°‘í±½¹¥ÑÕ‘•õ€õtì(€€€€€ô¤¹Í½ÉÐ ¡„°ˆ¤€ôø„¹‘¥ÍÑ…¹•5•Ñ•ÉÌ€´ˆ¹‘¥ÍÑ…¹•5•Ñ•ÉÌ¤¹Í±¥” À°€Ì¤ì(€€€€€É•ÑÕÉ¸ìÁÉ•™•ÉÉ•‘1…Õ¹‘Éä°…¹‘¥‘…Ñ•Ìôì(€€€ô…Ñ ìÉ•ÑÕÉ¸É•Á±ä¹½‘” ÔÀÌ¤¹Í•¹¡ì•ÉÉ½Èè€‰±…Õ¹‘Éå}Í•…É¡}Õ¹…Ù…¥±…‰±”ˆ°ÁÉ•™•ÉÉ•‘1…Õ¹‘Éäô¤ìô(€ô¤ì(€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½…Á…ÉÑµ•¹ÑÌ¼é¥½±…Õ¹‘Éäµ±¥¹­Ìˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€¡ÁÉ½‘ÕÑI•±•…Í”€ð€È¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰¹½Ñ}™½Õ¹ˆô¤ì(€€€½¹ÍÐÁ…É…µÌ€ô¥‘A…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì½¹ÍÐ¥¹ÁÕÐ€ô±…Õ¹‘Éå1¥¹­	½‘ä¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌñð€…¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€±•ÐÁ±…”èM…Ù•‘A±…”ð¹Õ±°€ô¹Õ±°ì(€€€¥˜€ ‰Á±…•%ˆ¥¸¥¹ÁÕÐ¹‘…Ñ„¤Á±…”€ô…Ý…¥Ð±•‘•È¹•ÑM…Ù•‘A±…”¡¥¹ÁÕÐ¹‘…Ñ„¹Á±…•%¤ì(€€€•±Í”ì(€€€€€½¹ÍÐ…¹‘¥‘…Ñ”€ô¥¹ÁÕÐ¹‘…Ñ„¹…¹‘¥‘…Ñ”ì(€€€€€Á±…”€ô…Ý…¥Ð±•‘•È¹™¥¹‘M…Ù•‘A±…•	å=Í´¡…¹‘¥‘…Ñ”¹½ÍµQåÁ”°…¹‘¥‘…Ñ”¹½Íµ%¤€üü…Ý…¥Ð±•‘•È¹É•…Ñ•M…Ù•‘A±…”¡ì­¥¹è€‰±…Õ¹‘Éäˆ°¹…µ”è…¹‘¥‘…Ñ”¹¹…µ”°…‘‘É•ÍÌè…¹‘¥‘…Ñ”¹…‘‘É•ÍÌ°¹½Ñ”è¹Õ±°°µ…ÁÍUÉ°è¡ÑÑÁÌè¼½ÝÝÜ¹½½±”¹½´½µ…ÁÌ½Í•…É ¼ý…Á¤ôÄ™ÅÕ•Éäô‘í…¹‘¥‘…Ñ”¹±…Ñ¥ÑÕ‘•ô°‘í…¹‘¥‘…Ñ”¹±½¹¥ÑÕ‘•õ€°±…Ñ¥ÑÕ‘”è…¹‘¥‘…Ñ”¹±…Ñ¥ÑÕ‘”°±½¹¥ÑÕ‘”è…¹‘¥‘…Ñ”¹±½¹¥ÑÕ‘”°±½…Ñ¥½¹M½ÕÉ”è€‰½Í´ˆ°±½…Ñ¥½¹ÕÉ…å5•Ñ•ÉÌè¹Õ±°°½ÍµQåÁ”è…¹‘¥‘…Ñ”¹½ÍµQåÁ”°½Íµ%è…¹‘¥‘…Ñ”¹½Íµ%ô¤ì(€€€ô(€€€¥˜€ …Á±…”ñðÁ±…”¹­¥¹€„ôô€‰±…Õ¹‘Éäˆ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}±…Õ¹‘Éäˆô¤ì(€€€½¹ÍÐ±¥¹¬€ô…Ý…¥Ð±•‘•È¹Í•ÑAÉ•™•ÉÉ•‘1…Õ¹‘Éä¡Á…É…µÌ¹‘…Ñ„¹¥°Á±…”¹¥¤ìÉ•ÑÕÉ¸±¥¹¬€üìÁ±…”°±¥¹¬ô€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰…Á…ÉÑµ•¹Ñ}¹½Ñ}™½Õ¹ˆô¤ì(€ô¤ì((€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½ÁÉ•Ù¥•Üˆ°ì‰½‘å1¥µ¥Ðè€ÌÈ€¨€ÄÀÈÐ°½¹™¥œèìÉ…Ñ•1¥µ¥Ðèìµ…àè½¹™¥œ¹AIY%]}IQ}1%5%Q}5`°Ñ¥µ•]¥¹‘½Üè½¹™¥œ¹AIY%]}IQ}1%5%Q}]%9=\ôôô°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐ¥¹ÁÕÐ€ôÁÉ•Ù¥•Ý	½‘ä¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆ°¥ÍÍÕ•Ìè¥¹ÁÕÐ¹•ÉÉ½È¹¥ÍÍÕ•Ì¹µ…À ¡ìÁ…Ñ °µ•ÍÍ…”ô¤€ôø€¡ìÁ…Ñ °µ•ÍÍ…”ô¤¤ô¤ì(€€€±•ÐÁ…ÉÍ•èA…ÉÍ•‘…äì±•ÐÍ½ÕÉ•Q•áÐèÍÑÉ¥¹œì(€€€ÑÉäì(€€€€€¥˜€ ‰™½Éµ…Ðˆ¥¸¥¹ÁÕÐ¹‘…Ñ„¤€¡ìÁ…ÉÍ•°Í½ÕÉ•Q•áÐô€ô…Ý…¥Ð‰Õ¥±‘MÑÉÕÑÕÉ•‘…ä¡¥¹ÁÕÐ¹‘…Ñ„°±•‘•È°™…±Í”¤¤ì(€€€€€•±Í”ìÁ…ÉÍ•€ô…Ý…¥ÐÁ…ÉÍ”¡¥¹ÁÕÐ¹‘…Ñ„¹Ñ•áÐ¤ìÍ½ÕÉ•Q•áÐ€ô¥¹ÁÕÐ¹‘…Ñ„¹Ñ•áÐì¥˜€¡¥¹ÁÕÐ¹‘…Ñ„¹­¥¹¤Á…ÉÍ•¹­¥¹€ô¥¹ÁÕÐ¹‘…Ñ„¹­¥¹ìô(€€€ô…Ñ ìÉ•ÑÕÉ¸É•Á±ä¹½‘” ÐÈÈ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}‘…äˆô¤ìô(€€€½¹ÍÐÑ½Ñ…±Ì€ô…±Õ±…Ñ•…ä¡Á…ÉÍ•°Í•ÑÑ¥¹Ì¤ì(€€€½¹ÍÐ…¹M¡…É”€ôÁ…ÉÍ•¹‘…Ñ•%Í¼€„ôô¹Õ±°€˜˜Á…ÉÍ•¹©½‰Ì¹±•¹Ñ €ø€À€˜˜Á…ÉÍ•¹¥ÍÍÕ•Ì¹±•¹Ñ €ôôô€À€˜˜Á…ÉÍ•¹Õ¹Á…ÉÍ•‘1¥¹•Ì¹±•¹Ñ €ôôô€Àì(€€€½¹ÍÐ±•…¹•É%€ôÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥ì(€€€½¹ÍÐÍ¹…ÁÍ¡½Ð€ô…¹M¡…É”€˜˜Á…ÉÍ•¹‘…Ñ•%Í¼€ü…Ý…¥Ð±•‘•È¹ÁÉ½©•Ñ…ä¡Á…ÉÍ•¹‘…Ñ•%Í¼°Ñ½Ñ…±Ì°Á…ÉÍ•¹…‘Ù…¹••¹ÑÌ°±•…¹•É%¤€è¹Õ±°ì(€€€½¹ÍÐ¡…Í1…Ñ•É¹ÑÉ¥•Ì€ôÁ…ÉÍ•¹‘…Ñ•%Í¼€ü€¡…Ý…¥Ð±•‘•È¹•Ñ1•‘•È¡Á…ÉÍ•¹‘…Ñ•%Í¼°µ½¹Ñ¡¹¡Á…ÉÍ•¹‘…Ñ•%Í¼¤°±•…¹•É%¤¤¹É½ÝÌ¹Í½µ” ¡É½Ü¤€ôøÉ½Ü¹‘…Ñ•%Í¼€øÁ…ÉÍ•¹‘…Ñ•%Í¼„¤€è™…±Í”ì(€€€É•ÑÕÉ¸ìÁ…ÉÍ•°Í½ÕÉ•Q•áÐ°Ñ½Ñ…±Ì°…‘Ù…¹••¹ÑÌèÁ…ÉÍ•¹…‘Ù…¹••¹ÑÌ°ÁÉ½©•Ñ•‘	…±…¹”èÍ¹…ÁÍ¡½Ðü¹Ñ½Ñ…°¹½ÕÑÍÑ…¹‘¥¹•¹ÑÌ€üü¹Õ±°°Í¹…ÁÍ¡½Ð°¥ÍÍÕ•ÌèÁ…ÉÍ•¹¥ÍÍÕ•Ì°Õ¹Á…ÉÍ•‘1¥¹•ÌèÁ…ÉÍ•¹Õ¹Á…ÉÍ•‘1¥¹•Ì°…¹M¡…É”°¡…Í1…Ñ•É¹ÑÉ¥•Ì°Í¡…É•Q•áÐè…¹M¡…É”€˜˜Í¹…ÁÍ¡½Ð€ü•¹•É…Ñ•M¡…É•Q•áÐ¡Á…ÉÍ•°Í•ÑÑ¥¹Ì°Í¹…ÁÍ¡½Ð¤€è€ˆˆôì(€ô¤ì((€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½‘…åÌˆ°ì½¹™¥œèìÉ…Ñ•1¥µ¥Ðèìµ…àè½¹™¥œ¹AIY%]}IQ}1%5%Q}5`°Ñ¥µ•]¥¹‘½Üè½¹™¥œ¹AIY%]}IQ}1%5%Q}]%9=\ôôô°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐ¥¹ÁÕÐ€ôÁÉ•Ù¥•Ý	½‘ä¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€±•ÐÁ…ÉÍ•èA…ÉÍ•‘…äì±•ÐÍ½ÕÉ•Q•áÐèÍÑÉ¥¹œì(€€€ÑÉäì(€€€€€¥˜€ ‰™½Éµ…Ðˆ¥¸¥¹ÁÕÐ¹‘…Ñ„¤€¡ìÁ…ÉÍ•°Í½ÕÉ•Q•áÐô€ô…Ý…¥Ð‰Õ¥±‘MÑÉÕÑÕÉ•‘…ä¡¥¹ÁÕÐ¹‘…Ñ„°±•‘•È°ÑÉÕ”¤¤ì(€€€€€•±Í”ìÁ…ÉÍ•€ô…Ý…¥ÐÁ…ÉÍ”¡¥¹ÁÕÐ¹‘…Ñ„¹Ñ•áÐ¤ìÍ½ÕÉ•Q•áÐ€ô¥¹ÁÕÐ¹‘…Ñ„¹Ñ•áÐì¥˜€¡¥¹ÁÕÐ¹‘…Ñ„¹­¥¹¤Á…ÉÍ•¹­¥¹€ô¥¹ÁÕÐ¹‘…Ñ„¹­¥¹ìô(€€€ô…Ñ ìÉ•ÑÕÉ¸É•Á±ä¹½‘” ÐÈÈ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}‘…äˆô¤ìô(€€€½¹ÍÐ…¹M…Ù”€ôÁ…ÉÍ•¹‘…Ñ•%Í¼€„ôô¹Õ±°€˜˜Á…ÉÍ•¹©½‰Ì¹±•¹Ñ €ø€À€˜˜Á…ÉÍ•¹¥ÍÍÕ•Ì¹±•¹Ñ €ôôô€À€˜˜Á…ÉÍ•¹Õ¹Á…ÉÍ•‘1¥¹•Ì¹±•¹Ñ €ôôô€Àì(€€€¥˜€ ……¹M…Ù”ñð€…Á…ÉÍ•¹‘…Ñ•%Í¼¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÈÈ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}‘…äˆô¤ì(€€€½¹ÍÐÑ½Ñ…±Ì€ô…±Õ±…Ñ•…ä¡Á…ÉÍ•°Í•ÑÑ¥¹Ì¤ì(€€€½¹ÍÐ±•…¹•É%€ôÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥ì(€€€½¹ÍÐÁÉ½©•Ñ•€ô…Ý…¥Ð±•‘•È¹ÁÉ½©•Ñ…ä¡Á…ÉÍ•¹‘…Ñ•%Í¼°Ñ½Ñ…±Ì°Á…ÉÍ•¹…‘Ù…¹••¹ÑÌ°±•…¹•É%¤ì(€€€½¹ÍÐÉ•Á½ÉÑQ•áÐ€ô•¹•É…Ñ•M¡…É•Q•áÐ¡Á…ÉÍ•°Í•ÑÑ¥¹Ì°ÁÉ½©•Ñ•¤ì(€€€½¹ÍÐÍ…Ù•€ô…Ý…¥Ð±•‘•È¹Í…Ù•…ä¡ì‘…Ñ•%Í¼èÁ…ÉÍ•¹‘…Ñ•%Í¼°Í½ÕÉ•Q•áÐ°Á…ÉÍ•‘•Ñ…¥±ÌèÁ…ÉÍ•°Ñ½Ñ…±Ì°…‘Ù…¹••¹ÑÌèÁ…ÉÍ•¹…‘Ù…¹••¹ÑÌ°É•Á½ÉÑQ•áÐô°±•…¹•É%¤ì(€€€É•ÑÕÉ¸ì‘…äèÍ…Ù•¹‘…ä°ÉÕ¹¹¥¹	…±…¹”èÍ…Ù•¹Í¹…ÁÍ¡½Ð¹Ñ½Ñ…°¹½ÕÑÍÑ…¹‘¥¹•¹ÑÌ°Í¹…ÁÍ¡½ÐèÍ…Ù•¹Í¹…ÁÍ¡½Ð°Í¡…É•Q•áÐèÉ•Á½ÉÑQ•áÐôì(€ô¤ì((€…ÁÀ¹‘•±•Ñ” ˆ½…Á¤½‘…åÌ¼é‘…Ñ•%Í¼ˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐÁ…É…µÌ€ôè¹½‰©•Ð¡ì‘…Ñ•%Í¼è‘…Ñ”ô¤¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì(€€€¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€É•ÑÕÉ¸€¡…Ý…¥Ð±•‘•È¹‘•±•Ñ•…ä¡Á…É…µÌ¹‘…Ñ„¹‘…Ñ•%Í¼°ÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥¤¤€üÉ•Á±ä¹½‘” ÈÀÐ¤¹Í•¹ ¤€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰‘…å}¹½Ñ}™½Õ¹ˆô¤ì(€ô¤ì((€…ÁÀ¹•Ð ˆ½…Á¤½±•‘•Èˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐÅÕ•Éä€ô±•‘•ÉEÕ•Éä¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹ÅÕ•Éä¤ì(€€€¥˜€ …ÅÕ•Éä¹ÍÕ•ÍÌñð€¡ÅÕ•Éä¹‘…Ñ„¹™É½´€˜˜ÅÕ•Éä¹‘…Ñ„¹Ñ¼€˜˜ÅÕ•Éä¹‘…Ñ„¹™É½´€øÅÕ•Éä¹‘…Ñ„¹Ñ¼¤¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐ±•…¹•É%€ôÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥ì(€€€½¹ÍÐÙ¥•Ü€ô…Ý…¥Ð±•‘•È¹•Ñ1•‘•È¡ÅÕ•Éä¹‘…Ñ„¹™É½´°ÅÕ•Éä¹‘…Ñ„¹Ñ¼°±•…¹•É%¤ì(€€€½¹ÍÐÉ½ÝÌ€ô…Ý…¥ÐAÉ½µ¥Í”¹…±°¡Ù¥•Ü¹É½ÝÌ¹µ…À¡…Íå¹Œ€¡É½Ü¤€ôøì(€€€€€¥˜€¡É½Ü¹É½ÝQåÁ”€„ôô€‰Ý½É¬ˆ¤É•ÑÕÉ¸É½Üì(€€€€€½¹ÍÐÍ¹…ÁÍ¡½Ð€ô…Ý…¥Ð±•‘•È¹ÁÉ½©•Ñ…ä¡É½Ü¹‘…Ñ•%Í¼°ì(€€€€€€€µ¥¹ÕÑ•ÌèÉ½Ü¹µ¥¹ÕÑ•Ì°¥¹½µ••¹ÑÌèÉ½Ü¹¥¹½µ••¹ÑÌ°•áÁ•¹Í•Í•¹ÑÌèÉ½Ü¹•áÁ•¹Í•Í•¹ÑÌ°¡•­¥¹•¹ÑÌèÉ½Ü¹¡•­¥¹•¹ÑÌ°(€€€€€ô°É½Ü¹Á…ÉÍ•‘•Ñ…¥±Ì¹…‘Ù…¹••¹ÑÌ°±•…¹•É%¤ì(€€€€€É•ÑÕÉ¸ì€¸¸¹É½Ü°É•Á½ÉÑQ•áÐè•¹•É…Ñ•M¡…É•Q•áÐ¡É½Ü¹Á…ÉÍ•‘•Ñ…¥±Ì°Í•ÑÑ¥¹Ì°Í¹…ÁÍ¡½Ð¤ôì(€€€ô¤¤ì(€€€É•ÑÕÉ¸ì€¸¸¹Ù¥•Ü°É½ÝÌôì(€ô¤ì((€…ÁÀ¹•Ð ˆ½…Á¤½Á•É¥½‘Ìˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ¤€ôø€¡ìÁ•É¥½‘Ìè…Ý…¥Ð±•‘•È¹±¥ÍÑA•É¥½‘Ì¡ÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥¤ô¤¤ì((€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½Á…åµ•¹ÑÌˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐ¥¹ÁÕÐ€ôÁ…åµ•¹ÑÉ•…Ñ”¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€É•ÑÕÉ¸É•Á±ä¹½‘” ÈÀÄ¤¹Í•¹¡ìÁ…åµ•¹Ðè…Ý…¥Ð±•‘•È¹É•…Ñ•A…åµ•¹Ð¡¥¹ÁÕÐ¹‘…Ñ„¹‘…Ñ•%Í¼°¥¹ÁÕÐ¹‘…Ñ„¹…µ½Õ¹Ñ•¹ÑÌ°¥¹ÁÕÐ¹‘…Ñ„¹¹½Ñ”°ÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥¤ô¤ì(€ô¤ì((€…ÁÀ¹Á…Ñ  ˆ½…Á¤½Á…åµ•¹ÑÌ¼é¥ˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐÁ…É…µÌ€ôÁ…åµ•¹ÑA…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì½¹ÍÐ¥¹ÁÕÐ€ôÁ…åµ•¹ÑA…Ñ ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌñð€…¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€½¹ÍÐÁ…åµ•¹Ð€ô…Ý…¥Ð±•‘•È¹ÕÁ‘…Ñ•A…åµ•¹Ð¡Á…É…µÌ¹‘…Ñ„¹¥°¥¹ÁÕÐ¹‘…Ñ„°ÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥¤ì(€€€É•ÑÕÉ¸Á…åµ•¹Ð€üìÁ…åµ•¹Ðô€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰Á…åµ•¹Ñ}¹½Ñ}™½Õ¹ˆô¤ì(€ô¤ì((€…ÁÀ¹‘•±•Ñ” ˆ½…Á¤½Á…åµ•¹ÑÌ¼é¥ˆ°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€½¹ÍÐÁ…É…µÌ€ôÁ…åµ•¹ÑA…É…µÌ¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹Á…É…µÌ¤ì(€€€¥˜€ …Á…É…µÌ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆô¤ì(€€€É•ÑÕÉ¸€¡…Ý…¥Ð±•‘•È¹‘•±•Ñ•A…åµ•¹Ð¡Á…É…µÌ¹‘…Ñ„¹¥°ÕÉÉ•¹Ñ±•…¹•È¡É•ÅÕ•ÍÐ¤¹¥¤¤€üÉ•Á±ä¹½‘” ÈÀÐ¤¹Í•¹ ¤€èÉ•Á±ä¹½‘” ÐÀÐ¤¹Í•¹¡ì•ÉÉ½Èè€‰Á…åµ•¹Ñ}¹½Ñ}™½Õ¹ˆô¤ì(€ô¤ì((€…ÁÀ¹Á½ÍÐ ˆ½…Á¤½…‘µ¥¸½…Á…ÉÑµ•¹ÑÌ½¥µÁ½ÉÐˆ°ì‰½‘å1¥µ¥Ðè€ÄØ€¨€ÄÀÈÐ€¨€ÄÀÈÐô°…Íå¹Œ€¡É•ÅÕ•ÍÐ°É•Á±ä¤€ôøì(€€€¥˜€ …½¹™¥œ¹AIQ59Q}%5A=IQ}Q=-8¤É•ÑÕÉ¸É•Á±ä¹½‘” ÔÀÌ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥µÁ½ÉÑ}‘¥Í…‰±•ˆô¤ì(€€€½¹ÍÐ…ÕÑ¡½É¥é…Ñ¥½¸€ôÉ•ÅÕ•ÍÐ¹¡•…‘•ÉÌ¹…ÕÑ¡½É¥é…Ñ¥½¸ì(€€€½¹ÍÐÁÉ½Ù¥‘•€ô…ÕÑ¡½É¥é…Ñ¥½¸ü¹ÍÑ…ÉÑÍ]¥Ñ  ‰	•…É•È€ˆ¤€ü…ÕÑ¡½É¥é…Ñ¥½¸¹Í±¥” Ü¤€è€ˆˆì(€€€½¹ÍÐ•áÁ•Ñ•‘	Õ™™•È€ô	Õ™™•È¹™É½´¡½¹™¥œ¹AIQ59Q}%5A=IQ}Q=-8¤ì(€€€½¹ÍÐÁÉ½Ù¥‘•‘	Õ™™•È€ô	Õ™™•È¹™É½´¡ÁÉ½Ù¥‘•¤ì(€€€¥˜€¡•áÁ•Ñ•‘	Õ™™•È¹±•¹Ñ €„ôôÁÉ½Ù¥‘•‘	Õ™™•È¹±•¹Ñ ñð€…Ñ¥µ¥¹M…™•ÅÕ…°¡•áÁ•Ñ•‘	Õ™™•È°ÁÉ½Ù¥‘•‘	Õ™™•È¤¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÄ¤¹Í•¹¡ì•ÉÉ½Èè€‰Õ¹…ÕÑ¡½É¥é•ˆô¤ì(€€€½¹ÍÐ¥¹ÁÕÐ€ô…Á…ÉÑµ•¹Ñ%µÁ½ÉÑ	½‘ä¹Í…™•A…ÉÍ”¡É•ÅÕ•ÍÐ¹‰½‘ä¤ì(€€€¥˜€ …¥¹ÁÕÐ¹ÍÕ•ÍÌ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀÀ¤¹Í•¹¡ì•ÉÉ½Èè€‰¥¹Ù…±¥‘}É•ÅÕ•ÍÐˆ°¥ÍÍÕ•Ìè¥¹ÁÕÐ¹•ÉÉ½È¹¥ÍÍÕ•Ì¹µ…À ¡ìÁ…Ñ °µ•ÍÍ…”ô¤€ôø€¡ìÁ…Ñ °µ•ÍÍ…”ô¤¤ô¤ì(€€€½¹ÍÐÍ••¹M½ÕÉ•Ì€ô¹•ÜM•ÐñÍÑÉ¥¹œø ¤ì½¹ÍÐÍ••¹…¹½¹¥…°€ô¹•ÜM•ÐñÍÑÉ¥¹œø ¤ì½¹ÍÐ‘ÕÁ±¥…Ñ•½¹™±¥ÑÌèÉÉ…äñìÍ½ÕÉ•-•äèÍÑÉ¥¹œìÉ•…Í½¸èÍÑÉ¥¹œôø€ômtì(€€€™½È€¡½¹ÍÐ¥Ñ•´½˜¥¹ÁÕÐ¹‘…Ñ„¹…Á…ÉÑµ•¹ÑÌ¤ì(€€€€€½¹ÍÐ…¹½¹¥…°€ô…Á…ÉÑµ•¹Ñ-•ä¡¥Ñ•´¹…¹½¹¥…±9…µ”¤ì(€€€€€¥˜€¡Í••¹M½ÕÉ•Ì¹¡…Ì¡¥Ñ•´¹Í½ÕÉ•-•ä¤ñðÍ••¹…¹½¹¥…°¹¡…Ì¡…¹½¹¥…°¤¤‘ÕÁ±¥…Ñ•½¹™±¥ÑÌ¹ÁÕÍ ¡ìÍ½ÕÉ•-•äè¥Ñ•´¹Í½ÕÉ•-•ä°É•…Í½¸è€‰‘ÕÁ±¥…Ñ•}¥¹}Á…å±½…ˆô¤ì(€€€€€Í••¹M½ÕÉ•Ì¹…‘¡¥Ñ•´¹Í½ÕÉ•-•ä¤ìÍ••¹…¹½¹¥…°¹…‘¡…¹½¹¥…°¤ì(€€€ô(€€€¥˜€¡‘ÕÁ±¥…Ñ•½¹™±¥ÑÌ¹±•¹Ñ ¤É•ÑÕÉ¸É•Á±ä¹½‘” ÐÀä¤¹Í•¹¡ìÉ•…Ñ•è€À°ÕÁ‘…Ñ•è€À°Í­¥ÁÁ•è€À°½¹™±¥ÑÌè‘ÕÁ±¥…Ñ•½¹™±¥ÑÌô¤ì(€€€½¹ÍÐ‘ÉåIÕ¸€ô€¡É•ÅÕ•ÍÐ¹ÅÕ•Éä…Ìì‘ÉåIÕ¸üèÍÑÉ¥¹œô¤¹‘ÉåIÕ¸€ôôô€‰ÑÉÕ”ˆì(€€€½¹ÍÐÉ•ÍÕ±Ð€ô…Ý…¥Ð±•‘•È¹¥µÁ½ÉÑÁ…ÉÑµ•¹ÑÌ¡¥¹ÁÕÐ¹‘…Ñ„¹…Á…ÉÑµ•¹ÑÌ°‘ÉåIÕ¸¤ì(€€€É•ÑÕÉ¸ì‘ÉåIÕ¸°…•ÁÑ•èÉ•ÍÕ±Ð¹É•…Ñ•€¬É•ÍÕ±Ð¹ÕÁ‘…Ñ•€¬É•ÍÕ±Ð¹Í­¥ÁÁ•°€¸¸¹É•ÍÕ±Ðôì(€ô¤ì(€™½È€¡½¹ÍÐÉ½ÕÑ”½˜lˆ½Ñ½‘…äˆ°€ˆ½µ…Àˆ°€ˆ½±•‘•Èˆ°€ˆ½µ…À½…Á…ÉÑµ•¹ÑÌ¼é¥ˆ°€ˆ½…Á…ÉÑµ•¹Ð¹¡Ñµ°‰t¤…ÁÀ¹•Ð¡É½ÕÑ”°…Íå¹Œ€¡}É•ÅÕ•ÍÐ°É•Á±ä¤€ôøÉ•Á±ä¹Í•¹‘¥±” ‰¥¹‘•à¹¡Ñµ°ˆ¤¤ì(€É•ÑÕÉ¸…ÁÀì)ô()…Íå¹Œ™Õ¹Ñ¥½¸ÍÑ…ÉÐ ¤èAÉ½µ¥Í”ñÙ½¥øì½¹ÍÐ½¹™¥œ€ô±½…‘½¹™¥œ ¤ì½¹ÍÐ…ÁÀ€ô…Ý…¥Ð‰Õ¥±‘ÁÀ¡½¹™¥œ¤ì…Ý…¥Ð…ÁÀ¹±¥ÍÑ•¸¡ìÁ½ÉÐè½¹™¥œ¹A=IP°¡½ÍÐè½¹™¥œ¹!=MPô¤ìô)½¹ÍÐ•¹ÑÉåA½¥¹Ð€ôÑåÁ•½˜ÁÉ½•ÍÌ€„ôô€‰Õ¹‘•™¥¹•ˆ€˜˜ÁÉ½•ÍÌ¹…ÉÙlÅt€üÁ…Ñ¡Q½¥±•UI0¡É•Í½±Ù”¡ÁÉ½•ÍÌ¹…ÉÙlÅt¤¤¹¡É•˜€è€ˆˆì)¥˜€¡¥µÁ½ÉÐ¹µ•Ñ„¹ÕÉ°€ôôô•¹ÑÉåA½¥¹Ð¤…Ý…¥ÐÍÑ…ÉÐ ¤ì(
+  const byId = new Map(activeApartments.map((apartment) => [apartment.id, apartment]));
+  const byKey = apartmentLookup(activeApartments);
+  const jobs: Job[] = [];
+  const expenses: Expense[] = [];
+  const sourceLines: string[] = [];
+
+  for (const inputJob of input.jobs) {
+    let apartment = inputJob.apartmentId ? byId.get(inputJob.apartmentId) : undefined;
+    const requestedName = inputJob.newApartmentName?.trim();
+    if (!apartment && requestedName) apartment = byKey.get(apartmentKey(requestedName));
+    if (!apartment && requestedName && createMissing) {
+      try {
+        apartment = await ledger.createApartment({ canonicalName: requestedName, aliases: [], address: null, mapsUrl: null, noteBody: null, latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null });
+      } catch {
+        apartment = apartmentLookup(await ledger.getActiveApartments()).get(apartmentKey(requestedName));
+      }
+      if (apartment) {
+        byId.set(apartment.id, apartment);
+        for (const alias of [apartment.canonicalName, ...apartment.aliases]) byKey.set(apartmentKey(alias), apartment);
+      }
+    }
+    if (createMissing && requestedName && !apartment) throw new Error("apartment_create_failed");
+    if (!apartment && !requestedName) throw new Error("apartment_not_found");
+    const object = apartment?.canonicalName ?? requestedName!;
+    const durationMinutes = structuredDuration(inputJob.workType, inputJob.durationMinutes);
+    const sourceLine = structuredSourceLine(object, inputJob.workType, durationMinutes, inputJob.dryerCents, inputJob.otherExpenseCents);
+    const jobIndex = jobs.length;
+    jobs.push({
+      object, apartmentId: apartment?.id ?? null, address: apartment?.address ?? null, mapsUrl: apartment?.mapsUrl ?? null,
+      noteBody: apartment?.noteBody ?? null, startMinutes: null, endMinutes: null, durationMinutes, endInferred: false,
+      workType: inputJob.workType, sourceLine,
+    });
+    if (inputJob.dryerCents > 0) expenses.push({ category: "ÑÑƒÑˆÐºÐ°", object, jobIndex, amountCents: inputJob.dryerCents, sourceLine });
+    if (inputJob.otherExpenseCents > 0) expenses.push({ category: "Ñ€Ð°ÑÑ…Ð¾Ð´Ñ‹", object, jobIndex, amountCents: inputJob.otherExpenseCents, sourceLine });
+    sourceLines.push(sourceLine);
+  }
+
+  const [year, month, day] = input.dateIso.split("-");
+  const displayDate = `${day}/${month}`;
+  const parsed: ParsedDay = { dateIso: input.dateIso, displayDate, kind: "actual", jobs, expenses, advanceCents: 0, unparsedLines: [], issues: [] };
+  return { parsed, sourceText: [`${day}/${month}/${year}`, ...sourceLines].join("\n") };
+}
+
+function distanceMeters(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const radians = (value: number) => value * Math.PI / 180; const earth = 6_371_000;
+  const dLat = radians(bLat - aLat); const dLon = radians(bLon - aLon);
+  const value = Math.sin(dLat / 2) ** 2 + Math.cos(radians(aLat)) * Math.cos(radians(bLat)) * Math.sin(dLon / 2) ** 2;
+  return Math.round(earth * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)));
+}
+
+export async function buildApp(config: Config = loadConfig(), providedStore?: LedgerStore, externalFetch: typeof fetch = fetch): Promise<FastifyInstance> {
+  const app = Fastify({ logger: { level: config.LOG_LEVEL }, trustProxy: true });
+  const productRelease = config.PRODUCT_RELEASE ?? 2;
+  const settings: Settings = {
+    hourlyRateCents: config.HOURLY_RATE_CENTS,
+    orientationFlatCents: config.ORIENTATION_FLAT_CENTS,
+    practiceFlatCents: config.PRACTICE_FLAT_CENTS,
+    checkinFlatCents: config.CHECKIN_FLAT_CENTS,
+    dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
+  };
+  const ledger = providedStore ?? new PostgresLedgerStore(config.DATABASE_URL);
+  const configuredInitialCleaner = await prepareInitialCleaner(config.INITIAL_CLEANER_NAME ?? "", config.INITIAL_CLEANER_PIN ?? "");
+  const initialCleaner = configuredInitialCleaner ?? (config.AUTH_TEST_BYPASS ? await prepareInitialCleaner("Test Cleaner", "123456") : null);
+  await ledger.initialize(initialCleaner);
+  let bypassCleaner = config.AUTH_TEST_BYPASS ? (await ledger.listCleaners())[0] ?? null : null;
+  if (config.AUTH_TEST_BYPASS && !bypassCleaner) {
+    const digest = await createPinDigest("123456");
+    bypassCleaner = await ledger.createCleaner({ name: "Test Cleaner", nameKey: normalizeCleanerName("Test Cleaner"), ...digest });
+  }
+  app.addHook("onListen", () => {
+    void repairLegacyMapCoordinates(ledger, externalFetch)
+      .then((repairedLocations) => { if (repairedLocations > 0) app.log.info({ repairedLocations }, "repaired legacy map coordinates"); })
+      .catch((error) => app.log.error({ err: error }, "failed to repair legacy map coordinates"));
+  });
+  const parse = async (text: string) => parseDay(text, new Date(), settings.dryerDefaultCents, apartmentLookup(await ledger.getActiveApartments()));
+  app.addHook("onClose", async () => ledger.close());
+  await app.register(rateLimit, { global: false, max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW });
+  await app.register(fastifyStatic, {
+    root: publicRoot,
+    wildcard: false,
+    cacheControl: false,
+    setHeaders(response, filePath) {
+      if (filePath.endsWith("sw.js")) {
+        response.setHeader("Cache-Control", "no-store");
+        return;
+      }
+      if (/\.(?:html|js|css|webmanifest)$/.test(filePath)) response.setHeader("Cache-Control", "no-cache");
+    },
+  });
+  await app.register(fastifyStatic, { root: leafletRoot, prefix: "/vendor/leaflet/", decorateReply: false, cacheControl: true, maxAge: "30d" });
+
+  const authenticatedCleaners = new WeakMap<object, Cleaner>();
+  const publicApiPaths = new Set(["/api/app-config", "/api/auth/me", "/api/auth/login", "/api/auth/register", "/api/auth/logout"]);
+  app.addHook("onRequest", async (request, reply) => {
+    const path = request.url.split("?", 1)[0] ?? request.url;
+    if (!path.startsWith("/api/") || publicApiPaths.has(path) || path === "/api/admin/apartments/import") return;
+    if (config.AUTH_TEST_BYPASS && bypassCleaner) { authenticatedCleaners.set(request, bypassCleaner); return; }
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    const cleaner = token ? await ledger.getCleanerBySession(hashSessionToken(token)) : null;
+    if (!cleaner) return reply.code(401).send({ error: "authentication_required" });
+    authenticatedCleaners.set(request, cleaner);
+  });
+  const currentCleaner = (request: object): Cleaner => {
+    const cleaner = authenticatedCleaners.get(request);
+    if (!cleaner) throw new Error("authenticated cleaner missing");
+    return cleaner;
+  };
+
+  const startSession = async (request: { protocol: string }, reply: { header(name: string, value: string): unknown }, cleaner: Cleaner) => {
+    const sessionDays = config.SESSION_DAYS ?? 90;
+    const expiresAt = new Date(Date.now() + sessionDays * 86_400_000);
+    const { token, tokenHash } = createSessionToken();
+    await ledger.createSession(cleaner.id, tokenHash, expiresAt);
+    reply.header("Set-Cookie", sessionCookie(token, sessionDays * 86_400, request.protocol === "https"));
+  };
+
+  app.get("/health", async (_request, reply) => {
+    const database = await ledger.health();
+    return reply.code(database ? 200 : 503).send({ status: database ? "ok" : "unavailable", service: "MaidAid", database });
+  });
+
+  app.get("/api/auth/me", async (request, reply) => {
+    if (config.AUTH_TEST_BYPASS && bypassCleaner) return { cleaner: bypassCleaner };
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    const cleaner = token ? await ledger.getCleanerBySession(hashSessionToken(token)) : null;
+    return cleaner ? { cleaner } : reply.code(401).send({ error: "authentication_required" });
+  });
+
+  app.post("/api/auth/login", { config: { rateLimit: { max: 10, timeWindow: "15 minutes" } } }, async (request, reply) => {
+    const input = loginBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    const cleaner = await ledger.findCleanerByNameKey(normalizeCleanerName(input.data.name));
+    if (!cleaner || !cleaner.active || !await verifyPin(input.data.pin, cleaner.pinSalt, cleaner.pinHash)) return reply.code(401).send({ error: "invalid_credentials" });
+    await startSession(request, reply, cleaner);
+    return { cleaner: { id: cleaner.id, name: cleaner.name, active: cleaner.active, createdAt: cleaner.createdAt, updatedAt: cleaner.updatedAt } };
+  });
+
+  app.post("/api/auth/register", { config: { rateLimit: { max: 10, timeWindow: "15 minutes" } } }, async (request, reply) => {
+    const input = registerBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    const teamCode = config.TEAM_ACCESS_CODE ?? "";
+    if (!teamCode) return reply.code(503).send({ error: "registration_disabled" });
+    if (!secretMatches(input.data.teamCode, teamCode)) return reply.code(401).send({ error: "invalid_team_code" });
+    const name = input.data.name.normalize("NFKC").trim().replace(/\s+/g, " ");
+    const digest = await createPinDigest(input.data.pin);
+    try {
+      const cleaner = await ledger.createCleaner({ name, nameKey: normalizeCleanerName(name), ...digest });
+      await startSession(request, reply, cleaner);
+      return reply.code(201).send({ cleaner });
+    } catch (error) { return (error as Error).message === "cleaner_exists" ? reply.code(409).send({ error: "cleaner_exists" }) : reply.code(500).send({ error: "registration_failed" }); }
+  });
+
+  app.post("/api/auth/logout", async (request, reply) => {
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    if (token) await ledger.deleteSession(hashSessionToken(token));
+    reply.header("Set-Cookie", sessionCookie("", 0, request.protocol === "https"));
+    return reply.code(204).send();
+  });
+
+  app.get("/api/app-config", async () => ({ productRelease }));
+
+  app.get("/api/apartments", async () => ({ apartments: await ledger.getActiveApartments() }));
+  app.get("/api/apartments/:id", async (request, reply) => {
+    const params = idParams.safeParse(request.params); if (!params.success) return reply.code(400).send({ error: "invalid_request" });
+    const apartment = await ledger.getApartment(params.data.id); if (!apartment) return reply.code(404).send({ error: "apartment_not_found" });
+    return { apartment, preferredLaundry: productRelease >= 2 ? await ledger.getPreferredLaundry(apartment.id) : null };
+  });
+  app.post("/api/apartments", async (request, reply) => {
+    if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
+    const input = apartmentCreate.safeParse(request.body); if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
+    try {
+      const apartment = await ledger.createApartment({ canonicalName: input.data.canonicalName, aliases: input.data.aliases, address: input.data.address ?? inferredAddress ?? null, mapsUrl: input.data.mapsUrl ?? null, noteBody: input.data.noteBody ?? null, ...location });
+      return reply.code(201).send({ apartment });
+    } catch { return reply.code(409).send({ error: "apartment_exists" }); }
+  });
+  app.patch("/api/apartments/:id", async (request, reply) => {
+    const params = idParams.safeParse(request.params); const input = apartmentPatch.safeParse(request.body);
+    if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
+    const current = await ledger.getApartment(params.data.id); if (!current) return reply.code(404).send({ error: "apartment_not_found" });
+    const locationChanged = input.data.address !== undefined || input.data.mapsUrl !== undefined || input.data.latitude !== undefined || input.data.longitude !== undefined;
+    const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
+    const { inferredAddress, ...location } = resolved;
+    try {
+      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location }); return { apartment };
+    } catch { return reply.code(409).send({ error: "apartment_exists" }); }
+  });
+
+  app.get("/api/places", async (_request, reply) => productRelease >= 2 ? { places: await ledger.getSavedPlaces() } : reply.code(404).send({ error: "not_found" }));
+  app.post("/api/places", async (request, reply) => {
+    if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
+    const input = placeCreate.safeParse(request.body); if (!input.success || (input.success && input.data.kind === "partner_restaurant" && !input.data.name)) return reply.code(400).send({ error: "invalid_request" });
+    const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
+    const place = await ledger.createSavedPlace({ kind: input.data.kind, name: input.data.name || "Ð¡ÑƒÑˆÐºÐ°", address: input.data.address ?? inferredAddress ?? null, note: input.data.note ?? null, mapsUrl: input.data.mapsUrl ?? null, ...location });
+    if (input.data.kind === "laundry" && input.data.apartmentId) await ledger.setPreferredLaundry(input.data.apartmentId, place.id);
+    return reply.code(201).send({ place });
+  });
+  app.patch("/api/places/:id", async (request, reply) => {
+    if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
+    const params = idParams.safeParse(request.params); const input = placePatch.safeParse(request.body);
+    if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
+    const current = await ledger.getSavedPlace(params.data.id); if (!current) return reply.code(404).send({ error: "place_not_found" });
+    if ((input.data.kind ?? current.kind) === "partner_restaurant" && input.data.name !== undefined && !input.data.name) return reply.code(400).send({ error: "invalid_request" });
+    const locationChanged = input.data.address !== undefined || input.data.mapsUrl !== undefined || input.data.latitude !== undefined || input.data.longitude !== undefined;
+    const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
+    const { inferredAddress, ...location } = resolved;
+    const values = { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...(input.data.kind === "laundry" && !input.data.name ? { name: "Ð¡ÑƒÑˆÐºÐ°" } : {}), ...location };
+    const place = await ledger.updateSavedPlace(params.data.id, values); return { place };
+  });
+  app.delete("/api/places/:id", async (request, reply) => {
+    if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
+    const params = idParams.safeParse(request.params); if (!params.success) return reply.code(400).send({ error: "invalid_request" });
+    return await ledger.archiveSavedPlace(params.data.id) ? reply.code(204).send() : reply.code(404).send({ error: "place_not_found" });
+  });
+
+  app.get("/api/apartments/:id/nearby-laundries", async (request, reply) => {
+    if (productRelease < 3) return reply.code(404).send({ error: "not_found" });
+    const params = idParams.safeParse(request.params); if (!params.success) return reply.code(400).send({ error: "invalid_request" });
+    const apartment = await ledger.getApartment(params.data.id); if (!apartment) return reply.code(404).send({ error: "apartment_not_found" });
+    const preferredLaundry = await ledger.getPreferredLaundry(apartment.id);
+    if (apartment.latitude == null || apartment.longitude == null) return reply.code(422).send({ error: "apartment_location_required", preferredLaundry });
+    const query = `[out:json][timeout:10];(nwr[\"shop\"=\"laundry\"](around:5000,${apartment.latitude},${apartment.longitude});nwr[\"amenity\"=\"dryer\"](around:5000,${apartment.latitude},${apartment.longitude}););out center tags;`;
+    try {
+      const response = await externalFetch("https://overpass-api.de/api/interpreter", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": "MaidAid/0.1" }, body: new URLSearchParams({ data: query }), signal: AbortSignal.timeout(12_000) });
+      if (!response.ok) throw new Error("overpass_unavailable");
+      const body = await response.json() as { elements?: Array<{ type: "node" | "way" | "relation"; id: number; lat?: number; lon?: number; center?: { lat?: number; lon?: number }; tags?: Record<string, string> }> };
+      const candidates = (body.elements ?? []).flatMap((element) => {
+        const latitude = element.lat ?? element.center?.lat; const longitude = element.lon ?? element.center?.lon;
+        if (latitude == null || longitude == null) return [];
+        const tags = element.tags ?? {}; const street = [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" ");
+        return [{ osmType: element.type, osmId: String(element.id), name: tags.name ?? "ÐŸÑ€Ð°Ñ‡ÐµÑ‡Ð½Ð°Ñ", address: street || null, latitude, longitude, distanceMeters: distanceMeters(apartment.latitude!, apartment.longitude!, latitude, longitude), dryerConfirmed: tags.amenity === "dryer" || tags.dryer === "yes", mapsUrl: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}` }];
+      }).sort((a, b) => a.distanceMeters - b.distanceMeters).slice(0, 3);
+      return { preferredLaundry, candidates };
+    } catch { return reply.code(503).send({ error: "laundry_search_unavailable", preferredLaundry }); }
+  });
+  app.post("/api/apartments/:id/laundry-links", async (request, reply) => {
+    if (productRelease < 2) return reply.code(404).send({ error: "not_found" });
+    const params = idParams.safeParse(request.params); const input = laundryLinkBody.safeParse(request.body);
+    if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
+    let place: SavedPlace | null = null;
+    if ("placeId" in input.data) place = await ledger.getSavedPlace(input.data.placeId);
+    else {
+      const candidate = input.data.candidate;
+      place = await ledger.findSavedPlaceByOsm(candidate.osmType, candidate.osmId) ?? await ledger.createSavedPlace({ kind: "laundry", name: candidate.name, address: candidate.address, note: null, mapsUrl: `https://www.google.com/maps/search/?api=1&query=${candidate.latitude},${candidate.longitude}`, latitude: candidate.latitude, longitude: candidate.longitude, locationSource: "osm", locationAccuracyMeters: null, osmType: candidate.osmType, osmId: candidate.osmId });
+    }
+    if (!place || place.kind !== "laundry") return reply.code(400).send({ error: "invalid_laundry" });
+    const link = await ledger.setPreferredLaundry(params.data.id, place.id); return link ? { place, link } : reply.code(404).send({ error: "apartment_not_found" });
+  });
+
+  app.post("/api/preview", { bodyLimit: 32 * 1024, config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
+    const input = previewBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request", issues: input.error.issues.map(({ path, message }) => ({ path, message })) });
+    let parsed: ParsedDay; let sourceText: string;
+    try {
+      if ("format" in input.data) ({ parsed, sourceText } = await buildStructuredDay(input.data, ledger, false));
+      else { parsed = await parse(input.data.text); sourceText = input.data.text; if (input.data.kind) parsed.kind = input.data.kind; }
+    } catch { return reply.code(422).send({ error: "invalid_day" }); }
+    const totals = calculateDay(parsed, settings);
+    const canShare = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
+    const cleanerId = currentCleaner(request).id;
+    const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents, cleanerId) : null;
+    const hasLaterEntries = parsed.dateIso ? (await ledger.getLedger(parsed.dateIso, monthEnd(parsed.dateIso), cleanerId)).rows.some((row) => row.dateIso > parsed.dateIso!) : false;
+    return { parsed, sourceText, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, hasLaterEntries, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
+  });
+
+  app.post("/api/days", { config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
+    const input = previewBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    let parsed: ParsedDay; let sourceText: string;
+    try {
+      if ("format" in input.data) ({ parsed, sourceText } = await buildStructuredDay(input.data, ledger, true));
+      else { parsed = await parse(input.data.text); sourceText = input.data.text; if (input.data.kind) parsed.kind = input.data.kind; }
+    } catch { return reply.code(422).send({ error: "invalid_day" }); }
+    const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
+    if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
+    const totals = calculateDay(parsed, settings);
+    const cleanerId = currentCleaner(request).id;
+    const projected = await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents, cleanerId);
+    const reportText = generateShareText(parsed, settings, projected);
+    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText }, cleanerId);
+    return { day: saved.day, runningBalance: saved.snapshot.total.outstandingCents, snapshot: saved.snapshot, shareText: reportText };
+  });
+
+  app.delete("/api/days/:dateIso", async (request, reply) => {
+    const params = z.object({ dateIso: date }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_request" });
+    return (await ledger.deleteDay(params.data.dateIso, currentCleaner(request).id)) ? reply.code(204).send() : reply.code(404).send({ error: "day_not_found" });
+  });
+
+  app.get("/api/ledger", async (request, reply) => {
+    const query = ledgerQuery.safeParse(request.query);
+    if (!query.success || (query.data.from && query.data.to && query.data.from > query.data.to)) return reply.code(400).send({ error: "invalid_request" });
+    const cleanerId = currentCleaner(request).id;
+    const view = await ledger.getLedger(query.data.from, query.data.to, cleanerId);
+    const rows = await Promise.all(view.rows.map(async (row) => {
+      if (row.rowType !== "work") return row;
+      const snapshot = await ledger.projectDay(row.dateIso, {
+        minutes: row.minutes, incomeCents: row.incomeCents, expensesCents: row.expensesCents, checkinCents: row.checkinCents,
+      }, row.parsedDetails.advanceCents, cleanerId);
+      return { ...row, reportText: generateShareText(row.parsedDetails, settings, snapshot) };
+    }));
+    return { ...view, rows };
+  });
+
+  app.get("/api/periods", async (request) => ({ periods: await ledger.listPeriods(currentCleaner(request).id) }));
+
+  app.post("/api/payments", async (request, reply) => {
+    const input = paymentCreate.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    return reply.code(201).send({ payment: await ledger.createPayment(input.data.dateIso, input.data.amountCents, input.data.note, currentCleaner(request).id) });
+  });
+
+  app.patch("/api/payments/:id", async (request, reply) => {
+    const params = paymentParams.safeParse(request.params); const input = paymentPatch.safeParse(request.body);
+    if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
+    const payment = await ledger.updatePayment(params.data.id, input.data, currentCleaner(request).id);
+    return payment ? { payment } : reply.code(404).send({ error: "payment_not_found" });
+  });
+
+  app.delete("/api/payments/:id", async (request, reply) => {
+    const params = paymentParams.safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_request" });
+    return (await ledger.deletePayment(params.data.id, currentCleaner(request).id)) ? reply.code(204).send() : reply.code(404).send({ error: "payment_not_found" });
+  });
+
+  app.post("/api/admin/apartments/import", { bodyLimit: 16 * 1024 * 1024 }, async (request, reply) => {
+    if (!config.APARTMENT_IMPORT_TOKEN) return reply.code(503).send({ error: "import_disabled" });
+    const authorization = request.headers.authorization;
+    const provided = authorization?.startsWith("Bearer ") ? authorization.slice(7) : "";
+    const expectedBuffer = Buffer.from(config.APARTMENT_IMPORT_TOKEN);
+    const providedBuffer = Buffer.from(provided);
+    if (expectedBuffer.length !== providedBuffer.length || !timingSafeEqual(expectedBuffer, providedBuffer)) return reply.code(401).send({ error: "unauthorized" });
+    const input = apartmentImportBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request", issues: input.error.issues.map(({ path, message }) => ({ path, message })) });
+    const seenSources = new Set<string>(); const seenCanonical = new Set<string>(); const duplicateConflicts: Array<{ sourceKey: string; reason: string }> = [];
+    for (const item of input.data.apartments) {
+      const canonical = apartmentKey(item.canonicalName);
+      if (seenSources.has(item.sourceKey) || seenCanonical.has(canonical)) duplicateConflicts.push({ sourceKey: item.sourceKey, reason: "duplicate_in_payload" });
+      seenSources.add(item.sourceKey); seenCanonical.add(canonical);
+    }
+    if (duplicateConflicts.length) return reply.code(409).send({ created: 0, updated: 0, skipped: 0, conflicts: duplicateConflicts });
+    const dryRun = (request.query as { dryRun?: string }).dryRun === "true";
+    const result = await ledger.importApartments(input.data.apartments, dryRun);
+    return { dryRun, accepted: result.created + result.updated + result.skipped, ...result };
+  });
+  for (const route of ["/today", "/map", "/ledger", "/map/apartments/:id", "/apartment.html"]) app.get(route, async (_request, reply) => reply.sendFile("index.html"));
+  return app;
+}
+
+async function start(): Promise<void> { const config = loadConfig(); const app = await buildApp(config); await app.listen({ port: config.PORT, host: config.HOST }); }
+const entryPoint = typeof process !== "undefined" && process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
+if (import.meta.url === entryPoint) await start();
