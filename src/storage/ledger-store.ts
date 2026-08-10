@@ -1,6 +1,7 @@
 import { Pool, type PoolClient } from "pg";
 import type { Apartment, ApartmentPlaceLink, DayTotals, LedgerTotals, LocationSource, ParsedDay, ReportSnapshot, SavedPlace, SavedPlaceKind } from "../domain/types.js";
 import { apartmentKey, publicApartmentRecords } from "../domain/apartments.js";
+import type { Cleaner, CleanerCredentials, InitialCleaner } from "../auth.js";
 
 export interface ApartmentImportInput {
   sourceKey: string;
@@ -91,17 +92,27 @@ export interface LedgerPeriod {
 }
 
 export interface LedgerStore {
-  initialize(): Promise<void>;
+  initialize(initialCleaner?: InitialCleaner | null): Promise<void>;
   health(): Promise<boolean>;
   close(): Promise<void>;
-  projectDay(dateIso: string, totals: DayTotals, advanceCents: number): Promise<ReportSnapshot>;
-  saveDay(input: SaveDayInput): Promise<{ day: StoredDay; snapshot: ReportSnapshot }>;
-  deleteDay(dateIso: string): Promise<boolean>;
-  getLedger(from?: string, to?: string): Promise<LedgerView>;
-  listPeriods(): Promise<LedgerPeriod[]>;
-  createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment>;
-  updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null>;
-  deletePayment(id: number): Promise<boolean>;
+  projectDay(dateIso: string, totals: DayTotals, advanceCents: number, cleanerId?: number): Promise<ReportSnapshot>;
+  saveDay(input: SaveDayInput, cleanerId?: number): Promise<{ day: StoredDay; snapshot: ReportSnapshot }>;
+  deleteDay(dateIso: string, cleanerId?: number): Promise<boolean>;
+  getLedger(from?: string, to?: string, cleanerId?: number): Promise<LedgerView>;
+  listPeriods(cleanerId?: number): Promise<LedgerPeriod[]>;
+  createPayment(dateIso: string, amountCents: number, note?: string, cleanerId?: number): Promise<Payment>;
+  updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }, cleanerId?: number): Promise<Payment | null>;
+  deletePayment(id: number, cleanerId?: number): Promise<boolean>;
+  createCleaner(input: { name: string; nameKey: string; pinSalt: string; pinHash: string }): Promise<Cleaner>;
+  findCleanerByNameKey(nameKey: string): Promise<CleanerCredentials | null>;
+  getCleaner(id: number): Promise<Cleaner | null>;
+  listCleaners(): Promise<Cleaner[]>;
+  setCleanerPin(id: number, pinSalt: string, pinHash: string): Promise<boolean>;
+  setCleanerActive(id: number, active: boolean): Promise<boolean>;
+  createSession(cleanerId: number, tokenHash: string, expiresAt: Date): Promise<void>;
+  getCleanerBySession(tokenHash: string): Promise<Cleaner | null>;
+  deleteSession(tokenHash: string): Promise<void>;
+  deleteCleanerSessions(cleanerId: number): Promise<void>;
   getActiveApartments(): Promise<Apartment[]>;
   getApartment(id: number): Promise<Apartment | null>;
   createApartment(input: ApartmentWriteInput): Promise<Apartment>;
@@ -113,6 +124,7 @@ export interface LedgerStore {
   updateSavedPlace(id: number, input: Partial<SavedPlaceWriteInput>): Promise<SavedPlace | null>;
   archiveSavedPlace(id: number): Promise<boolean>;
   findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null>;
+  findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null>;
   getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null>;
   setPreferredLaundry(apartmentId: number, placeId: number): Promise<ApartmentPlaceLink | null>;
 }
@@ -133,6 +145,10 @@ function finishTotals(value: Omit<LedgerTotals, "outstandingCents">): LedgerTota
 export class MemoryLedgerStore implements LedgerStore {
   private readonly days = new Map<string, StoredDay>();
   private readonly payments = new Map<number, Payment>();
+  private readonly paymentOwners = new Map<number, number>();
+  private readonly cleaners = new Map<number, CleanerCredentials>();
+  private readonly sessions = new Map<string, { cleanerId: number; expiresAt: Date }>();
+  private nextCleanerId = 1;
   private nextId = 1;
   private readonly apartments = new Map<number, Apartment>(publicApartmentRecords().map((item) => [item.id, item]));
   private nextApartmentId = this.apartments.size + 1;
@@ -140,13 +156,36 @@ export class MemoryLedgerStore implements LedgerStore {
   private nextSavedPlaceId = 1;
   private readonly apartmentPlaceLinks = new Map<number, ApartmentPlaceLink>();
 
-  async initialize(): Promise<void> {}
+  async initialize(initialCleaner?: InitialCleaner | null): Promise<void> {
+    if (initialCleaner && this.cleaners.size === 0) await this.createCleaner(initialCleaner);
+  }
   async health(): Promise<boolean> { return true; }
   async close(): Promise<void> {}
 
-  private aggregate(to?: string, from?: string, excludedDate?: string): LedgerTotals {
+  async createCleaner(input: { name: string; nameKey: string; pinSalt: string; pinHash: string }): Promise<Cleaner> {
+    if ([...this.cleaners.values()].some((cleaner) => cleaner.nameKey === input.nameKey)) throw new Error("cleaner_exists");
+    const now = new Date().toISOString();
+    const cleaner: CleanerCredentials = { id: this.nextCleanerId++, ...input, active: true, createdAt: now, updatedAt: now };
+    this.cleaners.set(cleaner.id, cleaner);
+    return { id: cleaner.id, name: cleaner.name, active: cleaner.active, createdAt: now, updatedAt: now };
+  }
+
+  async findCleanerByNameKey(nameKey: string): Promise<CleanerCredentials | null> { return [...this.cleaners.values()].find((cleaner) => cleaner.nameKey === nameKey) ?? null; }
+  async getCleaner(id: number): Promise<Cleaner | null> { const cleaner = this.cleaners.get(id); return cleaner ? { id, name: cleaner.name, active: cleaner.active, createdAt: cleaner.createdAt, updatedAt: cleaner.updatedAt } : null; }
+  async listCleaners(): Promise<Cleaner[]> { return (await Promise.all([...this.cleaners.keys()].map((id) => this.getCleaner(id)))).filter((item): item is Cleaner => item !== null); }
+  async setCleanerPin(id: number, pinSalt: string, pinHash: string): Promise<boolean> { const cleaner = this.cleaners.get(id); if (!cleaner) return false; this.cleaners.set(id, { ...cleaner, pinSalt, pinHash, updatedAt: new Date().toISOString() }); await this.deleteCleanerSessions(id); return true; }
+  async setCleanerActive(id: number, active: boolean): Promise<boolean> { const cleaner = this.cleaners.get(id); if (!cleaner) return false; this.cleaners.set(id, { ...cleaner, active, updatedAt: new Date().toISOString() }); if (!active) await this.deleteCleanerSessions(id); return true; }
+  async createSession(cleanerId: number, tokenHash: string, expiresAt: Date): Promise<void> { this.sessions.set(tokenHash, { cleanerId, expiresAt }); }
+  async getCleanerBySession(tokenHash: string): Promise<Cleaner | null> { const session = this.sessions.get(tokenHash); if (!session || session.expiresAt <= new Date()) { this.sessions.delete(tokenHash); return null; } const cleaner = await this.getCleaner(session.cleanerId); return cleaner?.active ? cleaner : null; }
+  async deleteSession(tokenHash: string): Promise<void> { this.sessions.delete(tokenHash); }
+  async deleteCleanerSessions(cleanerId: number): Promise<void> { for (const [hash, session] of this.sessions) if (session.cleanerId === cleanerId) this.sessions.delete(hash); }
+
+  private dayKey(cleanerId: number, dateIso: string): string { return `${cleanerId}:${dateIso}`; }
+
+  private aggregate(to?: string, from?: string, excludedDate?: string, cleanerId = 1): LedgerTotals {
     const result = zeroTotals();
-    for (const day of this.days.values()) {
+    for (const [key, day] of this.days) {
+      if (!key.startsWith(`${cleanerId}:`)) continue;
       if ((from && day.dateIso < from) || (to && day.dateIso > to) || day.dateIso === excludedDate) continue;
       result.minutes += day.minutes;
       result.earnedCents += day.incomeCents;
@@ -154,6 +193,7 @@ export class MemoryLedgerStore implements LedgerStore {
       result.checkinCents += day.checkinCents;
     }
     for (const payment of this.payments.values()) {
+      if ((this.paymentOwners.get(payment.id) ?? 1) !== cleanerId) continue;
       if ((from && payment.dateIso < from) || (to && payment.dateIso > to) || (excludedDate && payment.source === "day_text" && payment.workDate === excludedDate)) continue;
       result.receivedCents += payment.amountCents;
     }
@@ -161,16 +201,17 @@ export class MemoryLedgerStore implements LedgerStore {
     return result;
   }
 
-  async projectDay(dateIso: string, totals: DayTotals, advanceCents: number): Promise<ReportSnapshot> {
+  async projectDay(dateIso: string, totals: DayTotals, advanceCents: number, cleanerId = 1): Promise<ReportSnapshot> {
     const from = monthStart(dateIso);
-    const previous = this.aggregate(dateIso, from);
-    for (const day of this.days.values()) if (day.dateIso === dateIso) {
+    const previous = this.aggregate(dateIso, from, undefined, cleanerId);
+    const existing = this.days.get(this.dayKey(cleanerId, dateIso));
+    if (existing) { const day = existing;
       previous.minutes -= day.minutes; previous.earnedCents -= day.incomeCents;
       previous.expensesCents -= day.expensesCents; previous.checkinCents -= day.checkinCents;
     }
-    for (const payment of this.payments.values()) if (payment.dateIso === dateIso) previous.receivedCents -= payment.amountCents;
+    for (const payment of this.payments.values()) if ((this.paymentOwners.get(payment.id) ?? 1) === cleanerId && payment.dateIso === dateIso) previous.receivedCents -= payment.amountCents;
     previous.outstandingCents = previous.earnedCents - previous.receivedCents;
-    const base = this.aggregate(dateIso, from, dateIso);
+    const base = this.aggregate(dateIso, from, dateIso, cleanerId);
     const total = finishTotals({
       minutes: base.minutes + totals.minutes,
       earnedCents: base.earnedCents + totals.incomeCents,
@@ -181,57 +222,59 @@ export class MemoryLedgerStore implements LedgerStore {
     return { previous, total };
   }
 
-  async saveDay(input: SaveDayInput): Promise<{ day: StoredDay; snapshot: ReportSnapshot }> {
+  async saveDay(input: SaveDayInput, cleanerId = 1): Promise<{ day: StoredDay; snapshot: ReportSnapshot }> {
     const updatedAt = new Date().toISOString();
     const day: StoredDay = { dateIso: input.dateIso, sourceText: input.sourceText, reportText: input.reportText, parsedDetails: input.parsedDetails, ...input.totals, updatedAt };
-    this.days.set(input.dateIso, day);
-    for (const [id, payment] of this.payments) if (payment.source === "day_text" && payment.workDate === input.dateIso) this.payments.delete(id);
+    this.days.set(this.dayKey(cleanerId, input.dateIso), day);
+    for (const [id, payment] of this.payments) if ((this.paymentOwners.get(id) ?? 1) === cleanerId && payment.source === "day_text" && payment.workDate === input.dateIso) { this.payments.delete(id); this.paymentOwners.delete(id); }
     if (input.advanceCents > 0) {
       const id = this.nextId++;
+      this.paymentOwners.set(id, cleanerId);
       this.payments.set(id, { id, dateIso: input.dateIso, amountCents: input.advanceCents, note: "Аванс из отчёта", source: "day_text", workDate: input.dateIso, createdAt: updatedAt, updatedAt });
     }
-    return { day, snapshot: await this.projectDay(input.dateIso, input.totals, input.advanceCents) };
+    return { day, snapshot: await this.projectDay(input.dateIso, input.totals, input.advanceCents, cleanerId) };
   }
 
-  async deleteDay(dateIso: string): Promise<boolean> {
-    const deleted = this.days.delete(dateIso);
+  async deleteDay(dateIso: string, cleanerId = 1): Promise<boolean> {
+    const deleted = this.days.delete(this.dayKey(cleanerId, dateIso));
     for (const [id, payment] of this.payments) {
-      if (payment.source === "day_text" && payment.workDate === dateIso) this.payments.delete(id);
+      if ((this.paymentOwners.get(id) ?? 1) === cleanerId && payment.source === "day_text" && payment.workDate === dateIso) { this.payments.delete(id); this.paymentOwners.delete(id); }
     }
     return deleted;
   }
 
-  async getLedger(from?: string, to?: string): Promise<LedgerView> {
+  async getLedger(from?: string, to?: string, cleanerId = 1): Promise<LedgerView> {
     const rows: LedgerRow[] = [];
-    for (const day of this.days.values()) if ((!from || day.dateIso >= from) && (!to || day.dateIso <= to)) rows.push({ rowType: "work", ...day });
-    for (const payment of this.payments.values()) if ((!from || payment.dateIso >= from) && (!to || payment.dateIso <= to)) rows.push({ rowType: "payment", ...payment });
+    for (const [key, day] of this.days) if (key.startsWith(`${cleanerId}:`) && (!from || day.dateIso >= from) && (!to || day.dateIso <= to)) rows.push({ rowType: "work", ...day });
+    for (const payment of this.payments.values()) if ((this.paymentOwners.get(payment.id) ?? 1) === cleanerId && (!from || payment.dateIso >= from) && (!to || payment.dateIso <= to)) rows.push({ rowType: "payment", ...payment });
     rows.sort((a, b) => b.dateIso.localeCompare(a.dateIso) || (a.rowType === "work" ? -1 : 1));
-    return { totals: this.aggregate(to, from), rows };
+    return { totals: this.aggregate(to, from, undefined, cleanerId), rows };
   }
 
-  async listPeriods(): Promise<LedgerPeriod[]> {
+  async listPeriods(cleanerId = 1): Promise<LedgerPeriod[]> {
     const periods = new Set<string>();
-    for (const day of this.days.values()) periods.add(day.dateIso.slice(0, 7));
-    for (const payment of this.payments.values()) periods.add(payment.dateIso.slice(0, 7));
+    for (const [key, day] of this.days) if (key.startsWith(`${cleanerId}:`)) periods.add(day.dateIso.slice(0, 7));
+    for (const payment of this.payments.values()) if ((this.paymentOwners.get(payment.id) ?? 1) === cleanerId) periods.add(payment.dateIso.slice(0, 7));
     return [...periods].sort((a, b) => b.localeCompare(a)).map((period) => ({ period, from: `${period}-01`, to: `${period}-31` }));
   }
 
-  async createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment> {
+  async createPayment(dateIso: string, amountCents: number, note?: string, cleanerId = 1): Promise<Payment> {
     const now = new Date().toISOString(); const id = this.nextId++;
     const payment: Payment = { id, dateIso, amountCents, note: note?.trim() || null, source: "manual", workDate: null, createdAt: now, updatedAt: now };
-    this.payments.set(id, payment); return payment;
+    this.payments.set(id, payment); this.paymentOwners.set(id, cleanerId); return payment;
   }
 
-  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null> {
+  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }, cleanerId = 1): Promise<Payment | null> {
     const current = this.payments.get(id);
-    if (!current || current.source !== "manual") return null;
+    if (!current || (this.paymentOwners.get(id) ?? 1) !== cleanerId || current.source !== "manual") return null;
     const next = { ...current, dateIso: values.dateIso ?? current.dateIso, amountCents: values.amountCents ?? current.amountCents, note: values.note === undefined ? current.note : values.note?.trim() || null, updatedAt: new Date().toISOString() };
     this.payments.set(id, next); return next;
   }
 
-  async deletePayment(id: number): Promise<boolean> {
+  async deletePayment(id: number, cleanerId = 1): Promise<boolean> {
     const payment = this.payments.get(id);
-    return payment?.source === "manual" ? this.payments.delete(id) : false;
+    if ((this.paymentOwners.get(id) ?? 1) !== cleanerId || payment?.source !== "manual") return false;
+    this.paymentOwners.delete(id); return this.payments.delete(id);
   }
 
   async getActiveApartments(): Promise<Apartment[]> {
@@ -342,6 +385,11 @@ export class MemoryLedgerStore implements LedgerStore {
     return item ? { ...item } : null;
   }
 
+  async findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null> {
+    const item = [...this.savedPlaces.values()].find((place) => place.active && place.kind === "laundry" && place.mapsUrl === mapsUrl);
+    return item ? { ...item } : null;
+  }
+
   async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {
     const link = this.apartmentPlaceLinks.get(apartmentId); return link ? this.getSavedPlace(link.placeId) : null;
   }
@@ -391,6 +439,17 @@ function mapPayment(row: Record<string, unknown>): Payment {
   };
 }
 
+function mapCleaner(row: Record<string, unknown>): Cleaner {
+  return {
+    id: Number(row.id), name: String(row.display_name), active: Boolean(row.active),
+    createdAt: new Date(String(row.created_at)).toISOString(), updatedAt: new Date(String(row.updated_at)).toISOString(),
+  };
+}
+
+function mapCleanerCredentials(row: Record<string, unknown>): CleanerCredentials {
+  return { ...mapCleaner(row), nameKey: String(row.name_key), pinSalt: String(row.pin_salt), pinHash: String(row.pin_hash) };
+}
+
 function mapApartment(row: Record<string, unknown>): Apartment {
   return {
     id: Number(row.id), sourceKey: String(row.source_key), canonicalKey: String(row.canonical_key),
@@ -423,8 +482,25 @@ export class PostgresLedgerStore implements LedgerStore {
   private readonly pool: Pool;
   constructor(connectionString: string) { this.pool = new Pool({ connectionString }); }
 
-  async initialize(): Promise<void> {
+  async initialize(initialCleaner?: InitialCleaner | null): Promise<void> {
     await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS cleaners (
+        id bigserial PRIMARY KEY,
+        display_name text NOT NULL,
+        name_key text NOT NULL UNIQUE,
+        pin_salt text NOT NULL,
+        pin_hash text NOT NULL,
+        active boolean NOT NULL DEFAULT true,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE TABLE IF NOT EXISTS cleaner_sessions (
+        token_hash text PRIMARY KEY,
+        cleaner_id bigint NOT NULL REFERENCES cleaners(id) ON DELETE CASCADE,
+        expires_at timestamptz NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS cleaner_sessions_cleaner_idx ON cleaner_sessions (cleaner_id);
       CREATE TABLE IF NOT EXISTS work_days (
         date_iso date PRIMARY KEY, source_text text NOT NULL, parsed_details jsonb NOT NULL,
         report_text text,
@@ -487,6 +563,7 @@ export class PostgresLedgerStore implements LedgerStore {
         updated_at timestamptz NOT NULL DEFAULT now()
       );
     `);
+    await this.migrateCleanerOwnership(initialCleaner ?? null);
     for (const apartment of publicApartmentRecords()) {
       await this.pool.query(`
         INSERT INTO apartments (source_key, canonical_key, canonical_name, aliases, active)
@@ -496,7 +573,7 @@ export class PostgresLedgerStore implements LedgerStore {
     }
     await this.pool.query(`
       WITH recalculated AS (
-        SELECT day.date_iso, COALESCE(SUM(
+        SELECT day.cleaner_id, day.date_iso, COALESCE(SUM(
           CASE WHEN job->>'workType' = 'independent'
             THEN COALESCE(
               NULLIF(job->>'durationMinutes', '')::int,
@@ -508,42 +585,103 @@ export class PostgresLedgerStore implements LedgerStore {
         ), 0)::int AS minutes
         FROM work_days AS day
         LEFT JOIN LATERAL jsonb_array_elements(COALESCE(day.parsed_details->'jobs', '[]'::jsonb)) AS job ON true
-        GROUP BY day.date_iso
+        GROUP BY day.cleaner_id, day.date_iso
       )
       UPDATE work_days AS day
       SET minutes = recalculated.minutes
       FROM recalculated
-      WHERE day.date_iso = recalculated.date_iso AND day.minutes IS DISTINCT FROM recalculated.minutes
+      WHERE day.cleaner_id = recalculated.cleaner_id AND day.date_iso = recalculated.date_iso AND day.minutes IS DISTINCT FROM recalculated.minutes
     `);
+  }
+
+  private async migrateCleanerOwnership(initialCleaner: InitialCleaner | null): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("CREATE TABLE IF NOT EXISTS schema_migrations (version integer PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())");
+      const applied = await client.query("SELECT 1 FROM schema_migrations WHERE version=2");
+      if (applied.rowCount) { await client.query("COMMIT"); return; }
+      const counts = await client.query("SELECT (SELECT count(*) FROM work_days)::int AS days, (SELECT count(*) FROM payments)::int AS payments");
+      const hasLegacyData = Number(counts.rows[0].days) > 0 || Number(counts.rows[0].payments) > 0;
+      let initialCleanerId: number | null = null;
+      if (initialCleaner) {
+        const inserted = await client.query(`
+          INSERT INTO cleaners (display_name,name_key,pin_salt,pin_hash)
+          VALUES ($1,$2,$3,$4)
+          ON CONFLICT (name_key) DO UPDATE SET display_name=EXCLUDED.display_name
+          RETURNING id
+        `, [initialCleaner.name, initialCleaner.nameKey, initialCleaner.pinSalt, initialCleaner.pinHash]);
+        initialCleanerId = Number(inserted.rows[0].id);
+      }
+      if (hasLegacyData && initialCleanerId == null) throw new Error("Existing ledger data requires INITIAL_CLEANER_NAME and INITIAL_CLEANER_PIN before migration");
+      await client.query("ALTER TABLE work_days ADD COLUMN IF NOT EXISTS cleaner_id bigint");
+      await client.query("ALTER TABLE payments ADD COLUMN IF NOT EXISTS cleaner_id bigint");
+      if (initialCleanerId != null) {
+        await client.query("UPDATE work_days SET cleaner_id=$1 WHERE cleaner_id IS NULL", [initialCleanerId]);
+        await client.query("UPDATE payments SET cleaner_id=$1 WHERE cleaner_id IS NULL", [initialCleanerId]);
+      }
+      await client.query("ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_work_date_fkey");
+      await client.query("DROP INDEX IF EXISTS payments_one_day_text");
+      await client.query("ALTER TABLE work_days DROP CONSTRAINT IF EXISTS work_days_pkey");
+      await client.query("ALTER TABLE work_days ALTER COLUMN cleaner_id SET NOT NULL");
+      await client.query("ALTER TABLE payments ALTER COLUMN cleaner_id SET NOT NULL");
+      await client.query("ALTER TABLE work_days ADD CONSTRAINT work_days_pkey PRIMARY KEY (cleaner_id,date_iso)");
+      await client.query("ALTER TABLE work_days ADD CONSTRAINT work_days_cleaner_fkey FOREIGN KEY (cleaner_id) REFERENCES cleaners(id) ON DELETE CASCADE");
+      await client.query("ALTER TABLE payments ADD CONSTRAINT payments_cleaner_fkey FOREIGN KEY (cleaner_id) REFERENCES cleaners(id) ON DELETE CASCADE");
+      await client.query("ALTER TABLE payments ADD CONSTRAINT payments_work_day_fkey FOREIGN KEY (cleaner_id,work_date) REFERENCES work_days(cleaner_id,date_iso) ON DELETE CASCADE");
+      await client.query("CREATE UNIQUE INDEX payments_one_day_text ON payments (cleaner_id,work_date) WHERE source='day_text'");
+      await client.query("CREATE INDEX work_days_cleaner_date_idx ON work_days (cleaner_id,date_iso)");
+      await client.query("CREATE INDEX payments_cleaner_date_idx ON payments (cleaner_id,payment_date)");
+      await client.query("INSERT INTO schema_migrations(version) VALUES (2)");
+      await client.query("COMMIT");
+    } catch (error) { await client.query("ROLLBACK"); throw error; }
+    finally { client.release(); }
   }
 
   async health(): Promise<boolean> { try { await this.pool.query("SELECT 1"); return true; } catch { return false; } }
   async close(): Promise<void> { await this.pool.end(); }
 
-  private async aggregate(client: Pool | PoolClient, condition = "TRUE", values: unknown[] = []): Promise<LedgerTotals> {
+  async createCleaner(input: { name: string; nameKey: string; pinSalt: string; pinHash: string }): Promise<Cleaner> {
+    try {
+      const result = await this.pool.query("INSERT INTO cleaners(display_name,name_key,pin_salt,pin_hash) VALUES($1,$2,$3,$4) RETURNING *", [input.name, input.nameKey, input.pinSalt, input.pinHash]);
+      return mapCleaner(result.rows[0]);
+    } catch (error) { if ((error as { code?: string }).code === "23505") throw new Error("cleaner_exists"); throw error; }
+  }
+  async findCleanerByNameKey(nameKey: string): Promise<CleanerCredentials | null> { const result = await this.pool.query("SELECT * FROM cleaners WHERE name_key=$1", [nameKey]); return result.rows[0] ? mapCleanerCredentials(result.rows[0]) : null; }
+  async getCleaner(id: number): Promise<Cleaner | null> { const result = await this.pool.query("SELECT * FROM cleaners WHERE id=$1", [id]); return result.rows[0] ? mapCleaner(result.rows[0]) : null; }
+  async listCleaners(): Promise<Cleaner[]> { const result = await this.pool.query("SELECT * FROM cleaners ORDER BY display_name"); return result.rows.map(mapCleaner); }
+  async setCleanerPin(id: number, pinSalt: string, pinHash: string): Promise<boolean> { const result = await this.pool.query("UPDATE cleaners SET pin_salt=$2,pin_hash=$3,updated_at=now() WHERE id=$1", [id, pinSalt, pinHash]); if (result.rowCount) await this.deleteCleanerSessions(id); return Boolean(result.rowCount); }
+  async setCleanerActive(id: number, active: boolean): Promise<boolean> { const result = await this.pool.query("UPDATE cleaners SET active=$2,updated_at=now() WHERE id=$1", [id, active]); if (result.rowCount && !active) await this.deleteCleanerSessions(id); return Boolean(result.rowCount); }
+  async createSession(cleanerId: number, tokenHash: string, expiresAt: Date): Promise<void> { await this.pool.query("INSERT INTO cleaner_sessions(token_hash,cleaner_id,expires_at) VALUES($1,$2,$3)", [tokenHash, cleanerId, expiresAt]); }
+  async getCleanerBySession(tokenHash: string): Promise<Cleaner | null> { const result = await this.pool.query("SELECT c.* FROM cleaner_sessions s JOIN cleaners c ON c.id=s.cleaner_id WHERE s.token_hash=$1 AND s.expires_at>now() AND c.active=true", [tokenHash]); return result.rows[0] ? mapCleaner(result.rows[0]) : null; }
+  async deleteSession(tokenHash: string): Promise<void> { await this.pool.query("DELETE FROM cleaner_sessions WHERE token_hash=$1", [tokenHash]); }
+  async deleteCleanerSessions(cleanerId: number): Promise<void> { await this.pool.query("DELETE FROM cleaner_sessions WHERE cleaner_id=$1", [cleanerId]); }
+
+  private async aggregate(client: Pool | PoolClient, cleanerId: number, condition = "TRUE", values: unknown[] = []): Promise<LedgerTotals> {
+    const scopedCondition = condition.replace(/\$(\d+)/g, (_match, index: string) => `$${Number(index) + 1}`);
     const result = await client.query(`
       SELECT
-        COALESCE((SELECT SUM(minutes) FROM work_days WHERE ${condition}), 0)::int AS minutes,
-        COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE ${condition}), 0)::int AS earned_cents,
-        COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE ${condition}), 0)::int AS expenses_cents,
-        COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE ${condition}), 0)::int AS checkin_cents,
-        COALESCE((SELECT SUM(amount_cents) FROM payments WHERE ${condition.replaceAll("date_iso", "payment_date")}), 0)::int AS received_cents
-    `, values);
+        COALESCE((SELECT SUM(minutes) FROM work_days WHERE cleaner_id=$1 AND ${scopedCondition}), 0)::int AS minutes,
+        COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE cleaner_id=$1 AND ${scopedCondition}), 0)::int AS earned_cents,
+        COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE cleaner_id=$1 AND ${scopedCondition}), 0)::int AS expenses_cents,
+        COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE cleaner_id=$1 AND ${scopedCondition}), 0)::int AS checkin_cents,
+        COALESCE((SELECT SUM(amount_cents) FROM payments WHERE cleaner_id=$1 AND ${scopedCondition.replaceAll("date_iso", "payment_date")}), 0)::int AS received_cents
+    `, [cleanerId, ...values]);
     return mapTotals(result.rows[0]);
   }
 
-  async projectDay(dateIso: string, totals: DayTotals, advanceCents: number): Promise<ReportSnapshot> {
+  async projectDay(dateIso: string, totals: DayTotals, advanceCents: number, cleanerId = 1): Promise<ReportSnapshot> {
     const from = monthStart(dateIso);
     const [previous, baseResult] = await Promise.all([
-      this.aggregate(this.pool, "date_iso >= $2 AND date_iso < $1", [dateIso, from]),
+      this.aggregate(this.pool, cleanerId, "date_iso >= $2 AND date_iso < $1", [dateIso, from]),
       this.pool.query(`
         SELECT
-          COALESCE((SELECT SUM(minutes) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS minutes,
-          COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS earned_cents,
-          COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS expenses_cents,
-          COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS checkin_cents,
-          COALESCE((SELECT SUM(amount_cents) FROM payments WHERE payment_date >= $2 AND payment_date <= $1 AND NOT (source='day_text' AND work_date=$1)), 0)::int AS received_cents
-      `, [dateIso, from]),
+          COALESCE((SELECT SUM(minutes) FROM work_days WHERE cleaner_id=$3 AND date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS minutes,
+          COALESCE((SELECT SUM(earned_cents) FROM work_days WHERE cleaner_id=$3 AND date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS earned_cents,
+          COALESCE((SELECT SUM(expenses_cents) FROM work_days WHERE cleaner_id=$3 AND date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS expenses_cents,
+          COALESCE((SELECT SUM(checkin_cents) FROM work_days WHERE cleaner_id=$3 AND date_iso >= $2 AND date_iso <= $1 AND date_iso <> $1), 0)::int AS checkin_cents,
+          COALESCE((SELECT SUM(amount_cents) FROM payments WHERE cleaner_id=$3 AND payment_date >= $2 AND payment_date <= $1 AND NOT (source='day_text' AND work_date=$1)), 0)::int AS received_cents
+      `, [dateIso, from, cleanerId]),
     ]);
     const base = mapTotals(baseResult.rows[0]);
     const total = finishTotals({
@@ -554,47 +692,47 @@ export class PostgresLedgerStore implements LedgerStore {
     return { previous, total };
   }
 
-  async saveDay(input: SaveDayInput): Promise<{ day: StoredDay; snapshot: ReportSnapshot }> {
+  async saveDay(input: SaveDayInput, cleanerId = 1): Promise<{ day: StoredDay; snapshot: ReportSnapshot }> {
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
       const saved = await client.query(`
-        INSERT INTO work_days (date_iso, source_text, report_text, parsed_details, minutes, earned_cents, checkin_cents, expenses_cents, updated_at)
-        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, now())
-        ON CONFLICT (date_iso) DO UPDATE SET source_text=EXCLUDED.source_text, parsed_details=EXCLUDED.parsed_details,
+        INSERT INTO work_days (cleaner_id,date_iso, source_text, report_text, parsed_details, minutes, earned_cents, checkin_cents, expenses_cents, updated_at)
+        VALUES ($9,$1, $2, $3, $4::jsonb, $5, $6, $7, $8, now())
+        ON CONFLICT (cleaner_id,date_iso) DO UPDATE SET source_text=EXCLUDED.source_text, parsed_details=EXCLUDED.parsed_details,
           report_text=EXCLUDED.report_text,
           minutes=EXCLUDED.minutes, earned_cents=EXCLUDED.earned_cents, checkin_cents=EXCLUDED.checkin_cents,
           expenses_cents=EXCLUDED.expenses_cents, updated_at=now()
         RETURNING *
-      `, [input.dateIso, input.sourceText, input.reportText, JSON.stringify(input.parsedDetails), input.totals.minutes, input.totals.incomeCents, input.totals.checkinCents, input.totals.expensesCents]);
-      await client.query("DELETE FROM payments WHERE source='day_text' AND work_date=$1", [input.dateIso]);
+      `, [input.dateIso, input.sourceText, input.reportText, JSON.stringify(input.parsedDetails), input.totals.minutes, input.totals.incomeCents, input.totals.checkinCents, input.totals.expensesCents, cleanerId]);
+      await client.query("DELETE FROM payments WHERE cleaner_id=$2 AND source='day_text' AND work_date=$1", [input.dateIso, cleanerId]);
       if (input.advanceCents > 0) await client.query(
-        "INSERT INTO payments (payment_date, amount_cents, note, source, work_date) VALUES ($1,$2,'Аванс из отчёта','day_text',$1)",
-        [input.dateIso, input.advanceCents],
+        "INSERT INTO payments (cleaner_id,payment_date,amount_cents,note,source,work_date) VALUES ($3,$1,$2,'Аванс из отчёта','day_text',$1)",
+        [input.dateIso, input.advanceCents, cleanerId],
       );
       const from = monthStart(input.dateIso);
-      const previous = await this.aggregate(client, "date_iso >= $2 AND date_iso < $1", [input.dateIso, from]);
-      const total = await this.aggregate(client, "date_iso >= $2 AND date_iso <= $1", [input.dateIso, from]);
+      const previous = await this.aggregate(client, cleanerId, "date_iso >= $2 AND date_iso < $1", [input.dateIso, from]);
+      const total = await this.aggregate(client, cleanerId, "date_iso >= $2 AND date_iso <= $1", [input.dateIso, from]);
       await client.query("COMMIT");
       return { day: mapDay(saved.rows[0]), snapshot: { previous, total } };
     } catch (error) { await client.query("ROLLBACK"); throw error; }
     finally { client.release(); }
   }
 
-  async deleteDay(dateIso: string): Promise<boolean> {
-    const result = await this.pool.query("DELETE FROM work_days WHERE date_iso=$1", [dateIso]);
+  async deleteDay(dateIso: string, cleanerId = 1): Promise<boolean> {
+    const result = await this.pool.query("DELETE FROM work_days WHERE date_iso=$1 AND cleaner_id=$2", [dateIso, cleanerId]);
     return (result.rowCount ?? 0) > 0;
   }
 
-  async getLedger(from?: string, to?: string): Promise<LedgerView> {
+  async getLedger(from?: string, to?: string, cleanerId = 1): Promise<LedgerView> {
     const values: string[] = []; const clauses: string[] = [];
     if (from) { values.push(from); clauses.push(`date_iso >= $${values.length}`); }
     if (to) { values.push(to); clauses.push(`date_iso <= $${values.length}`); }
     const condition = clauses.length ? clauses.join(" AND ") : "TRUE";
     const [totals, days, payments] = await Promise.all([
-      this.aggregate(this.pool, condition, values),
-      this.pool.query(`SELECT * FROM work_days WHERE ${condition} ORDER BY date_iso, updated_at`, values),
-      this.pool.query(`SELECT * FROM payments WHERE ${condition.replaceAll("date_iso", "payment_date")} ORDER BY payment_date, id`, values),
+      this.aggregate(this.pool, cleanerId, condition, values),
+      this.pool.query(`SELECT * FROM work_days WHERE cleaner_id=$${values.length + 1} AND ${condition} ORDER BY date_iso, updated_at`, [...values, cleanerId]),
+      this.pool.query(`SELECT * FROM payments WHERE cleaner_id=$${values.length + 1} AND ${condition.replaceAll("date_iso", "payment_date")} ORDER BY payment_date, id`, [...values, cleanerId]),
     ]);
     const rows: LedgerRow[] = [
       ...days.rows.map((row) => ({ rowType: "work" as const, ...mapDay(row) })),
@@ -603,38 +741,38 @@ export class PostgresLedgerStore implements LedgerStore {
     return { totals, rows };
   }
 
-  async listPeriods(): Promise<LedgerPeriod[]> {
+  async listPeriods(cleanerId = 1): Promise<LedgerPeriod[]> {
     const result = await this.pool.query(`
       SELECT DISTINCT to_char(period_date, 'YYYY-MM') AS period
       FROM (
-        SELECT date_iso AS period_date FROM work_days
+        SELECT date_iso AS period_date FROM work_days WHERE cleaner_id=$1
         UNION ALL
-        SELECT payment_date AS period_date FROM payments
+        SELECT payment_date AS period_date FROM payments WHERE cleaner_id=$1
       ) entries
       ORDER BY period DESC
-    `);
+    `, [cleanerId]);
     return result.rows.map(({ period }) => ({ period: String(period), from: `${period}-01`, to: `${period}-31` }));
   }
 
-  async createPayment(dateIso: string, amountCents: number, note?: string): Promise<Payment> {
+  async createPayment(dateIso: string, amountCents: number, note?: string, cleanerId = 1): Promise<Payment> {
     const result = await this.pool.query(
-      "INSERT INTO payments (payment_date,amount_cents,note,source) VALUES ($1,$2,$3,'manual') RETURNING *",
-      [dateIso, amountCents, note?.trim() || null],
+      "INSERT INTO payments (cleaner_id,payment_date,amount_cents,note,source) VALUES ($4,$1,$2,$3,'manual') RETURNING *",
+      [dateIso, amountCents, note?.trim() || null, cleanerId],
     );
     return mapPayment(result.rows[0]);
   }
 
-  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }): Promise<Payment | null> {
+  async updatePayment(id: number, values: { dateIso?: string; amountCents?: number; note?: string | null }, cleanerId = 1): Promise<Payment | null> {
     const result = await this.pool.query(`
       UPDATE payments SET payment_date=COALESCE($2,payment_date), amount_cents=COALESCE($3,amount_cents),
         note=CASE WHEN $4::boolean THEN $5 ELSE note END, updated_at=now()
-      WHERE id=$1 AND source='manual' RETURNING *
-    `, [id, values.dateIso ?? null, values.amountCents ?? null, values.note !== undefined, values.note?.trim() || null]);
+      WHERE id=$1 AND cleaner_id=$6 AND source='manual' RETURNING *
+    `, [id, values.dateIso ?? null, values.amountCents ?? null, values.note !== undefined, values.note?.trim() || null, cleanerId]);
     return result.rows[0] ? mapPayment(result.rows[0]) : null;
   }
 
-  async deletePayment(id: number): Promise<boolean> {
-    const result = await this.pool.query("DELETE FROM payments WHERE id=$1 AND source='manual'", [id]);
+  async deletePayment(id: number, cleanerId = 1): Promise<boolean> {
+    const result = await this.pool.query("DELETE FROM payments WHERE id=$1 AND cleaner_id=$2 AND source='manual'", [id, cleanerId]);
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -735,6 +873,12 @@ export class PostgresLedgerStore implements LedgerStore {
 
   async findSavedPlaceByOsm(osmType: NonNullable<SavedPlace["osmType"]>, osmId: string): Promise<SavedPlace | null> {
     const result = await this.pool.query("SELECT * FROM saved_places WHERE osm_type=$1 AND osm_id=$2 AND active=true", [osmType, osmId]); return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
+  }
+
+
+  async findSavedPlaceByMapsUrl(mapsUrl: string): Promise<SavedPlace | null> {
+    const result = await this.pool.query("SELECT * FROM saved_places WHERE kind='laundry' AND maps_url=$1 AND active=true ORDER BY id LIMIT 1", [mapsUrl]);
+    return result.rows[0] ? mapSavedPlace(result.rows[0]) : null;
   }
 
   async getPreferredLaundry(apartmentId: number): Promise<SavedPlace | null> {

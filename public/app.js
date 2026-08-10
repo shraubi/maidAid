@@ -6,13 +6,13 @@ const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) => ({ independent: "Самостоятельная уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[type] ?? "Тип не указан";
 const kindLabel = (kind) => ({ apartment: "Квартира", laundry: "Сушка", partner_restaurant: "Партнёр" })[kind] ?? "Место";
-const mapsHref = (item) => item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null);
+const mapsHref = (item) => item ? item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null) : null;
 
 async function api(url, options) {
   const response = await fetch(url, options);
   if (response.status === 204) return null;
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) { const error = new Error(body.error ?? "request_failed"); error.body = body; throw error; }
+  if (!response.ok) { if (response.status === 401 && !url.startsWith("/api/auth/")) showAuth(); const error = new Error(body.error ?? "request_failed"); error.body = body; throw error; }
   return body;
 }
 
@@ -32,10 +32,53 @@ let nextTodayJobId = 1;
 let latestDayPayload = null;
 let daySaved = false;
 let selectedTodayDateIso = null;
+let todayState = "editor";
+let todayInitialized = false;
+let savedTodayDay = null;
+let savedTodayApartments = new Map();
 let mapMode = (() => { try { return new URLSearchParams(location.search).get("view") || localStorage.getItem("maidaid:map-view") || "map"; } catch { return "map"; } })();
 const today = new Date();
 const calendarPeriod = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 let selectedPeriod = calendarPeriod;
+let activeCleaner = null;
+
+function showAuth(mode = "login") {
+  activeCleaner = null;
+  $("#auth-view").hidden = false;
+  $(".app-header").hidden = true; $(".app-main").hidden = true; $(".mobile-nav").hidden = true;
+  $$('[data-auth-mode]').forEach((button) => button.classList.toggle("active", button.dataset.authMode === mode));
+  $("#login-form").hidden = mode !== "login"; $("#register-form").hidden = mode !== "register";
+  $("#auth-error").hidden = true;
+}
+
+function showAuthenticated(cleaner) {
+  const cleanerChanged = activeCleaner?.id !== cleaner.id;
+  activeCleaner = cleaner; $("#cleaner-name").textContent = cleaner.name;
+  if (cleanerChanged) { todayInitialized = false; savedTodayDay = null; savedTodayApartments = new Map(); todayJobs = []; latestPreview = null; latestDayPayload = null; daySaved = false; setTodayState("editor"); }
+  $("#auth-view").hidden = true; $(".app-header").hidden = false; $(".app-main").hidden = false; $(".mobile-nav").hidden = false;
+}
+
+function authErrorMessage(code) {
+  return ({ invalid_credentials: "Неверное имя или PIN.", invalid_team_code: "Неверный код команды.", cleaner_exists: "Профиль с таким именем уже существует.", registration_disabled: "Регистрация временно отключена.", rate_limit_exceeded: "Слишком много попыток. Попробуйте позже." })[code] || "Не удалось продолжить. Проверьте данные и попробуйте ещё раз.";
+}
+
+$$('[data-auth-mode]').forEach((button) => button.addEventListener("click", () => showAuth(button.dataset.authMode)));
+$("#login-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); $("#auth-error").hidden = true;
+  try {
+    const { cleaner } = await api("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: $("#login-name").value, pin: $("#login-pin").value }) });
+    showAuthenticated(cleaner); $("#login-pin").value = ""; await showRoute(routeFromPath());
+  } catch (error) { $("#auth-error").textContent = authErrorMessage(error.message); $("#auth-error").hidden = false; }
+});
+$("#register-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); $("#auth-error").hidden = true;
+  if ($("#register-pin").value !== $("#register-pin-confirm").value) { $("#auth-error").textContent = "PIN-коды не совпадают."; $("#auth-error").hidden = false; return; }
+  try {
+    const { cleaner } = await api("/api/auth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ teamCode: $("#register-team-code").value, name: $("#register-name").value, pin: $("#register-pin").value }) });
+    showAuthenticated(cleaner); $("#register-form").reset(); await showRoute(routeFromPath());
+  } catch (error) { $("#auth-error").textContent = authErrorMessage(error.message); $("#auth-error").hidden = false; }
+});
+$("#logout-button").addEventListener("click", async () => { try { await api("/api/auth/logout", { method: "POST" }); } finally { showAuth(); } });
 
 function routeFromPath() {
   if (location.pathname.startsWith("/map")) return "map";
@@ -50,7 +93,11 @@ async function showRoute(route, push = false) {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
   if (push) history.pushState({}, "", route === "today" ? "/today" : `/${route}`);
-  if (route === "today") { await loadApartments(); renderTodayJobs(); }
+  if (route === "today") {
+    await loadApartments();
+    if (!todayInitialized || todayState === "saved") await loadSavedToday(true);
+    else if (todayState === "editor") renderTodayJobs();
+  }
   if (route === "map") await loadMapItems();
   if (route === "ledger") await loadLedger();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -68,8 +115,10 @@ window.addEventListener("popstate", async () => {
 });
 
 function setTodayState(state) {
+  todayState = state;
   $("#today-editor").hidden = state !== "editor";
   $("#today-preview").hidden = state !== "preview";
+  $("#today-saved").hidden = state !== "saved";
 }
 
 const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -86,6 +135,74 @@ $("#today-date-input").addEventListener("change", (event) => {
   event.target.value = selectedTodayDateIso;
   latestPreview = null; latestDayPayload = null; daySaved = false;
   updateTodayDateLabel();
+});
+
+function savedJobExpenses(day, job, jobIndex) {
+  return (day.parsedDetails.expenses ?? []).filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
+}
+
+async function hydrateSavedToday(day) {
+  const ids = [...new Set((day.parsedDetails.jobs ?? []).map((job) => job.apartmentId).filter(Boolean))];
+  const details = await Promise.all(ids.map(async (id) => {
+    try { return [id, await api(`/api/apartments/${id}`)]; }
+    catch { return [id, null]; }
+  }));
+  savedTodayApartments = new Map(details);
+}
+
+function renderSavedToday(statusText = "") {
+  if (!savedTodayDay) return;
+  const jobs = savedTodayDay.parsedDetails.jobs ?? [];
+  $("#saved-today-summary").innerHTML = jobs.map((job, index) => {
+    const detail = job.apartmentId ? savedTodayApartments.get(job.apartmentId) : null;
+    const apartment = detail?.apartment ?? job;
+    const apartmentRoute = mapsHref(apartment);
+    const dryerRoute = mapsHref(detail?.preferredLaundry);
+    const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
+    const expenses = savedJobExpenses(savedTodayDay, job, index);
+    return `<article class="saved-today-card">${job.apartmentId ? `<button class="saved-apartment-title" data-open-today-apartment="${job.apartmentId}" type="button">${escapeHtml(job.object)}</button>` : `<strong>${escapeHtml(job.object)}</strong>`}${apartment.address ? `<span class="saved-apartment-address">${escapeHtml(apartment.address)}</span>` : ""}<small>${escapeHtml(typeLabel(job.workType))} · ${escapeHtml(timing)}${expenses.length ? ` · ${escapeHtml(expenses.map((expense) => `${expense.category} ${formatMoney(expense.amountCents)}`).join(", "))}` : ""}</small><div class="saved-today-actions">${apartmentRoute ? `<a class="secondary action-link" href="${escapeHtml(apartmentRoute)}" target="_blank" rel="noopener noreferrer">Квартира</a>` : ""}${dryerRoute ? `<a class="primary action-link" href="${escapeHtml(dryerRoute)}" target="_blank" rel="noopener noreferrer">Сушка</a>` : ""}</div></article>`;
+  }).join("");
+  $("#saved-today-report").textContent = savedTodayDay.reportText || "Отчёт не сохранён";
+  $("#saved-today-status").textContent = statusText;
+  $("#saved-today-status").hidden = !statusText;
+  setTodayState("saved");
+}
+
+async function loadSavedToday(force = false, statusText = "") {
+  if (todayInitialized && !force) return;
+  const dateIso = localDateIso();
+  try {
+    const data = await api(`/api/ledger?from=${dateIso}&to=${dateIso}`);
+    savedTodayDay = data.rows.find((row) => row.rowType === "work" && row.dateIso === dateIso) ?? null;
+    if (savedTodayDay) { await hydrateSavedToday(savedTodayDay); renderSavedToday(statusText); }
+    else if (todayState === "saved" || !todayInitialized) setTodayState("editor");
+  } catch {
+    if (!todayInitialized) setTodayState("editor");
+  }
+  todayInitialized = true;
+}
+
+function centsInput(cents) { return cents ? String(cents / 100) : ""; }
+
+function editSavedToday() {
+  if (!savedTodayDay) return;
+  selectedTodayDateIso = savedTodayDay.dateIso;
+  $("#today-date-input").value = selectedTodayDateIso;
+  todayJobs = (savedTodayDay.parsedDetails.jobs ?? []).map((job, index) => {
+    const expenses = savedJobExpenses(savedTodayDay, job, index);
+    const dryerCents = expenses.filter((expense) => normalizeSearch(expense.category).includes("сушк")).reduce((sum, expense) => sum + expense.amountCents, 0);
+    const otherExpenseCents = expenses.filter((expense) => !normalizeSearch(expense.category).includes("сушк")).reduce((sum, expense) => sum + expense.amountCents, 0);
+    const workType = ["independent", "orientation", "practice", "checkin"].includes(job.workType) ? job.workType : "independent";
+    return { id: nextTodayJobId++, apartmentId: job.apartmentId, newApartmentName: job.apartmentId ? "" : job.object, query: job.object, workType, durationMinutes: Math.max(30, Math.min(300, Math.round((job.durationMinutes ?? 180) / 30) * 30)), dryer: centsInput(dryerCents), otherExpense: centsInput(otherExpenseCents) };
+  });
+  latestPreview = null; latestDayPayload = null; daySaved = false;
+  updateTodayDateLabel(); renderTodayJobs(); setTodayState("editor");
+}
+
+$("#edit-saved-today").addEventListener("click", editSavedToday);
+$("#saved-today-summary").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-today-apartment]");
+  if (button) void openApartmentDetail(Number(button.dataset.openTodayApartment), false);
 });
 
 function addTodayJob() {
@@ -189,8 +306,17 @@ $("#preview-button").addEventListener("click", async () => {
   finally { button.disabled = false; button.textContent = "Сформировать отчёт"; }
 });
 $("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
-async function saveTodayFromReport() { if (daySaved) return; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; }
-$("#share-button").addEventListener("click", async () => { const status = $("#share-status"); try { await saveTodayFromReport(); if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); status.className = "notice success"; status.textContent = "День сохранён, отчёт отправлен."; status.hidden = false; return; } await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = daySaved ? "notice success" : "notice error"; status.textContent = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; } status.hidden = false; });
+async function saveTodayFromReport() { if (daySaved) return null; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; return saved; }
+$("#share-button").addEventListener("click", async () => {
+  const status = $("#share-status"); let statusText = "";
+  try {
+    await saveTodayFromReport();
+    if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); statusText = "День сохранён, отчёт отправлен."; }
+    else { await navigator.clipboard.writeText(latestPreview.shareText); statusText = "День сохранён, отчёт скопирован."; }
+  } catch { statusText = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; }
+  if (daySaved && latestDayPayload?.dateIso === localDateIso()) { await loadSavedToday(true, statusText); return; }
+  status.className = daySaved ? "notice success" : "notice error"; status.textContent = statusText; status.hidden = false;
+});
 
 function normalizeMapItems() {
   mapItems = [
@@ -446,6 +572,7 @@ async function initializeApp() {
   try { productRelease = Number((await api("/api/app-config")).productRelease) || 1; } catch { productRelease = 1; }
   $("#add-place-button").hidden = productRelease < 2;
   $("#place-filter").hidden = productRelease < 2;
+  try { const { cleaner } = await api("/api/auth/me"); showAuthenticated(cleaner); } catch { showAuth(); return; }
   await showRoute(routeFromPath());
   const directApartment = location.pathname.match(/^\/map\/apartments\/(\d+)$/);
   if (directApartment) await openApartmentDetail(Number(directApartment[1]), false);

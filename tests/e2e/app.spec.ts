@@ -42,6 +42,41 @@ test("Today keeps its preview and saves a missing day before a later entry", asy
   await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
 });
 
+test("a saved Today card restores quick routes and opens full apartment details", async ({ page, request }) => {
+  const now = new Date();
+  const dateIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const apartmentRoute = "https://www.google.com/maps?q=48.8566,2.3522";
+  const dryerRoute = "https://www.google.com/maps?q=48.857,2.353";
+  const note = `Код двери 2468\n${dryerRoute}`;
+  await request.patch("/api/apartments/1", { data: { address: "1 rue Today, Paris", mapsUrl: apartmentRoute, noteBody: note } });
+  await request.post("/api/days", { data: { format: "structured", dateIso, jobs: [{ apartmentId: 1, workType: "independent", durationMinutes: 180, dryerCents: 390, otherExpenseCents: 200 }] } });
+
+  await page.goto("/today");
+  await expect(page.locator("#today-saved")).toBeVisible();
+  const card = page.locator(".saved-today-card").first();
+  await expect(card.getByRole("button", { name: "Bosquet", exact: true })).toBeVisible();
+  await expect(card.getByRole("link", { name: "Квартира", exact: true })).toHaveAttribute("href", apartmentRoute);
+  await expect(card.getByRole("link", { name: "Сушка", exact: true })).toHaveAttribute("href", dryerRoute);
+  await expect(card).toContainText("1 rue Today");
+  await expect(card).not.toContainText("Код двери");
+
+  await card.getByRole("button", { name: "Bosquet", exact: true }).click();
+  await expect(page.locator("#place-detail-dialog")).toBeVisible();
+  await expect(page.locator("#place-detail")).toContainText("1 rue Today");
+  await expect(page.locator("#place-detail")).toContainText("Код двери 2468");
+  await expect(page.getByText("Выбранная сушка")).toBeVisible();
+  await page.locator('[data-close-dialog="place-detail-dialog"]').click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.locator("#today-saved")).toBeVisible();
+
+  await page.getByRole("button", { name: "Изменить", exact: true }).click();
+  await expect(page.locator("#today-editor")).toBeVisible();
+  await expect(page.locator("[data-apartment-search]")).toHaveValue(/Bosquet/);
+  await expect(page.getByLabel("Сушка, €")).toHaveValue("3.9");
+  await expect(page.getByLabel("Другие расходы, €")).toHaveValue("2");
+  await request.delete(`/api/days/${dateIso}`);
+});
+
 test("an apartment can choose an already saved laundry", async ({ page, request }, testInfo) => {
   test.skip(productRelease < 2, "available from release two");
   const address = `19 rue de la Buanderie, Paris · ${testInfo.project.name}`;
@@ -95,7 +130,7 @@ test("Saved work appears in the dedicated ledger", async ({ page, request }) => 
   await request.post("/api/days", { data: { text: "05/08\nКвартира А 9-12 уборка" } });
   await page.goto("/ledger");
   await expect(page.getByRole("heading", { name: "Учёт", exact: true })).toBeVisible();
-  await expect(page.getByText("3 ч работы", { exact: true })).toBeVisible();
+  await expect(page.locator(".ledger-row", { hasText: "2026-08-05" }).getByText("3 ч работы", { exact: true })).toBeVisible();
 });
 
 test("mobile layout has no horizontal overflow", async ({ page }, testInfo) => {

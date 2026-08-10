@@ -22,8 +22,13 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3000
+      PRODUCT_RELEASE: ${PRODUCT_RELEASE:-1}
       DATABASE_URL: postgresql://${POSTGRES_USER:-maidaid}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-maidaid}
       APARTMENT_IMPORT_TOKEN: ${APARTMENT_IMPORT_TOKEN:-}
+      TEAM_ACCESS_CODE: ${TEAM_ACCESS_CODE:-}
+      INITIAL_CLEANER_NAME: ${INITIAL_CLEANER_NAME:-}
+      INITIAL_CLEANER_PIN: ${INITIAL_CLEANER_PIN:-}
+      SESSION_DAYS: ${SESSION_DAYS:-90}
     volumes:
       - maidaid-data:/data
     depends_on:
@@ -58,6 +63,30 @@ services:
       maidaid:
         condition: service_healthy
 
+  tailscale:
+    image: tailscale/tailscale:stable
+    pull_policy: always
+    restart: unless-stopped
+    network_mode: service:maidaid
+    environment:
+      TS_AUTHKEY: ${TAILSCALE_AUTHKEY:-}
+      TS_AUTH_ONCE: "true"
+      TS_EXTRA_ARGS: --hostname=maidaid
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+    volumes:
+      - maidaid-tailscale:/var/lib/tailscale
+      - ./tailscale:/config:ro
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    depends_on:
+      maidaid:
+        condition: service_healthy
+
 volumes:
   maidaid-data:
   maidaid-postgres:
+  maidaid-tailscale:

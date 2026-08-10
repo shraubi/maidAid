@@ -12,6 +12,7 @@ const config: Config = {
   PREVIEW_RATE_LIMIT_MAX: 100, PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
   DATABASE_URL: "postgresql://unused",
   APARTMENT_IMPORT_TOKEN: "test-import-token",
+  AUTH_TEST_BYPASS: true,
 };
 
 let app: FastifyInstance | undefined;

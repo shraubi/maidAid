@@ -8,10 +8,11 @@ import { z } from "zod";
 import { calculateDay } from "./domain/calculations.js";
 import { generateShareText } from "./domain/draft.js";
 import { parseDay } from "./domain/parser.js";
-import type { Expense, Job, LocationSource, ParsedDay, SavedPlace, Settings, WorkType } from "./domain/types.js";
+import type { Apartment, Expense, Job, LocationSource, ParsedDay, SavedPlace, Settings, WorkType } from "./domain/types.js";
 import { apartmentKey, apartmentLookup } from "./domain/apartments.js";
 import { loadConfig, type Config } from "./config.js";
 import { PostgresLedgerStore, type LedgerStore } from "./storage/ledger-store.js";
+import { createPinDigest, createSessionToken, hashSessionToken, normalizeCleanerName, prepareInitialCleaner, validPin, verifyPin, type Cleaner } from "./auth.js";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const year = Number(value.slice(0, 4)); const month = Number(value.slice(5, 7)); const day = Number(value.slice(8, 10));
@@ -74,6 +75,10 @@ const osmCandidate = z.object({
   address: z.string().max(1000).nullable(), latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180),
 }).strict();
 const laundryLinkBody = z.union([z.object({ placeId: z.number().int().positive() }).strict(), z.object({ candidate: osmCandidate }).strict()]);
+const cleanerName = z.string().trim().min(1).max(80);
+const pin = z.string().regex(/^\d{6}$/);
+const loginBody = z.object({ name: cleanerName, pin }).strict();
+const registerBody = z.object({ teamCode: z.string().min(1).max(200), name: cleanerName, pin }).strict();
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));
 const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(moduleDirectory, "../../public") : resolve(moduleDirectory, "../public");
@@ -84,6 +89,23 @@ function monthEnd(dateIso: string): string {
   const year = Number(dateIso.slice(0, 4)); const month = Number(dateIso.slice(5, 7));
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return `${dateIso.slice(0, 7)}-${String(lastDay).padStart(2, "0")}`;
+}
+
+function cookieValue(header: string | undefined, name: string): string | null {
+  for (const part of header?.split(";") ?? []) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(value.join("="));
+  }
+  return null;
+}
+
+function sessionCookie(token: string, maxAgeSeconds: number, secure: boolean): string {
+  return [`maidaid_session=${encodeURIComponent(token)}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${maxAgeSeconds}`, secure ? "Secure" : ""].filter(Boolean).join("; ");
+}
+
+function secretMatches(actual: string, expected: string): boolean {
+  const actualBuffer = Buffer.from(actual); const expectedBuffer = Buffer.from(expected);
+  return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
 function coordinatePair(value: string): { latitude: number; longitude: number } | null {
@@ -163,6 +185,50 @@ async function resolveLocation(input: Record<string, unknown>, externalFetch: ty
     }
   }
   return { latitude: null, longitude: null, locationSource: null, locationAccuracyMeters: null, ...(inferredAddress ? { inferredAddress } : {}) };
+}
+
+const supportedMapsHosts = new Set(["google.com", "www.google.com", "maps.google.com", "maps.app.goo.gl"]);
+
+export function mapsUrlsFromApartmentNote(noteBody: string | null | undefined): string[] {
+  const matches = noteBody?.match(/https:\/\/[^\s<>"']+/gu) ?? [];
+  const urls: string[] = [];
+  for (const match of matches) {
+    const candidate = match.replace(/[),.;!?\]}]+$/u, "");
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== "https:" || !supportedMapsHosts.has(url.hostname.toLocaleLowerCase("en"))) continue;
+      url.hash = "";
+      const normalized = url.href;
+      if (!urls.includes(normalized)) urls.push(normalized);
+    } catch { /* Ignore prose that only resembles a URL. */ }
+  }
+  return urls;
+}
+
+export async function syncApartmentNoteDryers(apartment: Apartment, ledger: LedgerStore, externalFetch: typeof fetch): Promise<number> {
+  const mapsUrls = mapsUrlsFromApartmentNote(apartment.noteBody);
+  let created = 0;
+  for (const [index, mapsUrl] of mapsUrls.entries()) {
+    try {
+      let place = await ledger.findSavedPlaceByMapsUrl(mapsUrl);
+      if (!place) {
+        const { inferredAddress, ...location } = await resolveLocation({ mapsUrl }, externalFetch);
+        place = await ledger.createSavedPlace({
+          kind: "laundry", name: "Сушка", address: inferredAddress ?? null,
+          note: `Из заметки квартиры ${apartment.canonicalName}`, mapsUrl, ...location,
+        });
+        created += 1;
+      }
+      if (index === 0) await ledger.setPreferredLaundry(apartment.id, place.id);
+    } catch { /* Apartment saving and startup must not fail because a note link is unavailable. */ }
+  }
+  return created;
+}
+
+async function syncAllApartmentNoteDryers(ledger: LedgerStore, externalFetch: typeof fetch): Promise<number> {
+  let created = 0;
+  for (const apartment of await ledger.getActiveApartments()) created += await syncApartmentNoteDryers(apartment, ledger, externalFetch);
+  return created;
 }
 
 export async function repairLegacyMapCoordinates(ledger: LedgerStore, externalFetch: typeof fetch, delayMilliseconds = 1_100): Promise<number> {
@@ -259,11 +325,21 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     dryerDefaultCents: config.DRYER_DEFAULT_CENTS,
   };
   const ledger = providedStore ?? new PostgresLedgerStore(config.DATABASE_URL);
-  await ledger.initialize();
+  const configuredInitialCleaner = await prepareInitialCleaner(config.INITIAL_CLEANER_NAME ?? "", config.INITIAL_CLEANER_PIN ?? "");
+  const initialCleaner = configuredInitialCleaner ?? (config.AUTH_TEST_BYPASS ? await prepareInitialCleaner("Test Cleaner", "123456") : null);
+  await ledger.initialize(initialCleaner);
+  let bypassCleaner = config.AUTH_TEST_BYPASS ? (await ledger.listCleaners())[0] ?? null : null;
+  if (config.AUTH_TEST_BYPASS && !bypassCleaner) {
+    const digest = await createPinDigest("123456");
+    bypassCleaner = await ledger.createCleaner({ name: "Test Cleaner", nameKey: normalizeCleanerName("Test Cleaner"), ...digest });
+  }
   app.addHook("onListen", () => {
     void repairLegacyMapCoordinates(ledger, externalFetch)
       .then((repairedLocations) => { if (repairedLocations > 0) app.log.info({ repairedLocations }, "repaired legacy map coordinates"); })
       .catch((error) => app.log.error({ err: error }, "failed to repair legacy map coordinates"));
+    if (productRelease >= 2) void syncAllApartmentNoteDryers(ledger, externalFetch)
+      .then((createdNoteDryers) => { if (createdNoteDryers > 0) app.log.info({ createdNoteDryers }, "imported dryers from apartment notes"); })
+      .catch((error) => app.log.error({ err: error }, "failed to import dryers from apartment notes"));
   });
   const parse = async (text: string) => parseDay(text, new Date(), settings.dryerDefaultCents, apartmentLookup(await ledger.getActiveApartments()));
   app.addHook("onClose", async () => ledger.close());
@@ -282,9 +358,72 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   });
   await app.register(fastifyStatic, { root: leafletRoot, prefix: "/vendor/leaflet/", decorateReply: false, cacheControl: true, maxAge: "30d" });
 
+  const authenticatedCleaners = new WeakMap<object, Cleaner>();
+  const publicApiPaths = new Set(["/api/app-config", "/api/auth/me", "/api/auth/login", "/api/auth/register", "/api/auth/logout"]);
+  app.addHook("onRequest", async (request, reply) => {
+    const path = request.url.split("?", 1)[0] ?? request.url;
+    if (!path.startsWith("/api/") || publicApiPaths.has(path) || path === "/api/admin/apartments/import") return;
+    if (config.AUTH_TEST_BYPASS && bypassCleaner) { authenticatedCleaners.set(request, bypassCleaner); return; }
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    const cleaner = token ? await ledger.getCleanerBySession(hashSessionToken(token)) : null;
+    if (!cleaner) return reply.code(401).send({ error: "authentication_required" });
+    authenticatedCleaners.set(request, cleaner);
+  });
+  const currentCleaner = (request: object): Cleaner => {
+    const cleaner = authenticatedCleaners.get(request);
+    if (!cleaner) throw new Error("authenticated cleaner missing");
+    return cleaner;
+  };
+
+  const startSession = async (request: { protocol: string }, reply: { header(name: string, value: string): unknown }, cleaner: Cleaner) => {
+    const sessionDays = config.SESSION_DAYS ?? 90;
+    const expiresAt = new Date(Date.now() + sessionDays * 86_400_000);
+    const { token, tokenHash } = createSessionToken();
+    await ledger.createSession(cleaner.id, tokenHash, expiresAt);
+    reply.header("Set-Cookie", sessionCookie(token, sessionDays * 86_400, request.protocol === "https"));
+  };
+
   app.get("/health", async (_request, reply) => {
     const database = await ledger.health();
     return reply.code(database ? 200 : 503).send({ status: database ? "ok" : "unavailable", service: "MaidAid", database });
+  });
+
+  app.get("/api/auth/me", async (request, reply) => {
+    if (config.AUTH_TEST_BYPASS && bypassCleaner) return { cleaner: bypassCleaner };
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    const cleaner = token ? await ledger.getCleanerBySession(hashSessionToken(token)) : null;
+    return cleaner ? { cleaner } : reply.code(401).send({ error: "authentication_required" });
+  });
+
+  app.post("/api/auth/login", { config: { rateLimit: { max: 10, timeWindow: "15 minutes" } } }, async (request, reply) => {
+    const input = loginBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    const cleaner = await ledger.findCleanerByNameKey(normalizeCleanerName(input.data.name));
+    if (!cleaner || !cleaner.active || !await verifyPin(input.data.pin, cleaner.pinSalt, cleaner.pinHash)) return reply.code(401).send({ error: "invalid_credentials" });
+    await startSession(request, reply, cleaner);
+    return { cleaner: { id: cleaner.id, name: cleaner.name, active: cleaner.active, createdAt: cleaner.createdAt, updatedAt: cleaner.updatedAt } };
+  });
+
+  app.post("/api/auth/register", { config: { rateLimit: { max: 10, timeWindow: "15 minutes" } } }, async (request, reply) => {
+    const input = registerBody.safeParse(request.body);
+    if (!input.success) return reply.code(400).send({ error: "invalid_request" });
+    const teamCode = config.TEAM_ACCESS_CODE ?? "";
+    if (!teamCode) return reply.code(503).send({ error: "registration_disabled" });
+    if (!secretMatches(input.data.teamCode, teamCode)) return reply.code(401).send({ error: "invalid_team_code" });
+    const name = input.data.name.normalize("NFKC").trim().replace(/\s+/g, " ");
+    const digest = await createPinDigest(input.data.pin);
+    try {
+      const cleaner = await ledger.createCleaner({ name, nameKey: normalizeCleanerName(name), ...digest });
+      await startSession(request, reply, cleaner);
+      return reply.code(201).send({ cleaner });
+    } catch (error) { return (error as Error).message === "cleaner_exists" ? reply.code(409).send({ error: "cleaner_exists" }) : reply.code(500).send({ error: "registration_failed" }); }
+  });
+
+  app.post("/api/auth/logout", async (request, reply) => {
+    const token = cookieValue(request.headers.cookie, "maidaid_session");
+    if (token) await ledger.deleteSession(hashSessionToken(token));
+    reply.header("Set-Cookie", sessionCookie("", 0, request.protocol === "https"));
+    return reply.code(204).send();
   });
 
   app.get("/api/app-config", async () => ({ productRelease }));
@@ -301,6 +440,7 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const { inferredAddress, ...location } = await resolveLocation(input.data, externalFetch);
     try {
       const apartment = await ledger.createApartment({ canonicalName: input.data.canonicalName, aliases: input.data.aliases, address: input.data.address ?? inferredAddress ?? null, mapsUrl: input.data.mapsUrl ?? null, noteBody: input.data.noteBody ?? null, ...location });
+      if (productRelease >= 2) await syncApartmentNoteDryers(apartment, ledger, externalFetch);
       return reply.code(201).send({ apartment });
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
@@ -312,7 +452,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const resolved = locationChanged ? await resolveLocation(input.data, externalFetch) : { latitude: current.latitude, longitude: current.longitude, locationSource: current.locationSource, locationAccuracyMeters: current.locationAccuracyMeters, inferredAddress: undefined };
     const { inferredAddress, ...location } = resolved;
     try {
-      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location }); return { apartment };
+      const apartment = await ledger.updateApartment(params.data.id, { ...input.data, ...(input.data.address === undefined && inferredAddress ? { address: inferredAddress } : {}), ...location });
+      if (apartment && productRelease >= 2 && input.data.noteBody !== undefined) await syncApartmentNoteDryers(apartment, ledger, externalFetch);
+      return { apartment };
     } catch { return reply.code(409).send({ error: "apartment_exists" }); }
   });
 
@@ -387,8 +529,9 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     } catch { return reply.code(422).send({ error: "invalid_day" }); }
     const totals = calculateDay(parsed, settings);
     const canShare = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
-    const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents) : null;
-    const hasLaterEntries = parsed.dateIso ? (await ledger.getLedger(parsed.dateIso, monthEnd(parsed.dateIso))).rows.some((row) => row.dateIso > parsed.dateIso!) : false;
+    const cleanerId = currentCleaner(request).id;
+    const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents, cleanerId) : null;
+    const hasLaterEntries = parsed.dateIso ? (await ledger.getLedger(parsed.dateIso, monthEnd(parsed.dateIso), cleanerId)).rows.some((row) => row.dateIso > parsed.dateIso!) : false;
     return { parsed, sourceText, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, hasLaterEntries, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
   });
 
@@ -403,51 +546,53 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const canSave = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
     if (!canSave || !parsed.dateIso) return reply.code(422).send({ error: "invalid_day" });
     const totals = calculateDay(parsed, settings);
-    const projected = await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents);
+    const cleanerId = currentCleaner(request).id;
+    const projected = await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents, cleanerId);
     const reportText = generateShareText(parsed, settings, projected);
-    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText });
+    const saved = await ledger.saveDay({ dateIso: parsed.dateIso, sourceText, parsedDetails: parsed, totals, advanceCents: parsed.advanceCents, reportText }, cleanerId);
     return { day: saved.day, runningBalance: saved.snapshot.total.outstandingCents, snapshot: saved.snapshot, shareText: reportText };
   });
 
   app.delete("/api/days/:dateIso", async (request, reply) => {
     const params = z.object({ dateIso: date }).safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: "invalid_request" });
-    return (await ledger.deleteDay(params.data.dateIso)) ? reply.code(204).send() : reply.code(404).send({ error: "day_not_found" });
+    return (await ledger.deleteDay(params.data.dateIso, currentCleaner(request).id)) ? reply.code(204).send() : reply.code(404).send({ error: "day_not_found" });
   });
 
   app.get("/api/ledger", async (request, reply) => {
     const query = ledgerQuery.safeParse(request.query);
     if (!query.success || (query.data.from && query.data.to && query.data.from > query.data.to)) return reply.code(400).send({ error: "invalid_request" });
-    const view = await ledger.getLedger(query.data.from, query.data.to);
+    const cleanerId = currentCleaner(request).id;
+    const view = await ledger.getLedger(query.data.from, query.data.to, cleanerId);
     const rows = await Promise.all(view.rows.map(async (row) => {
       if (row.rowType !== "work") return row;
       const snapshot = await ledger.projectDay(row.dateIso, {
         minutes: row.minutes, incomeCents: row.incomeCents, expensesCents: row.expensesCents, checkinCents: row.checkinCents,
-      }, row.parsedDetails.advanceCents);
+      }, row.parsedDetails.advanceCents, cleanerId);
       return { ...row, reportText: generateShareText(row.parsedDetails, settings, snapshot) };
     }));
     return { ...view, rows };
   });
 
-  app.get("/api/periods", async () => ({ periods: await ledger.listPeriods() }));
+  app.get("/api/periods", async (request) => ({ periods: await ledger.listPeriods(currentCleaner(request).id) }));
 
   app.post("/api/payments", async (request, reply) => {
     const input = paymentCreate.safeParse(request.body);
     if (!input.success) return reply.code(400).send({ error: "invalid_request" });
-    return reply.code(201).send({ payment: await ledger.createPayment(input.data.dateIso, input.data.amountCents, input.data.note) });
+    return reply.code(201).send({ payment: await ledger.createPayment(input.data.dateIso, input.data.amountCents, input.data.note, currentCleaner(request).id) });
   });
 
   app.patch("/api/payments/:id", async (request, reply) => {
     const params = paymentParams.safeParse(request.params); const input = paymentPatch.safeParse(request.body);
     if (!params.success || !input.success) return reply.code(400).send({ error: "invalid_request" });
-    const payment = await ledger.updatePayment(params.data.id, input.data);
+    const payment = await ledger.updatePayment(params.data.id, input.data, currentCleaner(request).id);
     return payment ? { payment } : reply.code(404).send({ error: "payment_not_found" });
   });
 
   app.delete("/api/payments/:id", async (request, reply) => {
     const params = paymentParams.safeParse(request.params);
     if (!params.success) return reply.code(400).send({ error: "invalid_request" });
-    return (await ledger.deletePayment(params.data.id)) ? reply.code(204).send() : reply.code(404).send({ error: "payment_not_found" });
+    return (await ledger.deletePayment(params.data.id, currentCleaner(request).id)) ? reply.code(204).send() : reply.code(404).send({ error: "payment_not_found" });
   });
 
   app.post("/api/admin/apartments/import", { bodyLimit: 16 * 1024 * 1024 }, async (request, reply) => {
@@ -468,6 +613,7 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     if (duplicateConflicts.length) return reply.code(409).send({ created: 0, updated: 0, skipped: 0, conflicts: duplicateConflicts });
     const dryRun = (request.query as { dryRun?: string }).dryRun === "true";
     const result = await ledger.importApartments(input.data.apartments, dryRun);
+    if (!dryRun && productRelease >= 2) await syncAllApartmentNoteDryers(ledger, externalFetch);
     return { dryRun, accepted: result.created + result.updated + result.skipped, ...result };
   });
   for (const route of ["/today", "/map", "/ledger", "/map/apartments/:id", "/apartment.html"]) app.get(route, async (_request, reply) => reply.sendFile("index.html"));
