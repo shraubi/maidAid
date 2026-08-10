@@ -13,7 +13,11 @@ import { apartmentKey, apartmentLookup } from "./domain/apartments.js";
 import { loadConfig, type Config } from "./config.js";
 import { PostgresLedgerStore, type LedgerStore } from "./storage/ledger-store.js";
 
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
+  const year = Number(value.slice(0, 4)); const month = Number(value.slice(5, 7)); const day = Number(value.slice(8, 10));
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  return candidate.getUTCFullYear() === year && candidate.getUTCMonth() === month - 1 && candidate.getUTCDate() === day;
+}, "Invalid calendar date");
 const textDayBody = z.object({ kind: z.enum(["actual", "schedule"]).optional(), text: z.string().trim().min(1).max(32 * 1024) }).strict();
 const structuredJob = z.object({
   apartmentId: z.number().int().positive().optional(),
@@ -75,6 +79,12 @@ const moduleDirectory = dirname(fileURLToPath(import.meta.url));
 const publicRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(moduleDirectory, "../../public") : resolve(moduleDirectory, "../public");
 const projectRoot = moduleDirectory.includes(`${sep}dist${sep}`) ? resolve(moduleDirectory, "../..") : resolve(moduleDirectory, "..");
 const leafletRoot = resolve(projectRoot, "node_modules/leaflet/dist");
+
+function monthEnd(dateIso: string): string {
+  const year = Number(dateIso.slice(0, 4)); const month = Number(dateIso.slice(5, 7));
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${dateIso.slice(0, 7)}-${String(lastDay).padStart(2, "0")}`;
+}
 
 function coordinatePair(value: string): { latitude: number; longitude: number } | null {
   const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
@@ -378,7 +388,8 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
     const totals = calculateDay(parsed, settings);
     const canShare = parsed.dateIso !== null && parsed.jobs.length > 0 && parsed.issues.length === 0 && parsed.unparsedLines.length === 0;
     const snapshot = canShare && parsed.dateIso ? await ledger.projectDay(parsed.dateIso, totals, parsed.advanceCents) : null;
-    return { parsed, sourceText, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
+    const hasLaterEntries = parsed.dateIso ? (await ledger.getLedger(parsed.dateIso, monthEnd(parsed.dateIso))).rows.some((row) => row.dateIso > parsed.dateIso!) : false;
+    return { parsed, sourceText, totals, advanceCents: parsed.advanceCents, projectedBalance: snapshot?.total.outstandingCents ?? null, snapshot, issues: parsed.issues, unparsedLines: parsed.unparsedLines, canShare, hasLaterEntries, shareText: canShare && snapshot ? generateShareText(parsed, settings, snapshot) : "" };
   });
 
   app.post("/api/days", { config: { rateLimit: { max: config.PREVIEW_RATE_LIMIT_MAX, timeWindow: config.PREVIEW_RATE_LIMIT_WINDOW } } }, async (request, reply) => {
@@ -407,7 +418,15 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
   app.get("/api/ledger", async (request, reply) => {
     const query = ledgerQuery.safeParse(request.query);
     if (!query.success || (query.data.from && query.data.to && query.data.from > query.data.to)) return reply.code(400).send({ error: "invalid_request" });
-    return ledger.getLedger(query.data.from, query.data.to);
+    const view = await ledger.getLedger(query.data.from, query.data.to);
+    const rows = await Promise.all(view.rows.map(async (row) => {
+      if (row.rowType !== "work") return row;
+      const snapshot = await ledger.projectDay(row.dateIso, {
+        minutes: row.minutes, incomeCents: row.incomeCents, expensesCents: row.expensesCents, checkinCents: row.checkinCents,
+      }, row.parsedDetails.advanceCents);
+      return { ...row, reportText: generateShareText(row.parsedDetails, settings, snapshot) };
+    }));
+    return { ...view, rows };
   });
 
   app.get("/api/periods", async () => ({ periods: await ledger.listPeriods() }));
@@ -458,4 +477,3 @@ export async function buildApp(config: Config = loadConfig(), providedStore?: Le
 async function start(): Promise<void> { const config = loadConfig(); const app = await buildApp(config); await app.listen({ port: config.PORT, host: config.HOST }); }
 const entryPoint = typeof process !== "undefined" && process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : "";
 if (import.meta.url === entryPoint) await start();
-
