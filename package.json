@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "preview:local": "npm run build && node scripts/local-preview.mjs",
+    "users": "npm run build --silent && node dist/src/admin.js",
     "test": "vitest run --exclude \"tests/e2e/**\"",
     "test:e2e": "npm run build && playwright test",
     "test:watch": "vitest --exclude \"tests/e2e/**\""

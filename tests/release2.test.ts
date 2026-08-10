@@ -18,6 +18,7 @@ const config: Config = {
   PREVIEW_RATE_LIMIT_WINDOW: "1 minute",
   DATABASE_URL: "postgresql://unused",
   APARTMENT_IMPORT_TOKEN: "",
+  AUTH_TEST_BYPASS: true,
 };
 
 let app: FastifyInstance | undefined;
@@ -115,4 +116,3 @@ describe("release two places", () => {
     expect((await app.inject({ method: "GET", url: `/api/apartments/${apartment.id}/nearby-laundries` })).statusCode).toBe(404);
   });
 });
-

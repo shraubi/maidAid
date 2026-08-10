@@ -95,7 +95,7 @@ test("Saved work appears in the dedicated ledger", async ({ page, request }) => 
   await request.post("/api/days", { data: { text: "05/08\nКвартира А 9-12 уборка" } });
   await page.goto("/ledger");
   await expect(page.getByRole("heading", { name: "Учёт", exact: true })).toBeVisible();
-  await expect(page.getByText("3 ч работы", { exact: true })).toBeVisible();
+  await expect(page.locator(".ledger-row", { hasText: "2026-08-05" }).getByText("3 ч работы", { exact: true })).toBeVisible();
 });
 
 test("mobile layout has no horizontal overflow", async ({ page }, testInfo) => {

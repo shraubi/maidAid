@@ -13,7 +13,31 @@
     <title>MaidAid</title>
   </head>
   <body>
-    <header class="app-header">
+    <section id="auth-view" class="auth-shell" hidden>
+      <article class="surface auth-card">
+        <img src="/icons/icon.svg" alt="" width="64" height="64" />
+        <h1>MaidAid</h1>
+        <p class="muted">Личный учёт работы для команды</p>
+        <div class="view-switch auth-switch" role="group" aria-label="Вход или регистрация">
+          <button type="button" data-auth-mode="login">Войти</button>
+          <button type="button" data-auth-mode="register">Создать профиль</button>
+        </div>
+        <form id="login-form" class="auth-form">
+          <label>Имя<input id="login-name" autocomplete="username" maxlength="80" required /></label>
+          <label>PIN из 6 цифр<input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" pattern="[0-9]{6}" maxlength="6" required /></label>
+          <button class="primary" type="submit">Войти</button>
+        </form>
+        <form id="register-form" class="auth-form" hidden>
+          <label>Код команды<input id="register-team-code" type="password" autocomplete="off" maxlength="200" required /></label>
+          <label>Ваше имя<input id="register-name" autocomplete="name" maxlength="80" required /></label>
+          <label>Придумайте PIN из 6 цифр<input id="register-pin" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{6}" maxlength="6" required /></label>
+          <label>Повторите PIN<input id="register-pin-confirm" type="password" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{6}" maxlength="6" required /></label>
+          <button class="primary" type="submit">Создать профиль</button>
+        </form>
+        <p id="auth-error" class="notice error" role="alert" hidden></p>
+      </article>
+    </section>
+    <header class="app-header" hidden>
       <a class="brand" href="/today" data-route="today" aria-label="MaidAid · Сегодня">
         <img src="/icons/icon.svg" alt="" width="40" height="40" />
         <span>MaidAid</span>
@@ -23,9 +47,10 @@
         <a href="/map" data-route="map">Карта</a>
         <a href="/ledger" data-route="ledger">Учёт</a>
       </nav>
+      <div class="account-menu"><span id="cleaner-name"></span><button id="logout-button" class="ghost" type="button">Выйти</button></div>
     </header>
 
-    <main class="app-main">
+    <main class="app-main" hidden>
       <section id="view-today" class="app-view" aria-labelledby="today-title">
         <header class="view-heading"><p class="eyebrow">Рабочий день</p><h1 id="today-title">Сегодня</h1></header>
         <article id="today-editor" class="surface workflow-surface">
@@ -79,7 +104,7 @@
       </section>
     </main>
 
-    <nav class="mobile-nav" aria-label="Основная навигация">
+    <nav class="mobile-nav" aria-label="Основная навигация" hidden>
       <a href="/today" data-route="today"><span aria-hidden="true">✓</span>Сегодня</a>
       <a href="/map" data-route="map"><span aria-hidden="true">⌖</span>Карта</a>
       <a href="/ledger" data-route="ledger"><span aria-hidden="true">€</span>Учёт</a>
