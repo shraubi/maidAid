@@ -176,6 +176,8 @@ function renderPreview(data) {
   const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
   $("#parsed-summary").innerHTML = `<p class="muted">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</p><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>`;
   $("#share-text").textContent = data.shareText;
+  $("#backdated-warning").textContent = data.hasLaterEntries ? `После ${data.parsed.displayDate} уже есть записи. Их накопительные итоги будут пересчитаны после сохранения.` : "";
+  $("#backdated-warning").hidden = !data.hasLaterEntries;
   $("#share-status").hidden = true;
   setTodayState("preview");
 }
@@ -188,8 +190,6 @@ $("#preview-button").addEventListener("click", async () => {
 });
 $("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
 async function saveTodayFromReport() { if (daySaved) return; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; }
-async function copyResult() { const status = $("#share-status"); try { await saveTodayFromReport(); await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = "notice error"; status.textContent = daySaved ? "День сохранён, но текст не скопирован." : "Не удалось сохранить день."; } status.hidden = false; }
-$("#copy-button").addEventListener("click", copyResult);
 $("#share-button").addEventListener("click", async () => { const status = $("#share-status"); try { await saveTodayFromReport(); if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); status.className = "notice success"; status.textContent = "День сохранён, отчёт отправлен."; status.hidden = false; return; } await navigator.clipboard.writeText(latestPreview.shareText); status.className = "notice success"; status.textContent = "День сохранён, отчёт скопирован."; } catch { status.className = daySaved ? "notice success" : "notice error"; status.textContent = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; } status.hidden = false; });
 
 function normalizeMapItems() {
@@ -403,6 +403,7 @@ $("#laundry-results").addEventListener("click", async (event) => {
 });
 
 const formatPeriod = (period) => { const [year, month] = period.split("-").map(Number); const label = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date(year, month - 1, 1)); return label[0].toUpperCase() + label.slice(1); };
+const periodBounds = (period) => { const [year, month] = period.split("-").map(Number); const lastDay = new Date(year, month, 0).getDate(); return { from: `${period}-01`, to: `${period}-${String(lastDay).padStart(2, "0")}` }; };
 function renderLedger(data) {
   const totals = data.totals; ledgerDays = new Map(data.rows.filter((row) => row.rowType === "work").map((row) => [row.dateIso, row]));
   $("#ledger-totals").innerHTML = [["Часы", formatHours(totals.minutes)], ["Получено", formatMoney(totals.receivedCents)], ["Остаток", formatMoney(totals.outstandingCents)], ["Расходы", formatMoney(totals.expensesCents)]].map(([label, value]) => `<div class="summary-item"><span>${label}</span><strong>${value}</strong></div>`).join("");
@@ -414,10 +415,10 @@ function renderLedger(data) {
     const manual = row.source === "manual"; return `<article class="ledger-row"><time>${row.dateIso}</time><div><strong>${formatMoney(row.amountCents)} получено</strong><br><small>${escapeHtml(row.note || (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></div>${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Изменить</button><button class="ghost" data-delete-payment="${row.id}">Удалить</button></div>` : "<span class=\"muted\">Из текста</span>"}</article>`;
   }).join("") : "<p class=\"muted\">Записей пока нет.</p>";
 }
-async function loadLedger() { try { $("#ledger-error").hidden = true; $("#ledger-period-label").textContent = formatPeriod(selectedPeriod); renderLedger(await api(`/api/ledger?from=${selectedPeriod}-01&to=${selectedPeriod}-31`)); } catch { $("#ledger-error").textContent = "Не удалось загрузить историю."; $("#ledger-error").hidden = false; } }
+async function loadLedger() { try { $("#ledger-error").hidden = true; $("#ledger-period-label").textContent = formatPeriod(selectedPeriod); const { from, to } = periodBounds(selectedPeriod); renderLedger(await api(`/api/ledger?from=${from}&to=${to}`)); } catch { renderLedger({ totals: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 }, rows: [] }); $("#ledger-error").textContent = "Не удалось загрузить историю."; $("#ledger-error").hidden = false; } }
 $("#add-payment-button").addEventListener("click", () => $("#payment-dialog").showModal());
 $("#payment-form").addEventListener("submit", async (event) => { event.preventDefault(); await api("/api/payments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ dateIso: $("#payment-date").value, amountCents: Math.round(Number($("#payment-amount").value) * 100), note: $("#payment-note").value || undefined }) }); $("#payment-dialog").close(); $("#payment-amount").value = ""; $("#payment-note").value = ""; await loadLedger(); });
-$("#periods-button").addEventListener("click", async () => { const { periods } = await api("/api/periods"); const available = [...new Set([calendarPeriod, ...periods.map(({ period }) => period)])]; $("#periods-list").innerHTML = available.map((period) => `<button class="${period === selectedPeriod ? "primary" : "secondary"}" data-period="${period}">${formatPeriod(period)}</button>`).join(""); $("#periods-dialog").showModal(); });
+$("#periods-button").addEventListener("click", async () => { const { periods } = await api("/api/periods"); const available = periods.map(({ period }) => period); $("#periods-list").innerHTML = available.map((period) => `<button class="${period === selectedPeriod ? "primary" : "secondary"}" data-period="${period}">${formatPeriod(period)}</button>`).join(""); $("#periods-dialog").showModal(); });
 $("#periods-list").addEventListener("click", async (event) => { const button = event.target.closest("[data-period]"); if (!button) return; selectedPeriod = button.dataset.period; $("#periods-dialog").close(); await loadLedger(); });
 $("#ledger-rows").addEventListener("click", async (event) => {
   const editDay = event.target.closest("[data-edit-day]"); const deleteDay = event.target.closest("[data-delete-day]"); const editPayment = event.target.closest("[data-edit-payment]"); const deletePayment = event.target.closest("[data-delete-payment]");
@@ -429,6 +430,7 @@ $("#ledger-rows").addEventListener("click", async (event) => {
 $("#day-edit-form").addEventListener("submit", async (event) => { event.preventDefault(); const text = $("#day-edit-text").value; const preview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }); if (!preview.canShare || preview.parsed.dateIso !== editingDateIso) { $("#day-edit-error").textContent = "Проверьте текст и сохраните прежнюю дату."; $("#day-edit-error").hidden = false; return; } await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }); $("#day-edit-dialog").close(); await loadLedger(); });
 
 $$('[data-close-dialog]').forEach((button) => button.addEventListener("click", () => document.getElementById(button.dataset.closeDialog).close()));
+$$('dialog.app-dialog').forEach((dialog) => dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); }));
 $("#place-detail-dialog").addEventListener("close", () => {
   if (location.pathname.startsWith("/map/apartments/")) history.replaceState({}, "", `/map?view=${mapMode}`);
 });
