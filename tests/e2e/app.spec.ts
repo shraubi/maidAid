@@ -15,7 +15,8 @@ test("release one hides future place-management controls", async ({ page, reques
   await expect(page.getByText("Координаты сохранены").first()).toBeVisible();
 });
 
-test("Today keeps its preview while navigating between sections", async ({ page }) => {
+test("Today keeps its preview and saves a missing day before a later entry", async ({ page, request }) => {
+  await request.post("/api/days", { data: { text: "09/08/2026\nBosquet 9-12 уборка" } });
   await page.goto("/today");
   await page.getByLabel("Дата рабочего дня").fill("2026-08-08");
   await expect(page.locator("#today-date-label")).toHaveText("8 августа");
@@ -29,6 +30,12 @@ test("Today keeps its preview while navigating between sections", async ({ page 
   await page.getByRole("button", { name: "Сформировать отчёт", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
   await expect(page.locator("#parsed-summary")).toContainText("08/08");
+  await expect(page.locator("#backdated-warning")).toContainText("уже есть записи");
+  await page.locator("#share-button").click();
+  await expect(page.locator("#share-status")).toBeVisible();
+  const backfilledLedger = await (await request.get("/api/ledger?from=2026-08-08&to=2026-08-09")).json();
+  expect(backfilledLedger.rows.filter((row: { rowType: string }) => row.rowType === "work").map((row: { dateIso: string }) => row.dateIso)).toEqual(["2026-08-09", "2026-08-08"]);
+  expect(backfilledLedger.rows.find((row: { dateIso: string }) => row.dateIso === "2026-08-09").reportText).toContain("Было: 3 h");
   await page.getByRole("link", { name: "Карта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Карта", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
@@ -93,9 +100,16 @@ test("Saved work appears in the dedicated ledger", async ({ page, request }) => 
 
 test("mobile layout has no horizontal overflow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile", "mobile-only assertion");
-  await page.goto("/map?view=list");
+  await page.goto("/today");
+  await page.locator("#add-today-job").click();
+  await page.locator("[data-apartment-search]").fill("Bos");
+  await page.locator("[data-choose-apartment]").first().click();
+  await page.locator("[data-work-type]").selectOption("checkin");
+  await page.locator("[data-work-type]").selectOption("independent");
   const dimensions = await page.evaluate(() => ({ client: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth }));
   expect(dimensions.scroll).toBe(dimensions.client);
+  const cardBounds = await page.locator(".today-job-card").evaluate((card) => { const box = card.getBoundingClientRect(); return { left: box.left, right: box.right, viewport: document.documentElement.clientWidth }; });
+  expect(cardBounds.left).toBeGreaterThanOrEqual(0);
+  expect(cardBounds.right).toBeLessThanOrEqual(cardBounds.viewport);
   await expect(page.locator(".mobile-nav")).toBeVisible();
 });
-

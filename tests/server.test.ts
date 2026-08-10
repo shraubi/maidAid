@@ -18,6 +18,10 @@ let app: FastifyInstance | undefined;
 afterEach(async () => { await app?.close(); app = undefined; });
 
 describe("MaidAid HTTP API", () => {
+  it("rejects impossible ledger dates before they reach PostgreSQL", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    expect((await app.inject({ method: "GET", url: "/api/ledger?from=2026-02-01&to=2026-02-31" })).statusCode).toBe(400);
+  });
   it("exposes only release-one product capabilities by default", async () => {
     app = await buildApp({ ...config, PRODUCT_RELEASE: 1 }, new MemoryLedgerStore());
     expect((await app.inject({ method: "GET", url: "/api/app-config" })).json()).toEqual({ productRelease: 1 });
@@ -48,6 +52,19 @@ describe("MaidAid HTTP API", () => {
     expect(saved.json().runningBalance).toBe(4000);
     const workRow = (await app.inject({ method: "GET", url: "/api/ledger?from=2026-07-01&to=2026-07-31" })).json().rows.find((row: { rowType: string }) => row.rowType === "work");
     expect(workRow.reportText).toBe(saved.json().shareText);
+  });
+
+  it("recalculates later reports after a missing earlier day is saved", async () => {
+    app = await buildApp(config, new MemoryLedgerStore());
+    await app.inject({ method: "POST", url: "/api/days", payload: { text: "09/08/2026\nBosquet 9-12 уборка" } });
+    const earlierPreview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "08/08/2026\nBosquet 9-11 уборка" } });
+    expect(earlierPreview.json().hasLaterEntries).toBe(true);
+    await app.inject({ method: "POST", url: "/api/days", payload: { text: "08/08/2026\nBosquet 9-11 уборка" } });
+    const ledger = (await app.inject({ method: "GET", url: "/api/ledger?from=2026-08-01&to=2026-08-31" })).json();
+    const ninth = ledger.rows.find((row: { rowType: string; dateIso: string }) => row.rowType === "work" && row.dateIso === "2026-08-09");
+    expect(ninth.reportText).toContain("Было: 2 h");
+    const latestPreview = await app.inject({ method: "POST", url: "/api/preview", payload: { text: "10/08/2026\nBosquet 9-10 уборка" } });
+    expect(latestPreview.json().hasLaterEntries).toBe(false);
   });
 
   it("creates, edits and deletes manual payments", async () => {
