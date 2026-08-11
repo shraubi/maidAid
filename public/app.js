@@ -6,7 +6,7 @@ const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) => ({ independent: "Самостоятельная уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[type] ?? "Тип не указан";
 const kindLabel = (kind) => ({ apartment: "Квартира", laundry: "Сушка", partner_restaurant: "Партнёр" })[kind] ?? "Место";
-const mapsHref = (item) => item ? item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null) : null;
+const mapsHref = (item) => item ? item.mapsUrl || (item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : null) : null;
 
 async function api(url, options) {
   const response = await fetch(url, options);
@@ -89,6 +89,7 @@ function routeFromPath() {
 async function showRoute(route, push = false) {
   activeRoute = route;
   $$(".app-view").forEach((view) => { view.hidden = view.id !== `view-${route}`; });
+  document.body.classList.toggle("report-open", route === "today" && todayState === "preview");
   $$('[data-route]').forEach((link) => {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
@@ -100,7 +101,7 @@ async function showRoute(route, push = false) {
   }
   if (route === "map") await loadMapItems();
   if (route === "ledger") await loadLedger();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 $$('[data-route]').forEach((link) => link.addEventListener("click", (event) => {
@@ -119,6 +120,7 @@ function setTodayState(state) {
   $("#today-editor").hidden = state !== "editor";
   $("#today-preview").hidden = state !== "preview";
   $("#today-saved").hidden = state !== "saved";
+  document.body.classList.toggle("report-open", state === "preview" && activeRoute === "today");
 }
 
 const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -225,241 +227,32 @@ function durationWheel(job) {
   return `<div class="duration-wheel" role="spinbutton" tabindex="0" aria-label="Длительность уборки" aria-valuemin="30" aria-valuemax="300" aria-valuenow="${job.durationMinutes}" data-duration-wheel="${job.id}">${values.map((value) => `<button class="duration-option${value === job.durationMinutes ? " is-selected" : ""}" data-duration="${value}" type="button" aria-pressed="${value === job.durationMinutes}">${formatHours(value)}</button>`).join("")}</div>`;
 }
 
+function renderTodayDraftSummary() {
+  const draftMinutes = todayJobs.reduce((sum, job) => sum + (job.workType === "independent" ? job.durationMinutes : job.workType === "checkin" ? 30 : 60), 0);
+  const draftExpenses = todayJobs.reduce((sum, job) => {
+    if (job.workType !== "independent") return sum;
+    const dryer = Number(String(job.dryer || 0).replace(",", "."));
+    const other = Number(String(job.otherExpense || 0).replace(",", "."));
+    return sum + (Number.isFinite(dryer) ? Math.round(dryer * 100) : 0) + (Number.isFinite(other) ? Math.round(other * 100) : 0);
+  }, 0);
+  $("#today-draft-summary").innerHTML = `<div><span>Часы</span><strong>${formatHours(draftMinutes)}</strong></div><div><span>Расход</span><strong>${formatMoney(draftExpenses)}</strong></div>`;
+}
+
 function renderTodayJobs() {
   updateTodayDateLabel();
+  renderTodayDraftSummary();
   $("#today-job-list").innerHTML = todayJobs.length ? todayJobs.map((job, index) => {
     const apartment = apartments.find((item) => item.id === job.apartmentId);
     const value = apartment?.canonicalName ?? job.newApartmentName ?? job.query;
     const selectedState = apartment ? `<small class="apartment-selection">${escapeHtml(apartment.address || "Адрес нужно добавить")}</small>` : job.newApartmentName ? `<small class="apartment-selection needs-attention">Новая квартира · адрес нужно добавить</small>` : "";
-    return `<article class="today-job-card" data-today-job="${job.id}">
-      <div class="today-job-heading"><strong>Квартира ${index + 1}</strong><button class="ghost remove-job" data-remove-job="${job.id}" type="button" aria-label="Удалить квартиру">Удалить</button></div>
+    const draftExpenseCents = job.workType === "independent" ? [job.dryer, job.otherExpense].reduce((sum, amount) => { const value = Number(String(amount || 0).replace(",", ".")); return sum + (Number.isFinite(value) ? Math.round(value * 100) : 0); }, 0) : 0;
+    const summaryTiming = job.workType === "independent" ? formatHours(job.durationMinutes) : job.workType === "checkin" ? "0,5 ч" : "1 ч";
+    const summaryType = ({ independent: "Уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[job.workType];
+    return `<details class="today-job-card" data-today-job="${job.id}" open>
+      <summary class="today-job-summary"><span><strong>${escapeHtml(value || `Квартира ${index + 1}`)}</strong><small>${escapeHtml(summaryType)}</small><em>${escapeHtml(summaryTiming)}${draftExpenseCents ? ` · ${escapeHtml(formatMoney(draftExpenseCents))} расходы` : ""}</em></span></summary>
+      <div class="today-job-editor"><div class="today-job-heading"><strong>Квартира ${index + 1}</strong><button class="ghost remove-job" data-remove-job="${job.id}" type="button" aria-label="Удалить квартиру">Удалить</button></div>
       <label class="apartment-search-label">Название или улица<div class="apartment-combobox"><input class="apartment-search" data-apartment-search="${job.id}" value="${escapeHtml(value)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Например, Bosquet или Lauriston" /><div class="apartment-results" data-apartment-results="${job.id}" role="listbox" hidden></div></div>${selectedState}</label>
-      <label>Тип<select data-work-type="${job.id}"><option value="independent"${job.workType === "independent" ? " selected" : ""}>Уборка</option><option value="orientation"${job.workType === "orientation" ? " selected" : ""}>Ознакомление</option><option value="practice"${job.workType === "practice" ? " selected" : ""}>Практика</option><option value="checkin"${job.workType === "checkin" ? " selected" : ""}>Check-in</option></select></label>
-      ${job.workType === "independent" ? `<div class="duration-field"><span>Сколько часов</span>${durationWheel(job)}</div>` : ""}
-      ${job.workType === "independent" ? `<div class="job-expense-fields"><label>Сушка, €<input data-job-expense="dryer" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.dryer)}" placeholder="0" /></label><label>Другие расходы, €<input data-job-expense="otherExpense" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.otherExpense)}" placeholder="0" /></label></div>` : ""}
-    </article>`;
-  }).join("") : `<div class="today-empty"><strong>Добавьте первую квартиру</strong><p>Каждая работа будет отдельной карточкой.</p></div>`;
-}
-
-function showApartmentResults(input) {
-  const job = todayJobs.find((item) => item.id === Number(input.dataset.apartmentSearch)); if (!job) return;
-  const host = $(`[data-apartment-results="${job.id}"]`); const matches = apartmentMatches(input.value); const query = input.value.trim();
-  const exact = query && apartments.some((apartment) => [apartment.canonicalName, ...(apartment.aliases ?? [])].some((value) => normalizeSearch(value) === normalizeSearch(query)));
-  host.innerHTML = `${matches.map((apartment) => `<button data-choose-apartment="${apartment.id}" data-job-id="${job.id}" type="button" role="option"><strong>${escapeHtml(apartment.canonicalName)}</strong><small>${escapeHtml(apartment.address || "Адрес нужно добавить")}</small></button>`).join("")}${query && !exact ? `<button class="create-apartment-option" data-create-apartment="${job.id}" type="button" role="option">+ Создать «${escapeHtml(query)}»</button>` : ""}`;
-  host.hidden = false; input.setAttribute("aria-expanded", "true");
-}
-
-$("#add-today-job").addEventListener("click", addTodayJob);
-$("#today-job-list").addEventListener("focusin", (event) => { if (event.target.matches(".apartment-search")) showApartmentResults(event.target); });
-$("#today-job-list").addEventListener("focusout", (event) => { if (event.target.matches(".apartment-search")) setTimeout(() => { const host = $(`[data-apartment-results="${event.target.dataset.apartmentSearch}"]`); if (host) host.hidden = true; event.target.setAttribute("aria-expanded", "false"); }, 120); });
-$("#today-job-list").addEventListener("input", (event) => {
-  const search = event.target.closest("[data-apartment-search]");
-  if (search) { const job = todayJobs.find((item) => item.id === Number(search.dataset.apartmentSearch)); if (job) { job.query = search.value; job.apartmentId = null; job.newApartmentName = ""; showApartmentResults(search); } return; }
-  const expense = event.target.closest("[data-job-expense]"); if (expense) { const job = todayJobs.find((item) => item.id === Number(expense.dataset.jobId)); if (job) job[expense.dataset.jobExpense] = expense.value; }
-});
-$("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; if (job.workType !== "independent") { job.dryer = ""; job.otherExpense = ""; } renderTodayJobs(); } } });
-$("#today-job-list").addEventListener("click", (event) => {
-  const remove = event.target.closest("[data-remove-job]"); if (remove) { todayJobs = todayJobs.filter((job) => job.id !== Number(remove.dataset.removeJob)); renderTodayJobs(); return; }
-  const choice = event.target.closest("[data-choose-apartment]"); if (choice) { const job = todayJobs.find((item) => item.id === Number(choice.dataset.jobId)); const apartment = apartments.find((item) => item.id === Number(choice.dataset.chooseApartment)); if (job && apartment) { job.apartmentId = apartment.id; job.newApartmentName = ""; job.query = apartment.canonicalName; renderTodayJobs(); } return; }
-  const create = event.target.closest("[data-create-apartment]"); if (create) { const job = todayJobs.find((item) => item.id === Number(create.dataset.createApartment)); if (job && job.query.trim()) { job.apartmentId = null; job.newApartmentName = job.query.trim(); renderTodayJobs(); } return; }
-  const duration = event.target.closest("[data-duration]"); if (duration) { const card = duration.closest("[data-today-job]"); const job = todayJobs.find((item) => item.id === Number(card.dataset.todayJob)); if (job) { job.durationMinutes = Number(duration.dataset.duration); renderTodayJobs(); } }
-});
-$("#today-job-list").addEventListener("keydown", (event) => {
-  const search = event.target.closest("[data-apartment-search]");
-  if (search && ["ArrowDown", "ArrowUp"].includes(event.key)) { event.preventDefault(); const options = [...$(`[data-apartment-results="${search.dataset.apartmentSearch}"]`).querySelectorAll("button")]; (event.key === "ArrowDown" ? options[0] : options.at(-1))?.focus(); return; }
-  const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel || !["ArrowLeft", "ArrowRight"].includes(event.key)) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.key === "ArrowRight" ? 30 : -30))); renderTodayJobs(); $(`[data-duration-wheel="${job.id}"]`)?.focus(); }
-});
-$("#today-job-list").addEventListener("wheel", (event) => { const wheel = event.target.closest("[data-duration-wheel]"); if (!wheel) return; event.preventDefault(); const job = todayJobs.find((item) => item.id === Number(wheel.dataset.durationWheel)); if (job) { job.durationMinutes = Math.max(30, Math.min(300, job.durationMinutes + (event.deltaY > 0 || event.deltaX > 0 ? 30 : -30))); renderTodayJobs(); } }, { passive: false });
-
-function moneyCents(value, label) { if (!String(value).trim()) return 0; const amount = Number(String(value).replace(",", ".")); if (!Number.isFinite(amount) || amount < 0) throw new Error(`${label}: укажите корректную сумму`); return Math.round(amount * 100); }
-function buildTodayPayload() {
-  if (!todayJobs.length) throw new Error("Добавьте хотя бы одну квартиру");
-  return { format: "structured", dateIso: selectedTodayDateIso, jobs: todayJobs.map((job, index) => {
-    if (!job.apartmentId && !job.newApartmentName) throw new Error(`Квартира ${index + 1}: выберите вариант из поиска или создайте новую`);
-    return { ...(job.apartmentId ? { apartmentId: job.apartmentId } : { newApartmentName: job.newApartmentName }), workType: job.workType, ...(job.workType === "independent" ? { durationMinutes: job.durationMinutes, dryerCents: moneyCents(job.dryer, "Сушка"), otherExpenseCents: moneyCents(job.otherExpense, "Другие расходы") } : { dryerCents: 0, otherExpenseCents: 0 }) };
-  }) };
-}
-
-function renderPreview(data) {
-  const problems = [...data.issues.map((issue) => issue.message), ...data.unparsedLines.map((line) => `Не распознано: ${line}`)];
-  $("#issue-list").hidden = !problems.length;
-  $("#issue-list").innerHTML = problems.length ? `<strong>Нужно исправить</strong><ul>${problems.map((problem) => `<li>${escapeHtml(problem)}</li>`).join("")}</ul>` : "";
-  const jobs = data.parsed.jobs.map((job, jobIndex) => {
-    const expenses = data.parsed.expenses.filter((expense) => expense.jobIndex === jobIndex || (expense.jobIndex == null && expense.object === job.object));
-    const timing = job.startMinutes != null && job.endMinutes != null ? `${formatTime(job.startMinutes)}–${formatTime(job.endMinutes)}` : formatHours(job.durationMinutes);
-    return `<article class="job"><strong>${escapeHtml(job.object)}</strong><span>${timing}</span><small>${typeLabel(job.workType)}${job.companion ? ` · ${escapeHtml(job.companion)}` : ""}</small>${expenses.length ? `<small class="job-expenses">Расходы: ${expenses.map((expense) => `${escapeHtml(expense.category)} ${formatMoney(expense.amountCents)}`).join(", ")}</small>` : ""}</article>`;
-  }).join("");
-  const unmatched = data.parsed.expenses.filter((expense) => expense.jobIndex == null && (!expense.object || !data.parsed.jobs.some((job) => job.object === expense.object)));
-  const expenses = unmatched.map((expense) => `<article class="expense"><strong>${escapeHtml(expense.category)}${expense.object ? ` · ${escapeHtml(expense.object)}` : ""}</strong><span>${formatMoney(expense.amountCents)}</span></article>`).join("");
-  $("#parsed-summary").innerHTML = `<p class="muted">${escapeHtml(data.parsed.displayDate ?? "Дата не определена")}</p><div class="job-list">${jobs || "<p>Работы не найдены.</p>"}</div>${expenses ? `<div class="expense-list">${expenses}</div>` : ""}<div class="totals"><div class="total"><span>Время</span><strong>${formatHours(data.totals.minutes)}</strong></div><div class="total"><span>Заработок</span><strong>${formatMoney(data.totals.incomeCents)}</strong></div><div class="total"><span>Расходы</span><strong>${formatMoney(data.totals.expensesCents)}</strong></div></div>`;
-  $("#share-text").textContent = data.shareText;
-  $("#backdated-warning").textContent = data.hasLaterEntries ? `После ${data.parsed.displayDate} уже есть записи. Их накопительные итоги будут пересчитаны после сохранения.` : "";
-  $("#backdated-warning").hidden = !data.hasLaterEntries;
-  $("#share-status").hidden = true;
-  setTodayState("preview");
-}
-
-$("#preview-button").addEventListener("click", async () => {
-  const button = $("#preview-button"); const error = $("#request-error"); error.hidden = true; button.disabled = true; button.textContent = "Собираю…";
-  try { latestDayPayload = buildTodayPayload(); latestPreview = await api("/api/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); if (!latestPreview.canShare) throw new Error("Проверьте заполненные работы"); daySaved = false; renderPreview(latestPreview); }
-  catch (caught) { error.textContent = caught.message || "Не удалось сформировать отчёт."; error.hidden = false; }
-  finally { button.disabled = false; button.textContent = "Сформировать отчёт"; }
-});
-$("#edit-button").addEventListener("click", () => { daySaved = false; setTodayState("editor"); });
-async function saveTodayFromReport() { if (daySaved) return null; const saved = await api("/api/days", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(latestDayPayload) }); latestPreview.shareText = saved.shareText; $("#share-text").textContent = saved.shareText; selectedPeriod = saved.day.dateIso.slice(0, 7); daySaved = true; return saved; }
-$("#share-button").addEventListener("click", async () => {
-  const status = $("#share-status"); let statusText = "";
-  try {
-    await saveTodayFromReport();
-    if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); statusText = "День сохранён, отчёт отправлен."; }
-    else { await navigator.clipboard.writeText(latestPreview.shareText); statusText = "День сохранён, отчёт скопирован."; }
-  } catch { statusText = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; }
-  if (daySaved && latestDayPayload?.dateIso === localDateIso()) { await loadSavedToday(true, statusText); return; }
-  status.className = daySaved ? "notice success" : "notice error"; status.textContent = statusText; status.hidden = false;
-});
-
-function normalizeMapItems() {
-  mapItems = [
-    ...apartments.map((item) => ({ ...item, itemType: "apartment", kind: "apartment", name: item.canonicalName, note: item.noteBody })),
-    ...savedPlaces.map((item) => ({ ...item, itemType: "place" })),
-  ];
-}
-
-async function loadApartments(force = false) {
-  if (apartments.length && !force) return;
-  apartments = (await api("/api/apartments")).apartments;
-}
-
-async function loadMapItems(force = false) {
-  if (mapItems.length && !force) { applyMapMode(); return; }
-  try {
-    await loadApartments(force);
-    const placeData = productRelease >= 2 ? await api("/api/places") : { places: [] };
-    savedPlaces = placeData.places; normalizeMapItems(); renderPlaceList(); renderPlacesMap(); fillApartmentSelect(); applyMapMode();
-  } catch { $("#map-error").textContent = "Не удалось загрузить места."; $("#map-error").hidden = false; }
-}
-
-function applyMapMode() {
-  if (!new Set(["map", "list"]).has(mapMode)) mapMode = "map";
-  $("#map-mode-map").hidden = mapMode !== "map"; $("#map-mode-list").hidden = mapMode !== "list";
-  $$('[data-map-mode]').forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.mapMode === mapMode)));
-  try { localStorage.setItem("maidaid:map-view", mapMode); } catch {}
-  const url = new URL(location.href); url.searchParams.set("view", mapMode); history.replaceState({}, "", `${url.pathname}${url.search}`);
-  if (mapMode === "map" && placesMap) setTimeout(() => placesMap.invalidateSize(), 0);
-}
-$$('[data-map-mode]').forEach((button) => button.addEventListener("click", () => { mapMode = button.dataset.mapMode; applyMapMode(); }));
-
-function renderPlaceList() {
-  const query = $("#place-search").value.trim().toLocaleLowerCase("ru"); const filter = $("#place-filter").value;
-  const visible = mapItems.filter((item) => (filter === "all" || item.kind === filter) && (!query || [item.name, item.address, ...(item.aliases ?? [])].filter(Boolean).some((value) => String(value).toLocaleLowerCase("ru").includes(query)))).sort((a, b) => Number(!(a.itemType === "apartment" && a.latitude == null)) - Number(!(b.itemType === "apartment" && b.latitude == null)) || String(a.name).localeCompare(String(b.name), "ru"));
-  $("#place-list").innerHTML = visible.length ? visible.map((item) => {
-    const needsLocation = item.itemType === "apartment" && item.latitude == null;
-    const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru"));
-    const title = genericLaundry ? (item.address || "Адрес не указан") : item.name;
-    const description = genericLaundry ? (item.latitude == null ? "Нужно указать местоположение" : "") : (item.address || (item.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"));
-    const action = needsLocation
-      ? `<button class="secondary" data-locate-apartment="${item.id}" type="button">Указать место</button>`
-      : `<button class="secondary" data-open-item="${item.itemType}:${item.id}" type="button">Открыть</button>`;
-    return `<article class="place-card"><div class="place-card-main"><span class="place-kind">${kindLabel(item.kind)}</span><strong>${escapeHtml(title)}</strong>${description ? `<p class="${item.latitude == null ? "missing-location" : ""}">${escapeHtml(description)}</p>` : ""}</div>${action}</article>`;
-  }).join("") : "<p class=\"muted\">Ничего не найдено.</p>";
-}
-$("#place-search").addEventListener("input", renderPlaceList); $("#place-filter").addEventListener("change", renderPlaceList);
-$("#place-list").addEventListener("click", (event) => {
-  const locate = event.target.closest("[data-locate-apartment]");
-  if (locate) { openEditForm(`apartment:${locate.dataset.locateApartment}`); return; }
-  const button = event.target.closest("[data-open-item]"); if (button) openItemDetail(button.dataset.openItem);
-});
-
-function renderPlacesMap() {
-  const host = $("#places-map");
-  if (!globalThis.L) { $("#map-empty").textContent = "Карта не загрузилась. Список мест по-прежнему доступен."; $("#map-empty").hidden = false; return; }
-  if (!placesMap) {
-    placesMap = L.map(host, { zoomControl: true }).setView([48.8566, 2.3522], 12);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(placesMap);
-  }
-  if (markerLayer) markerLayer.remove(); markerLayer = L.layerGroup().addTo(placesMap);
-  const markerAppearance = {
-    apartment: { colorClass: "apartment" },
-    laundry: { colorClass: "laundry" },
-    partner_restaurant: { colorClass: "partner_restaurant" },
-  };
-  const located = mapItems.filter((item) => Number.isFinite(item.latitude) && Number.isFinite(item.longitude) && Math.abs(item.latitude) <= 90 && Math.abs(item.longitude) <= 180);
-  located.forEach((item) => {
-    const appearance = markerAppearance[item.kind] ?? markerAppearance.apartment;
-    const icon = L.divIcon({
-      className: "map-marker-icon",
-      html: `<span class="map-marker map-marker--${appearance.colorClass}"></span>`,
-      iconSize: [38, 44], iconAnchor: [19, 42], tooltipAnchor: [0, -34],
-    });
-    const marker = L.marker([item.latitude, item.longitude], { icon, title: item.name, alt: `${kindLabel(item.kind)}: ${item.name}`, riseOnHover: true }).addTo(markerLayer);
-    const tooltip = document.createElement("span");
-    const tooltipTitle = document.createElement("strong"); tooltipTitle.textContent = item.name; tooltip.append(tooltipTitle);
-    if (item.address) { const tooltipAddress = document.createElement("small"); tooltipAddress.textContent = item.address; tooltip.append(tooltipAddress); }
-    marker.bindTooltip(tooltip, { direction: "top", opacity: 1, className: "place-tooltip" });
-    marker.on("click", () => openItemDetail(`${item.itemType}:${item.id}`));
-  });
-  if (located.length === 1) placesMap.setView([located[0].latitude, located[0].longitude], 15);
-  else if (located.length) { const bounds = L.latLngBounds(located.map((item) => [item.latitude, item.longitude])); placesMap.fitBounds(bounds, { padding: [54, 54], maxZoom: 15 }); }
-  $("#map-empty").hidden = located.length > 0; $("#map-empty").textContent = located.length ? "" : "Пока ни у одной квартиры нет координат. Откройте список и укажите местоположение.";
-}
-
-async function openItemDetail(key, push = true) {
-  const [type, idText] = key.split(":"); const id = Number(idText);
-  if (type === "apartment") return openApartmentDetail(id, push);
-  const item = savedPlaces.find((place) => place.id === id); if (!item) return;
-  const mapLink = mapsHref(item);
-  const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(item.name.trim().toLocaleLowerCase("ru"));
-  $("#place-detail").innerHTML = `<span class="place-kind">${kindLabel(item.kind)}</span><h2>${escapeHtml(genericLaundry ? (item.address || "Сушка") : item.name)}</h2>${!genericLaundry || !item.address ? `<p class="detail-address">${escapeHtml(item.address || "Адрес не указан")}</p>` : ""}${item.note ? `<p class="detail-note">${escapeHtml(item.note)}</p>` : ""}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}<button class="secondary" data-edit-item="place:${item.id}" type="button">Изменить</button><button class="ghost" data-archive-place="${item.id}" type="button">Архивировать</button></div>`;
-  $("#place-detail-dialog").showModal();
-}
-
-async function openApartmentDetail(id, push = true) {
-  try {
-    const { apartment, preferredLaundry } = await api(`/api/apartments/${id}`);
-    const mapLink = mapsHref(apartment);
-    const editLabel = apartment.latitude == null ? "Указать место" : "Изменить";
-    const releaseActions = `${productRelease >= 2 ? `<button class="secondary" data-choose-laundry="${apartment.id}" type="button">${preferredLaundry ? "Сменить сушку" : "Выбрать сушку"}</button>` : ""}<button class="ghost" data-edit-item="apartment:${apartment.id}" type="button">${editLabel}</button>`;
-    const laundryTitle = preferredLaundry && ["сушка", "прачечная"].includes(String(preferredLaundry.name).trim().toLocaleLowerCase("ru")) ? (preferredLaundry.address || preferredLaundry.name) : preferredLaundry?.name;
-    const laundryMapLink = preferredLaundry ? mapsHref(preferredLaundry) : null;
-    const laundryCard = preferredLaundry ? `${laundryMapLink ? `<a class="notice success preferred-laundry-card" href="${escapeHtml(laundryMapLink)}" target="_blank" rel="noopener noreferrer">` : `<div class="notice success preferred-laundry-card">`}<strong>Выбранная сушка</strong><br>${escapeHtml(laundryTitle)}${laundryMapLink ? `<span>Открыть на карте →</span></a>` : "</div>"}` : "";
-    $("#place-detail").innerHTML = `<span class="place-kind">Квартира</span><h2>${escapeHtml(apartment.canonicalName)}</h2><p class="detail-address ${apartment.latitude == null ? "missing-location" : ""}">${escapeHtml(apartment.address || (apartment.latitude == null ? "Нужно указать местоположение" : "Координаты сохранены"))}</p>${apartment.noteBody ? `<pre class="detail-note">${escapeHtml(apartment.noteBody)}</pre>` : ""}${laundryCard}<div class="detail-actions">${mapLink ? `<a class="primary action-link" href="${escapeHtml(mapLink)}" target="_blank" rel="noopener noreferrer">Маршрут</a>` : ""}${releaseActions}</div>`;
-    $("#place-detail-dialog").showModal();
-    if (push && location.pathname !== `/map/apartments/${id}`) history.pushState({}, "", `/map/apartments/${id}?view=${mapMode}`);
-  } catch { $("#map-error").textContent = "Не удалось открыть квартиру."; $("#map-error").hidden = false; }
-}
-
-$("#place-detail").addEventListener("click", async (event) => {
-  const edit = event.target.closest("[data-edit-item]"); const archive = event.target.closest("[data-archive-place]"); const laundry = event.target.closest("[data-choose-laundry]");
-  if (edit) { $("#place-detail-dialog").close(); openEditForm(edit.dataset.editItem); }
-  if (archive && confirm("Убрать это место в архив?")) { await api(`/api/places/${archive.dataset.archivePlace}`, { method: "DELETE" }); $("#place-detail-dialog").close(); mapItems = []; await loadMapItems(true); }
-  if (laundry) { $("#place-detail-dialog").close(); await openLaundryPicker(Number(laundry.dataset.chooseLaundry)); }
-});
-
-function resetPlaceForm() {
-  $("#place-form").reset(); $("#place-edit-id").value = ""; $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
-  $("#place-kind").disabled = false;
-  $("#coordinate-picker").hidden = true; $("#place-form-error").hidden = true; $("#place-location-status").textContent = "Сначала попробуем определить точку по адресу.";
-}
-function clearDerivedLocation() {
-  $("#place-latitude").value = ""; $("#place-longitude").value = ""; $("#place-location-source").value = ""; $("#place-location-accuracy").value = "";
-  $("#place-location-status").textContent = "Местоположение будет определено по обновлённой ссылке или адресу.";
-}
-$("#place-address").addEventListener("input", clearDerivedLocation);
-$("#place-maps-url").addEventListener("input", clearDerivedLocation);
-function fillApartmentSelect() { $("#place-apartment-link").innerHTML = `<option value="">Не связывать</option>${[...apartments].sort((a, b) => Number(a.latitude != null) - Number(b.latitude != null) || a.canonicalName.localeCompare(b.canonicalName, "ru")).map((item) => `<option value="${item.id}">${escapeHtml(item.canonicalName)}${item.latitude == null ? " · не заполнена" : ""}</option>`).join("")}`; }
-function updatePlaceKind() {
-  const laundry = $("#place-kind").value === "laundry";
-  $("#place-apartment-link-label").hidden = !laundry;
-  $("#place-name").required = !laundry;
-  $("#place-name-caption").textContent = laundry ? "Название (необязательно)" : "Название";
-  $("#place-name").placeholder = laundry ? "Можно оставить пустым" : "";
-}
-$("#place-kind").addEventListener("change", updatePlaceKind);
-function openPlaceForm(kind = "apartment", name = "") { resetPlaceForm(); $("#place-form-title").textContent = "Добавить место"; $("#place-kind").value = kind; $("#place-name").value = name; fillApartmentSelect(); updatePlaceKind(); $("#place-form-dialog").showModal(); }
-$("#add-place-button").addEventListener("click", () => openPlaceForm());
-function openEditForm(key) {
-  const [type, idText] = key.split(":"); const id = Number(idText); const item = type === "apartment" ? apartments.find((entry) => entry.id === id) : savedPlaces.find((entry) => entry.id === id); if (!item) return;
-  resetPlaceForm(); $("#place-form-title").textContent = "Изменить место"; $("#place-edit-id").value = key; $("#place-kind").value = item.kind ?? "apartment"; const genericLaundry = item.kind === "laundry" && ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru")); $("#place-name").value = item.canonicalName ?? (genericLaundry ? "" : item.name); $("#place-address").value = item.address ?? ""; $("#place-maps-url").value = item.mapsUrl ?? ""; $("#place-note").value = item.noteBody ?? item.note ?? ""; $("#place-latitude").value = item.latitude ?? ""; $("#place-longitude").value = item.longitude ?? ""; $("#place-location-source").value = item.locationSource ?? ""; updatePlaceKind(); $("#place-form-dialog").showModal();
+      <label>Тип<select data-work-type="${job.id}"><option value="independent"${job.workType === "independent" ? " selected" : ""}>Уборка</option><option value="orientati…7291 tokens truncated…u0026& ["сушка", "прачечная"].includes(String(item.name).trim().toLocaleLowerCase("ru")); $("#place-name").value = item.canonicalName ?? (genericLaundry ? "" : item.name); $("#place-address").value = item.address ?? ""; $("#place-maps-url").value = item.mapsUrl ?? ""; $("#place-note").value = item.noteBody ?? item.note ?? ""; $("#place-latitude").value = item.latitude ?? ""; $("#place-longitude").value = item.longitude ?? ""; $("#place-location-source").value = item.locationSource ?? ""; updatePlaceKind(); $("#place-form-dialog").showModal();
   $("#place-kind").disabled = true;
 }
 
@@ -536,9 +329,9 @@ function renderLedger(data) {
   $("#ledger-rows").innerHTML = data.rows.length ? data.rows.map((row) => {
     if (row.rowType === "work") {
       const details = (row.parsedDetails?.jobs ?? []).map((job) => `<div class="ledger-detail-item"><strong>${escapeHtml(job.object)}</strong><small>${typeLabel(job.workType)}</small></div>`).join("");
-      return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatHours(row.minutes)} работы</strong><br><small>${formatMoney(row.incomeCents)} заработано · ${formatMoney(row.expensesCents)} расходы</small></div><div class="ledger-row-actions"><button class="secondary" data-edit-day="${row.dateIso}">Изменить</button><button class="ghost" data-delete-day="${row.dateIso}">Удалить</button></div><div class="ledger-day-tabs"><details class="ledger-day-details"><summary>Расписание</summary><pre>${escapeHtml(row.sourceText)}</pre></details><details class="ledger-day-details"><summary>Отчёт</summary><pre>${escapeHtml(row.reportText || "Отчёт не сохранён")}</pre></details><details class="ledger-day-details"><summary>Подробнее</summary><div class="ledger-detail-list">${details || "Работы не найдены"}</div></details></div></article>`;
+      return `<details class="ledger-row"><summary class="ledger-row-summary"><time>${escapeHtml(row.dateIso)}</time><span><strong>${formatHours(row.minutes)} работы</strong><small>${formatMoney(row.incomeCents)} заработано · ${formatMoney(row.expensesCents)} расходы</small></span><i aria-hidden="true"></i></summary><div class="ledger-row-panel"><div class="ledger-row-actions"><button class="secondary" data-edit-day="${row.dateIso}">Изменить</button><button class="ghost" data-delete-day="${row.dateIso}">Удалить</button></div><div class="ledger-day-tabs"><details class="ledger-day-details"><summary>Расписание</summary><pre>${escapeHtml(row.sourceText)}</pre></details><details class="ledger-day-details"><summary>Отчёт</summary><pre>${escapeHtml(row.reportText || "Отчёт не сохранён")}</pre></details><details class="ledger-day-details"><summary>Подробнее</summary><div class="ledger-detail-list">${details || "Работы не найдены"}</div></details></div></div></details>`;
     }
-    const manual = row.source === "manual"; return `<article class="ledger-row"><time>${row.dateIso}</time><div><strong>${formatMoney(row.amountCents)} получено</strong><br><small>${escapeHtml(row.note || (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></div>${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Изменить</button><button class="ghost" data-delete-payment="${row.id}">Удалить</button></div>` : "<span class=\"muted\">Из текста</span>"}</article>`;
+    const manual = row.source === "manual"; return `<details class="ledger-row"><summary class="ledger-row-summary"><time>${row.dateIso}</time><span><strong>${formatMoney(row.amountCents)} получено</strong><small>${escapeHtml(row.note || (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></span><i aria-hidden="true"></i></summary><div class="ledger-row-panel">${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Изменить</button><button class="ghost" data-delete-payment="${row.id}">Удалить</button></div>` : "<span class=\"muted\">Оплата создана из текста рабочего дня.</span>"}</div></details>`;
   }).join("") : "<p class=\"muted\">Записей пока нет.</p>";
 }
 async function loadLedger() { try { $("#ledger-error").hidden = true; $("#ledger-period-label").textContent = formatPeriod(selectedPeriod); const { from, to } = periodBounds(selectedPeriod); renderLedger(await api(`/api/ledger?from=${from}&to=${to}`)); } catch { renderLedger({ totals: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 }, rows: [] }); $("#ledger-error").textContent = "Не удалось загрузить историю."; $("#ledger-error").hidden = false; } }
