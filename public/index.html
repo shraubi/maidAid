@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#173f35" />
+    <meta name="theme-color" content="#faf7f1" />
     <meta name="description" content="Рабочий день, адреса и учёт MaidAid" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
@@ -15,7 +15,7 @@
   <body>
     <section id="auth-view" class="auth-shell" hidden>
       <article class="surface auth-card">
-        <img src="/icons/icon.svg" alt="" width="64" height="64" />
+        <img src="/icons/icon.svg" alt="" width="48" height="60" />
         <h1>MaidAid</h1>
         <p class="muted">Личный учёт работы для команды</p>
         <div class="view-switch auth-switch" role="group" aria-label="Вход или регистрация">
@@ -39,7 +39,7 @@
     </section>
     <header class="app-header" hidden>
       <a class="brand" href="/today" data-route="today" aria-label="MaidAid · Сегодня">
-        <img src="/icons/icon.svg" alt="" width="40" height="40" />
+        <img src="/icons/icon.svg" alt="" width="28" height="35" />
         <span>MaidAid</span>
       </a>
       <nav class="desktop-nav" aria-label="Основная навигация">
@@ -55,18 +55,19 @@
         <header class="view-heading"><p class="eyebrow">Рабочий день</p><h1 id="today-title">Сегодня</h1></header>
         <article id="today-editor" class="surface workflow-surface">
           <div class="today-date"><span>Работы за</span><label class="today-date-control"><strong id="today-date-label">Сегодня</strong><input id="today-date-input" type="date" aria-label="Дата рабочего дня" /></label></div>
+          <div id="today-draft-summary" class="today-draft-summary" aria-live="polite"></div>
           <div id="today-job-list" class="today-job-list"></div>
           <button id="add-today-job" class="secondary add-job-button" type="button">+ Квартира</button>
           <div class="action-row action-row-end"><button id="preview-button" class="primary" type="button">Сформировать отчёт</button></div>
           <p id="request-error" class="notice error" role="alert" hidden></p>
         </article>
-        <article id="today-preview" class="surface workflow-surface" hidden>
-          <div class="section-heading"><div><p class="eyebrow">Готовый отчёт</p><h2>Можно отправлять</h2></div><button id="edit-button" class="ghost" type="button">← Изменить</button></div>
+        <article id="today-preview" class="surface workflow-surface report-sheet" role="dialog" aria-modal="true" aria-labelledby="report-title" hidden>
+          <div class="section-heading"><div><h2 id="report-title">Отчёт за день</h2><p class="report-intro">Проверьте и скопируйте текст.</p></div><button id="edit-button" class="dialog-close" type="button" aria-label="Закрыть отчёт">×</button></div>
           <div id="issue-list" class="notice error" role="alert" hidden></div>
           <div id="parsed-summary"></div>
           <pre id="share-text"></pre>
           <p id="backdated-warning" class="notice" hidden></p>
-          <div class="action-row action-row-end"><button id="share-button" class="primary" type="button">Сохранить и поделиться</button></div>
+          <div class="report-actions"><button id="share-button" class="secondary" type="button">Копировать</button><button id="done-report-button" class="primary" type="button">Готово</button></div>
           <p id="share-status" class="notice success" role="status" hidden></p>
         </article>
         <article id="today-saved" class="surface workflow-surface" hidden>
@@ -111,9 +112,9 @@
     </main>
 
     <nav class="mobile-nav" aria-label="Основная навигация" hidden>
-      <a href="/today" data-route="today"><span aria-hidden="true">✓</span>Сегодня</a>
-      <a href="/map" data-route="map"><span aria-hidden="true">⌖</span>Карта</a>
-      <a href="/ledger" data-route="ledger"><span aria-hidden="true">€</span>Учёт</a>
+      <a href="/today" data-route="today"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="3"/><path d="M8 3v5M16 3v5M3.5 10h17M8 15l2.2 2.2L16 13"/></svg></span>Сегодня</a>
+      <a href="/map" data-route="map"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.5 6-11a6 6 0 1 0-12 0c0 5.5 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg></span>Карта</a>
+      <a href="/ledger" data-route="ledger"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h10a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-11a3 3 0 0 1 3-3ZM8 8h8M8 12h8M8 16h5"/></svg></span>Учёт</a>
     </nav>
 
     <dialog id="place-detail-dialog" class="app-dialog"><button class="dialog-close" data-close-dialog="place-detail-dialog" aria-label="Закрыть">×</button><div id="place-detail"></div></dialog>

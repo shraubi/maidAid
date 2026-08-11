@@ -28,7 +28,7 @@ test("Today keeps its preview and saves a missing day before a later entry", asy
   await expect(page.getByLabel("Другие расходы, €")).toHaveCount(0);
   await page.locator("[data-work-type]").selectOption("independent");
   await page.getByRole("button", { name: "Сформировать отчёт", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Отчёт за день" })).toBeVisible();
   await expect(page.locator("#parsed-summary")).toContainText("08/08");
   await expect(page.locator("#backdated-warning")).toContainText("уже есть записи");
   await page.locator("#share-button").click();
@@ -36,10 +36,23 @@ test("Today keeps its preview and saves a missing day before a later entry", asy
   const backfilledLedger = await (await request.get("/api/ledger?from=2026-08-08&to=2026-08-09")).json();
   expect(backfilledLedger.rows.filter((row: { rowType: string }) => row.rowType === "work").map((row: { dateIso: string }) => row.dateIso)).toEqual(["2026-08-09", "2026-08-08"]);
   expect(backfilledLedger.rows.find((row: { dateIso: string }) => row.dateIso === "2026-08-09").reportText).toContain("Было: 3 h");
+  await page.getByRole("button", { name: "Готово", exact: true }).click();
   await page.getByRole("link", { name: "Карта", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Карта", exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Сегодня", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Можно отправлять" })).toBeVisible();
+  await expect(page.locator("#today-editor")).toBeVisible();
+});
+
+test("generated map links prefer an address and fall back to coordinates", async ({ page, request }, testInfo) => {
+  const address = `27 Rue du Test, Paris · ${testInfo.project.name}`;
+  const addressApartment = await (await request.post("/api/apartments", { data: { canonicalName: `Address route ${testInfo.project.name}`, aliases: [], address, mapsUrl: null, latitude: 48.871, longitude: 2.292, locationSource: "pin" } })).json();
+  await page.goto(`/map/apartments/${addressApartment.apartment.id}?view=list`);
+  await expect(page.getByRole("link", { name: "Маршрут", exact: true })).toHaveAttribute("href", `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`);
+  await page.locator('[data-close-dialog="place-detail-dialog"]').click();
+
+  const coordinateApartment = await (await request.post("/api/apartments", { data: { canonicalName: `Coordinate route ${testInfo.project.name}`, aliases: [], latitude: 48.872, longitude: 2.293, locationSource: "pin" } })).json();
+  await page.goto(`/map/apartments/${coordinateApartment.apartment.id}?view=list`);
+  await expect(page.getByRole("link", { name: "Маршрут", exact: true })).toHaveAttribute("href", "https://www.google.com/maps/search/?api=1&query=48.872,2.293");
 });
 
 test("a saved Today card restores quick routes and opens full apartment details", async ({ page, request }) => {
@@ -147,4 +160,11 @@ test("mobile layout has no horizontal overflow", async ({ page }, testInfo) => {
   expect(cardBounds.left).toBeGreaterThanOrEqual(0);
   expect(cardBounds.right).toBeLessThanOrEqual(cardBounds.viewport);
   await expect(page.locator(".mobile-nav")).toBeVisible();
+  const undersized = await page.locator("button:visible,a:visible,input:visible,select:visible,summary:visible").evaluateAll((elements) => elements.map((element) => {
+    const box = element.getBoundingClientRect(); return { label: element.getAttribute("aria-label") || element.textContent?.trim() || element.tagName, width: box.width, height: box.height };
+  }).filter(({ width, height }) => width < 44 || height < 44));
+  expect(undersized).toEqual([]);
+  await page.keyboard.press("Tab");
+  const focusOutline = await page.evaluate(() => { const element = document.activeElement; return element ? getComputedStyle(element).outlineStyle : "none"; });
+  expect(focusOutline).not.toBe("none");
 });

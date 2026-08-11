@@ -6,7 +6,7 @@ const formatHours = (minutes) => `${Number((minutes / 60).toFixed(2))} ч`;
 const formatMoney = (cents) => `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 const typeLabel = (type) => ({ independent: "Самостоятельная уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[type] ?? "Тип не указан";
 const kindLabel = (kind) => ({ apartment: "Квартира", laundry: "Сушка", partner_restaurant: "Партнёр" })[kind] ?? "Место";
-const mapsHref = (item) => item ? item.mapsUrl || (item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : null) : null;
+const mapsHref = (item) => item ? item.mapsUrl || (item.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}` : item.latitude != null && item.longitude != null ? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}` : null) : null;
 
 async function api(url, options) {
   const response = await fetch(url, options);
@@ -89,6 +89,7 @@ function routeFromPath() {
 async function showRoute(route, push = false) {
   activeRoute = route;
   $$(".app-view").forEach((view) => { view.hidden = view.id !== `view-${route}`; });
+  document.body.classList.toggle("report-open", route === "today" && todayState === "preview");
   $$('[data-route]').forEach((link) => {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
   });
@@ -100,7 +101,7 @@ async function showRoute(route, push = false) {
   }
   if (route === "map") await loadMapItems();
   if (route === "ledger") await loadLedger();
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 $$('[data-route]').forEach((link) => link.addEventListener("click", (event) => {
@@ -119,6 +120,7 @@ function setTodayState(state) {
   $("#today-editor").hidden = state !== "editor";
   $("#today-preview").hidden = state !== "preview";
   $("#today-saved").hidden = state !== "saved";
+  document.body.classList.toggle("report-open", state === "preview" && activeRoute === "today");
 }
 
 const normalizeSearch = (value) => String(value ?? "").normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -225,19 +227,36 @@ function durationWheel(job) {
   return `<div class="duration-wheel" role="spinbutton" tabindex="0" aria-label="Длительность уборки" aria-valuemin="30" aria-valuemax="300" aria-valuenow="${job.durationMinutes}" data-duration-wheel="${job.id}">${values.map((value) => `<button class="duration-option${value === job.durationMinutes ? " is-selected" : ""}" data-duration="${value}" type="button" aria-pressed="${value === job.durationMinutes}">${formatHours(value)}</button>`).join("")}</div>`;
 }
 
+function renderTodayDraftSummary() {
+  const draftMinutes = todayJobs.reduce((sum, job) => sum + (job.workType === "independent" ? job.durationMinutes : job.workType === "checkin" ? 30 : 60), 0);
+  const draftExpenses = todayJobs.reduce((sum, job) => {
+    if (job.workType !== "independent") return sum;
+    const dryer = Number(String(job.dryer || 0).replace(",", "."));
+    const other = Number(String(job.otherExpense || 0).replace(",", "."));
+    return sum + (Number.isFinite(dryer) ? Math.round(dryer * 100) : 0) + (Number.isFinite(other) ? Math.round(other * 100) : 0);
+  }, 0);
+  $("#today-draft-summary").innerHTML = `<div><span>Часы</span><strong>${formatHours(draftMinutes)}</strong></div><div><span>Расход</span><strong>${formatMoney(draftExpenses)}</strong></div>`;
+}
+
 function renderTodayJobs() {
   updateTodayDateLabel();
+  renderTodayDraftSummary();
   $("#today-job-list").innerHTML = todayJobs.length ? todayJobs.map((job, index) => {
     const apartment = apartments.find((item) => item.id === job.apartmentId);
     const value = apartment?.canonicalName ?? job.newApartmentName ?? job.query;
     const selectedState = apartment ? `<small class="apartment-selection">${escapeHtml(apartment.address || "Адрес нужно добавить")}</small>` : job.newApartmentName ? `<small class="apartment-selection needs-attention">Новая квартира · адрес нужно добавить</small>` : "";
-    return `<article class="today-job-card" data-today-job="${job.id}">
-      <div class="today-job-heading"><strong>Квартира ${index + 1}</strong><button class="ghost remove-job" data-remove-job="${job.id}" type="button" aria-label="Удалить квартиру">Удалить</button></div>
+    const draftExpenseCents = job.workType === "independent" ? [job.dryer, job.otherExpense].reduce((sum, amount) => { const value = Number(String(amount || 0).replace(",", ".")); return sum + (Number.isFinite(value) ? Math.round(value * 100) : 0); }, 0) : 0;
+    const summaryTiming = job.workType === "independent" ? formatHours(job.durationMinutes) : job.workType === "checkin" ? "0,5 ч" : "1 ч";
+    const summaryType = ({ independent: "Уборка", orientation: "Ознакомление", practice: "Практика", checkin: "Check in" })[job.workType];
+    return `<details class="today-job-card" data-today-job="${job.id}" open>
+      <summary class="today-job-summary"><span><strong>${escapeHtml(value || `Квартира ${index + 1}`)}</strong><small>${escapeHtml(summaryType)}</small><em>${escapeHtml(summaryTiming)}${draftExpenseCents ? ` · ${escapeHtml(formatMoney(draftExpenseCents))} расходы` : ""}</em></span></summary>
+      <div class="today-job-editor"><div class="today-job-heading"><strong>Квартира ${index + 1}</strong><button class="ghost remove-job" data-remove-job="${job.id}" type="button" aria-label="Удалить квартиру">Удалить</button></div>
       <label class="apartment-search-label">Название или улица<div class="apartment-combobox"><input class="apartment-search" data-apartment-search="${job.id}" value="${escapeHtml(value)}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Например, Bosquet или Lauriston" /><div class="apartment-results" data-apartment-results="${job.id}" role="listbox" hidden></div></div>${selectedState}</label>
       <label>Тип<select data-work-type="${job.id}"><option value="independent"${job.workType === "independent" ? " selected" : ""}>Уборка</option><option value="orientation"${job.workType === "orientation" ? " selected" : ""}>Ознакомление</option><option value="practice"${job.workType === "practice" ? " selected" : ""}>Практика</option><option value="checkin"${job.workType === "checkin" ? " selected" : ""}>Check-in</option></select></label>
       ${job.workType === "independent" ? `<div class="duration-field"><span>Сколько часов</span>${durationWheel(job)}</div>` : ""}
       ${job.workType === "independent" ? `<div class="job-expense-fields"><label>Сушка, €<input data-job-expense="dryer" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.dryer)}" placeholder="0" /></label><label>Другие расходы, €<input data-job-expense="otherExpense" data-job-id="${job.id}" inputmode="decimal" value="${escapeHtml(job.otherExpense)}" placeholder="0" /></label></div>` : ""}
-    </article>`;
+      </div>
+    </details>`;
   }).join("") : `<div class="today-empty"><strong>Добавьте первую квартиру</strong><p>Каждая работа будет отдельной карточкой.</p></div>`;
 }
 
@@ -255,7 +274,7 @@ $("#today-job-list").addEventListener("focusout", (event) => { if (event.target.
 $("#today-job-list").addEventListener("input", (event) => {
   const search = event.target.closest("[data-apartment-search]");
   if (search) { const job = todayJobs.find((item) => item.id === Number(search.dataset.apartmentSearch)); if (job) { job.query = search.value; job.apartmentId = null; job.newApartmentName = ""; showApartmentResults(search); } return; }
-  const expense = event.target.closest("[data-job-expense]"); if (expense) { const job = todayJobs.find((item) => item.id === Number(expense.dataset.jobId)); if (job) job[expense.dataset.jobExpense] = expense.value; }
+  const expense = event.target.closest("[data-job-expense]"); if (expense) { const job = todayJobs.find((item) => item.id === Number(expense.dataset.jobId)); if (job) { job[expense.dataset.jobExpense] = expense.value; renderTodayDraftSummary(); } }
 });
 $("#today-job-list").addEventListener("change", (event) => { const select = event.target.closest("[data-work-type]"); if (select) { const job = todayJobs.find((item) => item.id === Number(select.dataset.workType)); if (job) { job.workType = select.value; if (job.workType !== "independent") { job.dryer = ""; job.otherExpense = ""; } renderTodayJobs(); } } });
 $("#today-job-list").addEventListener("click", (event) => {
@@ -311,11 +330,20 @@ $("#share-button").addEventListener("click", async () => {
   const status = $("#share-status"); let statusText = "";
   try {
     await saveTodayFromReport();
-    if (navigator.share) { await navigator.share({ text: latestPreview.shareText }); statusText = "День сохранён, отчёт отправлен."; }
-    else { await navigator.clipboard.writeText(latestPreview.shareText); statusText = "День сохранён, отчёт скопирован."; }
+    await navigator.clipboard.writeText(latestPreview.shareText); statusText = "День сохранён, отчёт скопирован.";
   } catch { statusText = daySaved ? "День сохранён. Отправка отменена или недоступна." : "Не удалось сохранить день."; }
   if (daySaved && latestDayPayload?.dateIso === localDateIso()) { await loadSavedToday(true, statusText); return; }
   status.className = daySaved ? "notice success" : "notice error"; status.textContent = statusText; status.hidden = false;
+});
+$("#done-report-button").addEventListener("click", async () => {
+  const status = $("#share-status");
+  try {
+    await saveTodayFromReport();
+    if (latestDayPayload?.dateIso === localDateIso()) { await loadSavedToday(true, "День сохранён."); return; }
+    setTodayState("editor");
+  } catch {
+    status.className = "notice error"; status.textContent = "Не удалось сохранить день."; status.hidden = false;
+  }
 });
 
 function normalizeMapItems() {
@@ -536,9 +564,9 @@ function renderLedger(data) {
   $("#ledger-rows").innerHTML = data.rows.length ? data.rows.map((row) => {
     if (row.rowType === "work") {
       const details = (row.parsedDetails?.jobs ?? []).map((job) => `<div class="ledger-detail-item"><strong>${escapeHtml(job.object)}</strong><small>${typeLabel(job.workType)}</small></div>`).join("");
-      return `<article class="ledger-row"><time>${escapeHtml(row.dateIso)}</time><div><strong>${formatHours(row.minutes)} работы</strong><br><small>${formatMoney(row.incomeCents)} заработано · ${formatMoney(row.expensesCents)} расходы</small></div><div class="ledger-row-actions"><button class="secondary" data-edit-day="${row.dateIso}">Изменить</button><button class="ghost" data-delete-day="${row.dateIso}">Удалить</button></div><div class="ledger-day-tabs"><details class="ledger-day-details"><summary>Расписание</summary><pre>${escapeHtml(row.sourceText)}</pre></details><details class="ledger-day-details"><summary>Отчёт</summary><pre>${escapeHtml(row.reportText || "Отчёт не сохранён")}</pre></details><details class="ledger-day-details"><summary>Подробнее</summary><div class="ledger-detail-list">${details || "Работы не найдены"}</div></details></div></article>`;
+      return `<details class="ledger-row"><summary class="ledger-row-summary"><time>${escapeHtml(row.dateIso)}</time><span><strong>${formatHours(row.minutes)} работы</strong><small>${formatMoney(row.incomeCents)} заработано · ${formatMoney(row.expensesCents)} расходы</small></span><i aria-hidden="true"></i></summary><div class="ledger-row-panel"><div class="ledger-row-actions"><button class="secondary" data-edit-day="${row.dateIso}">Изменить</button><button class="ghost" data-delete-day="${row.dateIso}">Удалить</button></div><div class="ledger-day-tabs"><details class="ledger-day-details"><summary>Расписание</summary><pre>${escapeHtml(row.sourceText)}</pre></details><details class="ledger-day-details"><summary>Отчёт</summary><pre>${escapeHtml(row.reportText || "Отчёт не сохранён")}</pre></details><details class="ledger-day-details"><summary>Подробнее</summary><div class="ledger-detail-list">${details || "Работы не найдены"}</div></details></div></div></details>`;
     }
-    const manual = row.source === "manual"; return `<article class="ledger-row"><time>${row.dateIso}</time><div><strong>${formatMoney(row.amountCents)} получено</strong><br><small>${escapeHtml(row.note || (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></div>${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Изменить</button><button class="ghost" data-delete-payment="${row.id}">Удалить</button></div>` : "<span class=\"muted\">Из текста</span>"}</article>`;
+    const manual = row.source === "manual"; return `<details class="ledger-row"><summary class="ledger-row-summary"><time>${row.dateIso}</time><span><strong>${formatMoney(row.amountCents)} получено</strong><small>${escapeHtml(row.note || (manual ? "Ручная оплата" : "Аванс из отчёта"))}</small></span><i aria-hidden="true"></i></summary><div class="ledger-row-panel">${manual ? `<div class="ledger-row-actions"><button class="secondary" data-edit-payment="${row.id}" data-date="${row.dateIso}" data-amount="${row.amountCents}" data-note="${escapeHtml(row.note || "")}">Изменить</button><button class="ghost" data-delete-payment="${row.id}">Удалить</button></div>` : "<span class=\"muted\">Оплата создана из текста рабочего дня.</span>"}</div></details>`;
   }).join("") : "<p class=\"muted\">Записей пока нет.</p>";
 }
 async function loadLedger() { try { $("#ledger-error").hidden = true; $("#ledger-period-label").textContent = formatPeriod(selectedPeriod); const { from, to } = periodBounds(selectedPeriod); renderLedger(await api(`/api/ledger?from=${from}&to=${to}`)); } catch { renderLedger({ totals: { minutes: 0, earnedCents: 0, receivedCents: 0, outstandingCents: 0, expensesCents: 0, checkinCents: 0 }, rows: [] }); $("#ledger-error").textContent = "Не удалось загрузить историю."; $("#ledger-error").hidden = false; } }

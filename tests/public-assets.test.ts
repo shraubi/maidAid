@@ -63,20 +63,34 @@ describe("public assets", () => {
     expect(app).toContain("event.target === dialog");
   });
 
-  it("uses one save-and-share action and warns only when later entries exist", () => {
+  it("uses the referenced report sheet actions and warns only when later entries exist", () => {
     const app = readFileSync(resolve("public/app.js"), "utf8");
     const html = readFileSync(resolve("public/index.html"), "utf8");
     expect(html).not.toContain('id="save-day-button"');
     expect(html).not.toContain('id="copy-button"');
-    expect(html).toContain("Сохранить и поделиться");
+    expect(html).toContain('id="share-button" class="secondary"');
+    expect(html).toContain('id="done-report-button"');
     expect(html).toContain('id="backdated-warning"');
     expect(app).toContain("data.hasLaterEntries");
+  });
+
+  it("prefers a readable address when generating a Google Maps URL", () => {
+    const app = readFileSync(resolve("public/app.js"), "utf8");
+    expect(app).toContain("item.mapsUrl || (item.address ?");
+    expect(app.indexOf("encodeURIComponent(item.address)")).toBeLessThan(app.indexOf("item.latitude != null"));
   });
 
   it("allows Today cards and native controls to shrink on narrow iPhones", () => {
     const styles = readFileSync(resolve("public/styles.css"), "utf8");
     expect(styles).toContain(".today-job-card { width: 100%; min-width: 0;");
     expect(styles).toContain("input,select,textarea { width: 100%; min-width: 0; max-width: 100%;");
+  });
+
+  it("includes safe areas, visible focus and 44px interaction targets", () => {
+    const styles = readFileSync(resolve("public/styles.css"), "utf8");
+    expect(styles).toContain("env(safe-area-inset-bottom)");
+    expect(styles).toContain("button:focus-visible,a:focus-visible,summary:focus-visible");
+    expect(styles).toContain("button { min-height: 44px;");
   });
 
   it("renders place kinds on their own line and makes laundry names optional", () => {
