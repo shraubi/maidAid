@@ -1,7 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="118" fill="#173f35"/>
-  <path d="M132 342c0-89 48-175 124-216 76 41 124 127 124 216" fill="#f3f0e8"/>
-  <path d="M177 342c0-68 29-125 79-164 50 39 79 96 79 164" fill="#d88559"/>
-  <path d="M105 342h302v50H105z" rx="25" fill="#f3f0e8"/>
-  <circle cx="256" cy="150" r="28" fill="#f3f0e8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" width="64" height="80" fill="none" role="img" aria-label="MaidAid">
+  <g stroke="#123A2E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 30a22 22 0 1 1 44 0c0 12-8.5 19.5-14.5 25.5L32 62" />
+    <path d="M10 30c0 12 8.5 19.5 14.5 25.5L32 62" />
+    <path d="M16.5 42 32 26.5 47.5 42c0 8-4.5 13.5-9.5 18" />
+    <path d="M16.5 42c0 8 4.5 13.5 9.5 18" />
+  </g>
+  <g fill="#C2603C">
+    <rect x="26" y="41.5" width="4.6" height="4.6" rx="1" />
+    <rect x="33.4" y="41.5" width="4.6" height="4.6" rx="1" />
+    <rect x="26" y="48.9" width="4.6" height="4.6" rx="1" />
+    <rect x="33.4" y="48.9" width="4.6" height="4.6" rx="1" />
+  </g>
+  <circle cx="32" cy="68.5" r="4.8" stroke="#C2603C" stroke-width="4.4" />
 </svg>
